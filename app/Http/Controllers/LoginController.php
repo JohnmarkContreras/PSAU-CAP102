@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Spatie\Activitylog\Traits\LogsActivity; 
 use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
@@ -57,5 +58,13 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/login')->with('success', 'You have been logged out.');
+    }
+
+    #activity log
+    protected function authenticated(Request $request, $user)
+    {
+        activity()
+            ->causedBy($user)
+            ->log('Logged in');
     }
 }

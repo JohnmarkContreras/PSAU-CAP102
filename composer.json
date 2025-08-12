@@ -15,7 +15,8 @@
         "laravel/framework": "^7.29",
         "laravel/tinker": "^2.5",
         "livewire/livewire": "^2.12",
-        "maatwebsite/excel": "^3.1.30"
+        "maatwebsite/excel": "^3.1.30",
+        "spatie/laravel-activitylog": "^3.17"
     },
     "require-dev": {
         "facade/ignition": "^2.0",

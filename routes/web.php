@@ -48,7 +48,7 @@ Route::middleware('auth')->group(function () {
 
 // Superadmin routes
 Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
-    Route::get('/superadmin', 'SuperAdminController@index')->name('superadmin.dashboard');
+    Route::get('/dashboard', 'SuperAdminController@index')->name('pages.dashboard');
     Route::get('/farm-data', 'SuperAdminController@farmData')->name('pages.farm-data');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
     Route::get('/harvest-management', 'SuperAdminController@harvestManagement')->name('pages.harvest-management');
@@ -58,20 +58,25 @@ Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
     Route::delete('/accounts/{id}', 'SuperAdminController@deleteAccount')->name('superadmin.delete.account');
     Route::get('/create-account', 'SuperAdminController@createAccount')->name('create.account');
     Route::post('/create-account', 'SuperAdminController@storeAccount')->name('store.account');
+    Route::get('/activity-log', 'ActivityLogController@index')->name('pages.activity-log');
 });
 
 // Admin routes
 Route::group(['middleware' => ['auth', 'role:admin']], function () {
-    Route::get('/admin', 'AdminController@index')->name('admin.dashboard');
+    Route::get('/dashboard', 'AdminController@index')->name('pages.dashboard');
     Route::get('/farm-data', 'AdminController@farmData')->name('pages.farm-data');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
     Route::get('/harvest-management', 'AdminController@harvestManagement')->name('pages.harvest-management');
     Route::get('/feedback', 'AdminController@feedback')->name('pages.feedback');
+    Route::get('/activity-log', 'ActivityLogController@index')->name('pages.activity-log');
 });
 
 // User routes
 Route::group(['middleware' => ['auth', 'role:user, admin, superadmin']], function () {
-    Route::get('/user', 'UserDashboardController@index')->name('user.dashboard');
+    Route::get('/dashboard', 'UserDashboardController@index')->name('pages.dashboard');
+    Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
+    Route::get('/feedback', 'AdminController@feedback')->name('pages.feedback');
+    Route::get('/activity-log', 'ActivityLogController@index')->name('pages.activity-log');
 });
 
 //tree

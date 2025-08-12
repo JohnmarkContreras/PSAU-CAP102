@@ -1,7 +1,7 @@
 <?php
 
 namespace App;
-
+use Spatie\Activitylog\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 
 class Tree extends Model
@@ -38,6 +38,19 @@ class Tree extends Model
         ]);
     });
 }
+    #activity log
+    use LogsActivity;
+
+        protected static $logAttributes = [
+            'type',
+            'age_years',
+            'height_m',
+            'stem_diameter_cm',
+            'canopy_diameter_m'
+        ];
+
+        protected static $logOnlyDirty = true;
+        protected static $logName = 'tamarind_tree';
 }
 
 

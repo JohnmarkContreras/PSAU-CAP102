@@ -11,7 +11,11 @@ class SuperAdminController extends Controller
     public function index()
     {
         $role = 'superadmin';
-        return view('pages.dashboard', compact('role'));
+        $totaltrees = Tree::count();
+        $totalsour = Tree::where('type', 'sour')->count();
+        $totalsweet = Tree::where('type', 'sweet')->count();
+        $totalsemi_sweet = Tree::where('type', 'semi_sweet')->count();
+        return view('pages.dashboard', compact('role', 'totaltrees', 'totalsour', 'totalsweet', 'totalsemi_sweet'));
     }
 
     public function farmData()

@@ -1,5 +1,6 @@
 @php
     $role = auth()->user()->role;
+    $role = Auth::check() ? Auth::user()->role : null;
 @endphp
 <aside class="bg-[#0b5a0b] w-48 h-screen flex flex-col items-center py-6 text-white select-none">
         <img src="{{ asset('PSAU_Logo.png') }}" alt="Pamanga State Agricultural University official seal logo in green and yellow colors" class="mb-3" width="100" height="100" />
@@ -7,21 +8,35 @@
             Tamarind RDE
         </h1>
         <nav class="flex flex-col space-y-1 text-xs font-bold leading-tight">
-            <a href="{{ 
+            {{-- <a href="{{ 
                 $role === 'admin' ? route('admin.dashboard') :
                 ($role === 'superadmin' ? route('superadmin.dashboard') :
-                route('user.dashboard'))}}">Dashboard</a>
-            <a href="{{route('pages.farm-data')}}" class="hover:underline">Farm Data</a>
+                route('user.dashboard'))}}">Dashboard</a> --}}
+
+
+            {{--Visible to all--}}
+            @auth
+            <a href="{{route('pages.dashboard')}}">Dashboard</a>
+            <a href="{{route('trees.map')}}" class="hover:underline">Map</a>
             <a href="{{route('pages.analytics')}}" class="hover:underline">Analytics</a>
+            <a href="{{route('pages.feedback')}}" class="hover:underline">Feedback</a>
+            @endauth
+
+            @role(['admin', 'superadmin'])
+            <a href="{{route('pages.farm-data')}}" class="hover:underline">Farm Data</a>
             <a href="{{route('pages.harvest-management')}}" class="hover:underline">Harvest Management</a>
             <a href="{{route('pages.backup')}}" class="hover:underline">Backup</a>
-            <a href="{{route('pages.feedback')}}" class="hover:underline">Feedback</a>
-            <a href="{{route('trees.map')}}" class="hover:underline">Map</a>
             <a href="{{ route('trees.import') }}" class="hover:underline">Upload Excel</a>
+            @endrole
+
+            @role(['superadmin'])
+            @if(Auth::user()->role === 'superadmin')
+                <a href="{{ route('pages.accounts') }}" class="hover:underline">Accounts</a>
+            @endif
+            @endrole
+
             @auth
-                @if(Auth::user()->role === 'superadmin')
-                    <a href="{{ route('pages.accounts') }}" class="hover:underline">Accounts</a>
-                @endif
+            <a href="{{ route('pages.activity-log') }}" class="hover:underline">Activity Log</a>
             @endauth
         </nav>
         <div class="mt-auto text-[9px] px-2 text-white/80 select-text">
