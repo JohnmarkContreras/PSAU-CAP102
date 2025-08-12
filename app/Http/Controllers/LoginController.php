@@ -1,0 +1,61 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class LoginController extends Controller
+{
+    // Show login form
+    public function index()
+    {
+        return view('login'); // Make sure resources/views/login.blade.php exists
+    }
+    
+
+    // Handle login form submission
+    public function check(Request $request)
+    {
+        // Validate input
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        // Attempt login
+        $credentials = $request->only('email', 'password');
+        
+        if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+
+            // Role-based redirects
+            if ($user->role === 'superadmin') {
+                return redirect('/superadmin');
+            } elseif ($user->role === 'admin') {
+                return redirect('/admin');
+            } elseif ($user->role === 'user') {
+                return redirect('/user');
+            } else {
+                Auth::logout(); // Unknown role
+                return redirect('/login')->withErrors(['role' => 'Unauthorized role.']);
+            }
+        }
+        
+
+        // Login failed
+        return back()->withErrors([
+            'email' => 'Invalid credentials.',
+        ]);
+    }
+
+    // Logout method
+    public function logout(Request $request)
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/login')->with('success', 'You have been logged out.');
+    }
+}
