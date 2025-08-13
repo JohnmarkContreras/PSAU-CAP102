@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Middleware;
 
 use Closure;
@@ -12,15 +13,15 @@ class RoleMiddleware
             return redirect('/login');
         }
 
-        $userRole = Auth::user()->role;
+        $user = Auth::user();
 
         // Always allow superadmin
-        if ($userRole === 'superadmin') {
+        if ($user->hasRole('superadmin')) {
             return $next($request);
         }
 
-        // Otherwise, check if role is allowed
-        if (!in_array($userRole, $roles)) {
+        // Otherwise, check if the user has any of the allowed roles
+        if (!$user->hasAnyRole($roles)) {
             abort(403, 'Unauthorized access.');
         }
 

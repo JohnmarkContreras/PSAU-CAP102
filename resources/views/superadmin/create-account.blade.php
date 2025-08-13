@@ -36,12 +36,15 @@
         </div>
 
         <div class="mb-4">
-            <label for="role" class="block text-sm font-semibold">Role</label>
-            <select name="role" id="role" class="w-full border rounded px-3 py-2" required>
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
+            <label for="account_id" class="block text-sm font-semibold">Account ID</label>
+            <select name="account_id" id="account_id" class="w-full border rounded px-3 py-2" required>
+                <option value="">-- Select Account ID --</option>
+                <option value="S1">S1 - Super Admin</option>
+                <option value="A1">A1 - Admin</option>
+                <option value="U1">U1 - User</option>
             </select>
         </div>
+
 
         <div class="mb-6">
             <label for="password" class="block text-sm font-semibold">Password</label>

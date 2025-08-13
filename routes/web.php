@@ -48,7 +48,7 @@ Route::middleware('auth')->group(function () {
 
 // Superadmin routes
 Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
-    Route::get('/dashboard', 'SuperAdminController@index')->name('pages.dashboard');
+    Route::get('/superadmin', 'SuperAdminController@index')->name('superadmin.dashboard');
     Route::get('/farm-data', 'SuperAdminController@farmData')->name('pages.farm-data');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
     Route::get('/harvest-management', 'SuperAdminController@harvestManagement')->name('pages.harvest-management');
@@ -62,8 +62,8 @@ Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
 });
 
 // Admin routes
-Route::group(['middleware' => ['auth', 'role:admin']], function () {
-    Route::get('/dashboard', 'AdminController@index')->name('pages.dashboard');
+Route::group(['middleware' => ['auth', 'role:admin|superadmin']], function () {
+    Route::get('/admin', 'AdminController@index')->name('admin.dashboard');
     Route::get('/farm-data', 'AdminController@farmData')->name('pages.farm-data');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
     Route::get('/harvest-management', 'AdminController@harvestManagement')->name('pages.harvest-management');
@@ -72,10 +72,10 @@ Route::group(['middleware' => ['auth', 'role:admin']], function () {
 });
 
 // User routes
-Route::group(['middleware' => ['auth', 'role:user, admin, superadmin']], function () {
-    Route::get('/dashboard', 'UserDashboardController@index')->name('pages.dashboard');
+Route::group(['middleware' => ['auth', 'role:user|admin|superadmin']], function () {
+    Route::get('/user', 'UserDashboardController@index')->name('user.dashboard');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
-    Route::get('/feedback', 'AdminController@feedback')->name('pages.feedback');
+    Route::get('/feedback', 'UserDashboardController@feedback')->name('pages.feedback');
     Route::get('/activity-log', 'ActivityLogController@index')->name('pages.activity-log');
 });
 

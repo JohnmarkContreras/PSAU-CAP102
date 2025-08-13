@@ -34,7 +34,7 @@
                         <td class="px-4 py-2 border">{{ $user->id }}</td>
                         <td class="px-4 py-2 border">{{ $user->name }}</td>
                         <td class="px-4 py-2 border">{{ $user->email }}</td>
-                        <td class="px-4 py-2 border capitalize">{{ $user->role }}</td>
+                        <td class="px-4 py-2 border capitalize">{{ $user->getRoleNames()->implode(', ')}}</td>
                         <td class="px-4 py-2 border">
                             {{-- Delete Button --}}
                             <form action="{{ route('superadmin.delete.account', $user->id) }}" method="POST" onsubmit="return confirm('Are you sure?');" class="inline">

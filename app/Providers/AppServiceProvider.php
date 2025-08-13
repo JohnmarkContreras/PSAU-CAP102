@@ -24,12 +24,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        Blade::directive('role', function ($roles) {
-        return "<?php if(Auth::check() && in_array(Auth::user()->role, (array) {$roles})): ?>";
-        });
-
-        Blade::directive('endrole', function () {
-            return "<?php endif; ?>";
-        });
+        
     }
 }

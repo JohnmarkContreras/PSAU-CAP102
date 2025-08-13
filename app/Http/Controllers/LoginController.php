@@ -28,28 +28,26 @@ class LoginController extends Controller
         $credentials = $request->only('email', 'password');
         
         if (Auth::attempt($credentials)) {
-            $user = Auth::user();
+        $user = Auth::user();
 
-            // Role-based redirects
-            if ($user->role === 'superadmin') {
-                return redirect('/superadmin');
-            } elseif ($user->role === 'admin') {
-                return redirect('/admin');
-            } elseif ($user->role === 'user') {
-                return redirect('/user');
-            } else {
-                Auth::logout(); // Unknown role
-                return redirect('/login')->withErrors(['role' => 'Unauthorized role.']);
-            }
+        //Role-based redirects using Spatie
+        if ($user->hasRole('superadmin')) {
+            return redirect('/superadmin');
+        } elseif ($user->hasRole('admin')) {
+            return redirect('/admin');
+        } elseif ($user->hasRole('user')) {
+            return redirect('/user');
+        } else {
+            Auth::logout(); // Unknown role
+            return redirect('/login')->withErrors(['role' => 'Unauthorized role.']);
         }
-        
-
-        // Login failed
-        return back()->withErrors([
-            'email' => 'Invalid credentials.',
-        ]);
     }
 
+    // Login failed
+    return back()->withErrors([
+        'email' => 'Invalid credentials.',
+    ]);
+    }
     // Logout method
     public function logout(Request $request)
     {

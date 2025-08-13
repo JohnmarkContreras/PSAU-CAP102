@@ -101,15 +101,25 @@ public function storeAccount(Request $request)
         'name'     => 'required|string|max:255',
         'email'    => 'required|string|email|max:255|unique:users',
         'password' => 'required|string|min:5',
-        'role'     => 'required|in:user,admin',
+        'account_id' => 'required|string|max:255',
     ]);
 
     $user = User::create([
         'name'     => $request->name,
         'email'    => $request->email,
         'password' => Hash::make($request->password),
-        'role'     => $request->role,
+        'account_id' => $request->account_id,
     ]);
+
+    if ($request->account_id === 'A1') {
+        $user->assignRole('admin');
+    } elseif ($request->account_id === 'S1') {
+        $user->assignRole('superadmin');
+    } elseif ($request->account_id === 'U1') {
+    $user->assignRole('user');
+    } else {
+        $user->assignRole('user');
+    }
 
     return redirect()->route('create.account')->with('success', 'User account created successfully.');
 }
