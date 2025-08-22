@@ -1,0 +1,14 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class FeedbackController extends Controller
+{
+    public function feedback()
+    {
+        $role = 'superadmin';
+        return view('pages.feedback', compact('role'));
+    }
+}

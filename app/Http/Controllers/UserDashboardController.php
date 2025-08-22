@@ -33,17 +33,4 @@ class UserDashboardController extends Controller
         $role = 'user';
         return view('pages.harvest-management', compact('role'));
     }
-
-    public function backup()
-    {
-        $role = 'user';
-        return view('pages.backup', compact('role'));
-    }
-
-    public function feedback()
-    {
-        $role = 'user';
-        return view('pages.feedback', compact('role'));
-    }
-
 }

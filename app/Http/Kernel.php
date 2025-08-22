@@ -69,4 +69,11 @@ class Kernel extends HttpKernel
         'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
 
     ];
+    
+    protected function schedule(Schedule $schedule)
+    {
+        // Run every day at midnight
+        $schedule->command('harvest:predict')->daily();
+    }
+
 }

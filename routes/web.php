@@ -6,7 +6,7 @@ use GuzzleHttp\Psr7\Request;
 use Illuminate\Support\Facades\Auth; 
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\CarbonRecordController;
-
+use App\Http\Controllers\HarvestManagementController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -48,12 +48,15 @@ Route::middleware('auth')->group(function () {
 
 // Superadmin routes
 Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
-    Route::get('/superadmin', 'SuperAdminController@index')->name('superadmin.dashboard');
+    Route::get('/superadmin', 'DashboardController@index')->name('superadmin.dashboard');
     Route::get('/farm-data', 'SuperAdminController@farmData')->name('pages.farm-data');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
-    Route::get('/harvest-management', 'SuperAdminController@harvestManagement')->name('pages.harvest-management');
-    Route::get('/backup', 'SuperAdminController@backup')->name('pages.backup');
-    Route::get('/feedback', 'SuperAdminController@feedback')->name('pages.feedback');
+    Route::get('/harvest-management', 'HarvestManagementController@index')->name('pages.harvest-management');
+    Route::post('/harvest-management/store', 'HarvestManagementController@store')->name('harvest.store');
+    Route::post('/harvest-management/import', 'HarvestManagementController@import')->name('harvest.import');
+    Route::post('/harvest-management/{Code}/predict', 'HarvestManagementController@predict')->name('harvest.predict');
+    Route::get('/backup', 'BackupController@index')->name('pages.backup');
+    Route::get('/feedback', 'FeedbackController@index')->name('pages.feedback');
     Route::get('/accounts', 'SuperAdminController@accounts')->name('pages.accounts');
     Route::delete('/accounts/{id}', 'SuperAdminController@deleteAccount')->name('superadmin.delete.account');
     Route::get('/create-account', 'SuperAdminController@createAccount')->name('create.account');
@@ -63,19 +66,22 @@ Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
 
 // Admin routes
 Route::group(['middleware' => ['auth', 'role:admin|superadmin']], function () {
-    Route::get('/admin', 'AdminController@index')->name('admin.dashboard');
+    Route::get('/admin', 'DashboardController@index')->name('admin.dashboard');
     Route::get('/farm-data', 'AdminController@farmData')->name('pages.farm-data');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
-    Route::get('/harvest-management', 'AdminController@harvestManagement')->name('pages.harvest-management');
-    Route::get('/feedback', 'AdminController@feedback')->name('pages.feedback');
+    Route::get('/harvest-management', 'HarvestManagementController@index')->name('pages.harvest-management');
+    Route::post('/harvest-management/store', 'HarvestManagementController@store')->name('harvest.store');
+    Route::post('/harvest-management/import', 'HarvestManagementController@import')->name('harvest.import');
+    Route::post('/harvest-management/{Code}/predict', 'HarvestManagementController@predict')->name('harvest.predict');
+    Route::get('/feedback', 'FeedbackController@index')->name('pages.feedback');
     Route::get('/activity-log', 'ActivityLogController@index')->name('pages.activity-log');
 });
 
 // User routes
 Route::group(['middleware' => ['auth', 'role:user|admin|superadmin']], function () {
-    Route::get('/user', 'UserDashboardController@index')->name('user.dashboard');
+    Route::get('/user', 'DashboardController@index')->name('user.dashboard');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
-    Route::get('/feedback', 'UserDashboardController@feedback')->name('pages.feedback');
+    Route::get('/feedback', 'BackupController@index')->name('pages.feedback');
     Route::get('/activity-log', 'ActivityLogController@index')->name('pages.activity-log');
 });
 
@@ -85,9 +91,21 @@ Route::get('/trees/import', function () {
 })->name('trees.import');
 Route::post('/trees/import', 'TreeController@importExcel');
 
+Route::get('/trees/codes', 'TreeController@getCodes');
+Route::get('/trees/check-code', 'TreeController@checkCode');
 Route::get('/trees/map', 'TreeController@showMap')->name('trees.map');
 Route::get('/trees/data', 'TreeController@getTreeData')->name('trees.data');
+//store tree manually
+Route::post('/trees/store', 'TreeController@store')->name('trees.store');
 
 //logout
 Route::post('/logout', 'LoginController@logout')->name('logout');
 //Route::post('/logout', ['UserDashboardController@logout'])->middleware('auth', 'role:admin,superadmin')->name('logout');
+
+
+// Route::middleware(['auth'])->group(function () {
+//     Route::get('/harvest-management', [HarvestManagementController::class, 'index'])->name('harvest.index');
+//     Route::post('/harvest-management/store', [HarvestManagementController::class, 'store'])->name('harvest.store');
+//     Route::post('/harvest-management/import', [HarvestManagementController::class, 'import'])->name('harvest.import');
+//     Route::post('/harvest-management/{treeCode}/predict', [HarvestManagementController::class, 'predict'])->name('harvest.predict');
+// });

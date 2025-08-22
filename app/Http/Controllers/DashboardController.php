@@ -1,8 +1,9 @@
 <?php
-use Illuminate\Support\Facades\Auth;
-namespace App\Http\Controllers;
 
+namespace App\Http\Controllers;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use App\Tree;
 
 class DashboardController extends Controller
 {
@@ -12,38 +13,13 @@ class DashboardController extends Controller
         $this->middleware('auth');
     }
 
-    public function dashboard()
+    public function index()
     {
-        return view('pages.dashboard');
-    }
-
-    public function farmData()
-    {
-        return view('pages.farm-data');
-    }
-
-    public function analytics()
-    {
-        return view('pages.analytics');
-    }
-
-    public function carbonSequestration()
-    {
-        return view('pages.carbon-sequestration');
-    }
-
-    public function harvestManagement()
-    {
-        return view('pages.harvest-management');
-    }
-
-    public function backup()
-    {
-        return view('pages.backup');
-    }
-
-    public function feedback()
-    {
-        return view('pages.feedback');
+        $role = Auth::user()->role;
+        $totaltrees = Tree::count();
+        $totalsour = Tree::where('type', 'sour')->count();
+        $totalsweet = Tree::where('type', 'sweet')->count();
+        $totalsemi_sweet = Tree::where('type', 'semi_sweet')->count();
+        return view('pages.dashboard', compact('role', 'totaltrees', 'totalsour', 'totalsweet', 'totalsemi_sweet'));
     }
 }

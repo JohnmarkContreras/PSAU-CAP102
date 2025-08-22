@@ -42,6 +42,10 @@ class LoginController extends Controller
             return redirect('/login')->withErrors(['role' => 'Unauthorized role.']);
         }
     }
+    if (!Auth::attempt($credentials)) {
+        return back()->with('error', 'Incorrect username or password')
+                    ->withInput(); // ✅ this makes old('email') work
+    }
 
     // Login failed
     return back()->withErrors([

@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    @php
+    $role = Auth::user()->role;
+    @endphp
     @livewireStyles
     <meta charset="UTF-8">
     <title>@yield('title', 'PSAU Tamarind RDE')</title>
@@ -47,7 +50,8 @@
         
     <div class="relative p-4 flex">
         <div class="flex p-4 items-center space-x-2 whitespace-nowrap">
-        <span class="text-l font-medium">{{ Auth::user()->name }}</span>
+        <span class="text-l font-medium">{{ Auth::user()->name }}-{{ Auth::user()->getRoleNames()->first() }}
+</span>
     </div>
 
         <button id="dropdownBtn" class="text-3xl">

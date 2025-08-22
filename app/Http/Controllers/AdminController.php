@@ -34,16 +34,4 @@ class AdminController extends Controller
         $role = 'admin';
         return view('pages.harvest-management', compact('role'));
     }
-
-    public function feedback()
-    {
-        $role = 'admin';
-        return view('pages.feedback', compact('role'));
-    }
-
-    public function test()
-    {
-        $role = 'admin';
-        return view('pages.test', compact('role'));
-    }
 }

@@ -15,7 +15,7 @@ class AddCodeAndTypeToTreesTable extends Migration
     {
         Schema::table('trees', function (Blueprint $table) {
     if (!Schema::hasColumn('trees', 'code')) {
-        $table->string('code')->after('id');
+        $table->string('code')->unique()->after('id');
     }
 
     if (!Schema::hasColumn('trees', 'type')) {

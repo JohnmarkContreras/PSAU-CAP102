@@ -8,16 +8,6 @@ use App\Tree;
 class SuperAdminController extends Controller
 {
     
-    public function index()
-    {
-        $role = 'superadmin';
-        $totaltrees = Tree::count();
-        $totalsour = Tree::where('type', 'sour')->count();
-        $totalsweet = Tree::where('type', 'sweet')->count();
-        $totalsemi_sweet = Tree::where('type', 'semi_sweet')->count();
-        return view('pages.dashboard', compact('role', 'totaltrees', 'totalsour', 'totalsweet', 'totalsemi_sweet'));
-    }
-
     public function farmData()
     {
         $role = 'superadmin';
@@ -56,18 +46,6 @@ class SuperAdminController extends Controller
     {
         $role = 'superadmin';
         return view('pages.harvest-management', compact('role'));
-    }
-
-    public function backup()
-    {
-        $role = 'superadmin';
-        return view('pages.backup', compact('role'));
-    }
-
-    public function feedback()
-    {
-        $role = 'superadmin';
-        return view('pages.feedback', compact('role'));
     }
 
     public function accounts()

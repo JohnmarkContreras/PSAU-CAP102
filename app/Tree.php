@@ -17,6 +17,24 @@ class Tree extends Model
         'longitude',
     ];
 
+    protected $table = 'trees';
+    protected $primaryKey = 'id';
+    public $timestamps = true;
+
+    public function harvests()
+    {
+        return $this->hasMany(Harvest::class, 'code', 'code')
+                    ->orderBy('harvest_date', 'desc');
+    }
+
+    // Relationship to get the most recent harvest prediction
+    public function latestPrediction()
+    {
+        return $this->hasOne(HarvestPrediction::class, 'code', 'code')
+                    ->orderBy('predicted_date', 'desc');
+    }
+
+
     public function carbonRecords()
     {
         return $this->hasMany(CarbonRecord::class);

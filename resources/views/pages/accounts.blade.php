@@ -3,51 +3,54 @@
 @section('title', 'Accounts')
 
 @section('content')
-<main class="flex-1 p-6 space-y-6">
-    {{-- Users Table --}}
-    <section class="bg-[#e9eee9] rounded-lg p-6">
-        <h2 class="text-[#0b5a0b] font-extrabold text-2xl mb-4 border-l-4 border-[#0b5a0b] pl-3">
-            Accounts
-        </h2>
+<h1 class="font-extrabold text-lg mb-6">
+    <main class="flex-1 p-6 space-y-6">
+        <section class="bg-[#e9eee9] rounded-lg p-4 relative">
+            <h2 class="text-[#0b5a0b] font-extrabold text-2xl mb-2 border-l-4 border-[#0b5a0b] pl-3">
+                <x-card title="Accounts">
+                    <div class="text-sm text-black/90 space-y-0.5">
 
-        {{-- Create New User Button --}}
-        <div class="mb-4">
-            <a href="{{ route('create.account') }}" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
-                + Create New Account
-            </a>
-        </div>
+                        {{-- Create New User Button --}}
+                        <div class="mb-4">
+                            <a href="{{ route('create.account') }}" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                                + Create New Account
+                            </a>
+                        </div>
 
-        {{-- Users List Table --}}
-        <table class="min-w-full bg-white border rounded">
-            <thead>
-                <tr class="bg-gray-100 text-left text-sm font-semibold">
-                    <th class="px-4 py-2 border">ID</th>
-                    <th class="px-4 py-2 border">Name</th>
-                    <th class="px-4 py-2 border">Email</th>
-                    <th class="px-4 py-2 border">Role</th>
-                    <th class="px-4 py-2 border">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="text-sm">
-                @foreach ($users as $user)
-                    <tr class="border-t hover:bg-gray-50">
-                        <td class="px-4 py-2 border">{{ $user->id }}</td>
-                        <td class="px-4 py-2 border">{{ $user->name }}</td>
-                        <td class="px-4 py-2 border">{{ $user->email }}</td>
-                        <td class="px-4 py-2 border capitalize">{{ $user->getRoleNames()->implode(', ')}}</td>
-                        <td class="px-4 py-2 border">
-                            {{-- Delete Button --}}
-                            <form action="{{ route('superadmin.delete.account', $user->id) }}" method="POST" onsubmit="return confirm('Are you sure?');" class="inline">
-                                @csrf
-                                @method('DELETE')
-                                <button class="text-red-600 hover:underline">Delete</button>
-                            </form>
-                            {{-- Optional: Edit or view --}}
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </section>
-</main>
+                        {{-- Users List Table --}}
+                        <table class="min-w-full bg-white border rounded">
+                            <thead>
+                                <tr class="bg-gray-100 text-left text-sm font-semibold">
+                                    <th class="px-4 py-2 border">ID</th>
+                                    <th class="px-4 py-2 border">Name</th>
+                                    <th class="px-4 py-2 border">Email</th>
+                                    <th class="px-4 py-2 border">Role</th>
+                                    <th class="px-4 py-2 border">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm">
+                                @foreach ($users as $user)
+                                    <tr class="border-t hover:bg-gray-50">
+                                        <td class="px-4 py-2 border">{{ $user->id }}</td>
+                                        <td class="px-4 py-2 border">{{ $user->name }}</td>
+                                        <td class="px-4 py-2 border">{{ $user->email }}</td>
+                                        <td class="px-4 py-2 border capitalize">{{ $user->getRoleNames()->implode(', ')}}</td>
+                                        <td class="px-4 py-2 border">
+                                            {{-- Delete Button --}}
+                                            <form action="{{ route('superadmin.delete.account', $user->id) }}" method="POST" onsubmit="return confirm('Are you sure?');" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="text-red-600 hover:underline">Delete</button>
+                                            </form>
+                                            {{-- Optional: Edit or view --}}
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </x-card>
+                </h2>
+            </section>
+        </main>
+    </h1>
 @endsection

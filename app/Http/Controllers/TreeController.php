@@ -40,6 +40,47 @@ class TreeController extends Controller
     ));
     }
     
+    public function getCodes()
+    {
+        $codes = Tree::pluck('code'); // returns collection of codes
+        return response()->json($codes);
+    }
+
+    // Check if a code already exists (for duplicate prevention)
+    public function checkCode(Request $request)
+    {
+        $exists = Tree::where('code', $request->code)->exists();
+        return response()->json(['exists' => $exists]);
+    }
+
+    // Store manual entry
+    public function store(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|max:50|unique:trees,code',
+            'type' => 'required|in:sweet,sour,semi_sweet',
+            'age' => 'required|integer|min:0',
+            'height' => 'required|numeric|min:0',
+            'stem_diameter' => 'required|numeric|min:0',
+            'canopy_diameter' => 'required|numeric|min:0',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        Tree::create([
+            'code' => strtoupper($request->code),
+            'age' => $request->age,
+            'type' => $request->type,
+            'height' => $request->height,
+            'stem_diameter' => $request->stem_diameter,
+            'canopy_diameter' => $request->canopy_diameter,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+        ]);
+
+        return redirect()->back()->with('success', 'Tree added successfully!');
+    }
+
     public function importForm()
     {
         return view('trees.import');
