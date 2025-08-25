@@ -35,7 +35,7 @@
             <a href="{{ route('pages.farm-data') }}" class="hover:underline">Farm Data</a>
             <a href="{{ route('pages.harvest-management') }}" class="hover:underline">Harvest Management</a>
             <a href="{{ route('pages.backup') }}" class="hover:underline">Backup</a>
-            <a href="{{ route('trees.import') }}" class="hover:underline">Upload Excel</a>
+            {{-- <a href="{{ route('trees.import') }}" class="hover:underline">Add tree</a> --}}
         @endhasanyrole
 
         {{-- Visible to superadmin only --}}

@@ -54,7 +54,7 @@ Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
     Route::get('/harvest-management', 'HarvestManagementController@index')->name('pages.harvest-management');
     Route::post('/harvest-management/store', 'HarvestManagementController@store')->name('harvest.store');
     Route::post('/harvest-management/import', 'HarvestManagementController@import')->name('harvest.import');
-    Route::post('/harvest-management/{Code}/predict', 'HarvestManagementController@predict')->name('harvest.predict');
+    Route::post('/harvest-management/predict-all', 'HarvestManagementController@predictAll')->name('harvest.predictAll');
     Route::get('/backup', 'BackupController@index')->name('pages.backup');
     Route::get('/feedback', 'FeedbackController@index')->name('pages.feedback');
     Route::get('/accounts', 'SuperAdminController@accounts')->name('pages.accounts');
@@ -72,7 +72,8 @@ Route::group(['middleware' => ['auth', 'role:admin|superadmin']], function () {
     Route::get('/harvest-management', 'HarvestManagementController@index')->name('pages.harvest-management');
     Route::post('/harvest-management/store', 'HarvestManagementController@store')->name('harvest.store');
     Route::post('/harvest-management/import', 'HarvestManagementController@import')->name('harvest.import');
-    Route::post('/harvest-management/{Code}/predict', 'HarvestManagementController@predict')->name('harvest.predict');
+    Route::post('/harvest-management/predict-all', 'HarvestManagementController@predictAll')->name('harvest.predictAll');
+
     Route::get('/feedback', 'FeedbackController@index')->name('pages.feedback');
     Route::get('/activity-log', 'ActivityLogController@index')->name('pages.activity-log');
 });

@@ -1,10 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-<h1 class="font-extrabold text-lg mb-6">
     <main class="flex-1 p-6 space-y-6">
         <section class="bg-[#e9eee9] rounded-lg p-4 relative">
-            <h2 class="text-[#0b5a0b] font-extrabold text-2xl mb-2 border-l-4 border-[#0b5a0b] pl-3">
                 <x-card title="Harvest Management">
                     <div class="text-sm text-black/90 space-y-0.5">
                     @if (session('success'))
@@ -61,10 +59,20 @@
                     </form>
 
                     {{-- Trees + Predictions + Past Harvests --}}
+
                     <div class="space-y-6">
+                            {{-- Single Predict All Button --}}
+                            <div class="mb-6">
+                                <button id="predict-all-btn"
+                                    class="rounded-xl bg-emerald-600 text-white py-2 px-4 hover:bg-emerald-700">
+                                    Predict All Trees (SARIMA 4,1,4)
+                                </button>
+                            </div>
                         @foreach ($trees as $tree)
                             <div class="rounded-2xl border p-4">
+                                
                                 <div class="flex items-center justify-between mb-3">
+                                    
                                     <div>
                                         <h3 class="text-lg font-semibold text-gray-800">
                                             Tree <span class="font-mono">{{ $tree->code }}</span>
@@ -81,12 +89,6 @@
                                             <p class="text-sm text-gray-500">No prediction yet.</p>
                                         @endif
                                     </div>
-                                    <button
-                                        data-tree="{{ $tree->code }}"
-                                        class="predict-btn rounded-xl bg-emerald-600 text-white py-2 px-4 hover:bg-emerald-700"
-                                    >
-                                        Predict (SARIMA 4,1,4)
-                                    </button>
                                 </div>
 
                                 <div class="overflow-x-auto">
@@ -146,31 +148,48 @@
                             </ul>
                         </div>
                     @endif
+                
+
+                    <script>
+                        document.getElementById('predict-all-btn').addEventListener('click', async () => {
+                            const btn = document.getElementById('predict-all-btn');
+                            btn.disabled = true; const old = btn.textContent; btn.textContent = 'Predicting...';
+
+                            try {
+                                const res = await fetch(`{{ route('harvest.predictAll') }}`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Accept': 'application/json'
+                                    }
+                                });
+
+                                const data = await res.json();
+                                console.log("Prediction results:", data);
+
+                                if (!data.ok) {
+                                    alert('Prediction failed.');
+                                } else {
+                                    let summary = '';
+                                    for (const [code, result] of Object.entries(data.results)) {
+                                        if (result.ok) {
+                                            summary += `Tree ${code}: ✅ Predicted ${result.predicted_quantity}kg on ${result.predicted_date}\n`;
+                                        } else {
+                                            summary += `Tree ${code}: ⚠️ ${result.message}\n`;
+                                        }
+                                    }
+                                    alert(summary);
+                                    location.reload();
+                                }
+                            } catch (e) {
+                                console.error(e);
+                                alert('Prediction error');
+                            } finally {
+                                btn.disabled = false; btn.textContent = old;
+                            }
+                        });
+                    </script>
                 </x-card>
-            </h2>
         </section>
     </main>
-</h1>
 @endsection
-
-<script>
-document.querySelectorAll('.predict-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-        const code = btn.getAttribute('data-tree');
-        btn.disabled = true; const old = btn.textContent; btn.textContent = 'Predicting...';
-        try {
-            const res = await fetch(`/harvest-management/${code}/predict`, {
-                method: 'POST',
-                headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
-            });
-            const data = await res.json();
-            if (!data.ok) alert(data.message || 'Prediction failed');
-            else location.reload();
-        } catch (e) {
-            alert('Prediction error');
-        } finally {
-            btn.disabled = false; btn.textContent = old;
-        }
-    });
-});
-</script>

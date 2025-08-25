@@ -7,9 +7,9 @@ use App\Harvest;
 use App\HarvestPrediction;
 use App\Imports\HarvestsImport;
 use Illuminate\Http\Request;
+use Symfony\Component\Process\Process;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class HarvestManagementController extends Controller
@@ -42,56 +42,86 @@ class HarvestManagementController extends Controller
         return back()->with('success', 'Excel data imported.');
     }
 
-    public function predict($treeCode)
+    public function predictAll()
     {
-        $tree = Tree::where('code', $treeCode)->firstOrFail();
-        $rows = $tree->harvests()->select('harvest_date','harvest_weight_kg')->orderBy('harvest_date')->get();
+        $trees = Tree::all();
+        $results = [];
 
-        if ($rows->count() < 6) {
-            return response()->json(['ok' => false, 'message' => 'Need at least 6 records to forecast.'], 422);
+        foreach ($trees as $tree) {
+            try {
+                $rows = $tree->harvests()
+                    ->select('harvest_date','harvest_weight_kg')
+                    ->orderBy('harvest_date')
+                    ->get();
+
+                if ($rows->count() < 6) {
+                    $results[$tree->code] = [
+                        'code' => $tree->code,
+                        'ok' => false,
+                        'message' => 'Need at least 6 records to forecast.'
+                    ];
+                    continue;
+                }
+
+                // Write CSV
+                $csv = "harvest_date,harvest_weight_kg\n";
+                foreach ($rows as $r) {
+                    $csv .= "{$r->harvest_date},{$r->harvest_weight_kg}\n";
+                }
+
+                $path = "harvest_data/{$tree->code}.csv";
+                Storage::disk('local')->put($path, $csv);
+                $full = storage_path("app/$path");
+
+                // Run Python script
+                $script = base_path('scripts/sarima_predict.py');
+                $python = env('PYTHON_BIN', 'python');
+
+                $process = new Process([$python, $script, $full, '--order', '4,1,4', '--seasonal', '0,1,0,12']);
+                $process->setTimeout(60);
+                $process->run();
+
+                if (!$process->isSuccessful()) {
+                    throw new ProcessFailedException($process);
+                }
+
+                $out = json_decode(trim($process->getOutput()), true);
+
+                if (!$out || !isset($out['predicted_quantity'], $out['predicted_date'])) {
+                    $results[$tree->code] = [
+                        'code' => $tree->code,
+                        'ok' => false,
+                        'message' => 'Invalid prediction output from Python.'
+                    ];
+                    continue;
+                }
+
+                // Save prediction in DB
+                $pred = HarvestPrediction::updateOrCreate(
+                    ['code' => $tree->code, 'predicted_date' => $out['predicted_date']],
+                    ['predicted_quantity' => $out['predicted_quantity']]
+                );
+
+                $results[$tree->code] = [
+                    'code' => $tree->code,
+                    'ok' => true,
+                    'predicted_date' => $pred->predicted_date,
+                    'predicted_quantity' => (float) $pred->predicted_quantity
+                ];
+
+            } catch (\Throwable $e) {
+                $results[$tree->code] = [
+                    'code' => $tree->code,
+                    'ok' => false,
+                    'error' => $e->getMessage()
+                ];
+            }
         }
-
-        // Write CSV for Python
-        $csv = "harvest_date,harvest_weight_kg\n";
-        foreach ($rows as $r) {
-            $csv .= "{$r->harvest_date},{$r->harvest_weight_kg}\n";
-        }
-
-        $path = "harvest_data/{$treeCode}.csv";
-        Storage::disk('local')->put($path, $csv);
-        $full = storage_path("app/$path");
-
-        $script = base_path('scripts/sarima_predict.py');
-        $python = env('PYTHON_BIN', 'python');
-
-        $process = new Process([$python, $script, $full, '--order', '4,1,4', '--seasonal', '0,1,0,12']);
-        $process->setTimeout(60);
-        $process->run();
-
-        if (!$process->isSuccessful()) {
-            throw new ProcessFailedException($process);
-        }
-
-        $out = json_decode(trim($process->getOutput()), true);
-        if (!$out || !isset($out['predicted_quantity'], $out['predicted_date'])) {
-            return response()->json(['ok' => false, 'message' => 'Invalid prediction output.'], 500);
-        }
-
-        // $pred = HarvestPrediction::updateOrCreate(
-        //     ['code' => $treeCode, 'predicted_date' => $out['predicted_date']],
-        //     ['predicted_quantity' => $out['predicted_quantity']]
-        // );
-
-        // $users = User::all(); // Or filter by role
-        // foreach ($users as $user) {
-        //     $user->notify(new HarvestScheduleNotification($pred));
-        // }
 
         return response()->json([
             'ok' => true,
-            'code' => $treeCode,
-            'predicted_date' => $pred->predicted_date,
-            'predicted_quantity' => (float)$pred->predicted_quantity,
+            'results' => $results
         ]);
     }
+
 }
