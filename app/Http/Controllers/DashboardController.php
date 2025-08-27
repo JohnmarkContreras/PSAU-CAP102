@@ -20,6 +20,7 @@ class DashboardController extends Controller
         $totalsour = Tree::where('type', 'sour')->count();
         $totalsweet = Tree::where('type', 'sweet')->count();
         $totalsemi_sweet = Tree::where('type', 'semi_sweet')->count();
-        return view('pages.dashboard', compact('role', 'totaltrees', 'totalsour', 'totalsweet', 'totalsemi_sweet'));
+        $notifications = auth()->user()->notifications()->latest()->take(5)->get();
+        return view('pages.dashboard', compact('role', 'totaltrees', 'totalsour', 'totalsweet', 'totalsemi_sweet', 'notifications'));
     }
 }

@@ -16,9 +16,10 @@ class HarvestManagementController extends Controller
 {
     public function index()
     {
+        $allTrees = Tree::orderBy('code')->get();
         $trees = Tree::with(['harvests', 'latestPrediction'])->orderBy('code')->paginate(10);
         $harvests = Harvest::with('tree')->latest('harvest_date')->paginate(10);
-        return view ('pages.harvest-management', compact('trees', 'harvests'));
+        return view ('pages.harvest-management', compact('allTrees', 'trees', 'harvests'));
     }
 
     public function store(Request $request)

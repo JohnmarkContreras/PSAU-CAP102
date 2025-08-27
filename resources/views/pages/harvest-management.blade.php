@@ -29,7 +29,7 @@
                         <div>
                             <label class="block text-sm font-medium mb-1">Tree</label>
                             <select name="code" class="w-full border rounded-lg p-2">
-                                @foreach($trees as $t)
+                                @foreach($allTrees as $t)
                                     <option value="{{ $t->code }}">{{ $t->code }}</option>
                                 @endforeach
                             </select>
