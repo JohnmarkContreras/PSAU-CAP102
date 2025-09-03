@@ -4,7 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Login - PSAU Tamarind RDE Center</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<link href="{{ mix('css/app.css') }}" rel="stylesheet">
+<script src="{{ mix('js/app.js') }}" defer></script>
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
 </head>
 <body class="min-h-screen bg-gray-100 flex flex-col items-center justify-start pt-2">

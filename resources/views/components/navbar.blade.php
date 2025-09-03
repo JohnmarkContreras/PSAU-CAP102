@@ -7,8 +7,8 @@
         alt="Pamanga State Agricultural University official seal logo in green and yellow colors" 
         class="mb-3" width="100" height="100" />
 
-    <h1 class="font-extrabold text-lg mb-6">
-        Tamarind RDE
+    <h1 class="font-extrabold text-sm mb-6">
+        PSAU Tamarind R&DE
     </h1>
 
     <nav class="flex flex-col space-y-1 text-xs font-bold leading-tight">

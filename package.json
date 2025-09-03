@@ -10,13 +10,18 @@
     "production": "cross-env NODE_ENV=production node_modules/webpack/bin/webpack.js --no-progress --config=node_modules/laravel-mix/setup/webpack.config.js"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.12",
+    "autoprefixer": "^10.4.21",
     "axios": "^1.11.0",
     "cross-env": "^7.0",
     "laravel-mix": "^6.0.49",
     "lodash": "^4.17.19",
+    "postcss": "^8.5.6",
     "resolve-url-loader": "^5.0.0",
     "sass": "^1.15.2",
-    "sass-loader": "^8.0.0"
+    "sass-loader": "^8.0.0",
+    "tailwindcss": "^4.1.12",
+    "vite": "^6.3.5"
   },
   "name": "cap102",
   "description": "<p align=\"center\"><a href=\"https://laravel.com\" target=\"_blank\"><img src=\"https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg\" width=\"400\"></a></p>",
@@ -29,6 +34,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.12",
     "accepts": "^1.3.8",
     "acorn": "^6.4.2",
     "adjust-sourcemap-loader": "^3.0.0",
@@ -65,7 +71,6 @@
     "async-function": "^1.0.0",
     "async-limiter": "^1.0.1",
     "atob": "^2.1.2",
-    "autoprefixer": "^10.4.21",
     "available-typed-arrays": "^1.0.7",
     "babel-code-frame": "^6.26.0",
     "babel-loader": "^8.4.1",
@@ -499,7 +504,7 @@
     "on-headers": "^1.1.0",
     "once": "^1.4.0",
     "opn": "^5.5.0",
-    "optimize-css-assets-webpack-plugin": "^4.0.0",
+    "optimize-css-assets-webpack-plugin": "^6.0.1",
     "os-browserify": "^0.3.0",
     "own-keys": "^1.0.1",
     "p-finally": "^1.0.0",
@@ -536,7 +541,6 @@
     "portfinder": "^1.0.37",
     "posix-character-classes": "^0.1.1",
     "possible-typed-array-names": "^1.1.0",
-    "postcss": "^7.0.39",
     "postcss-calc": "^10.1.1",
     "postcss-colormin": "^7.0.4",
     "postcss-convert-values": "^7.0.6",
