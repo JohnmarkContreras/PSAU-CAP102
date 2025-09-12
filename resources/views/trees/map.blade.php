@@ -4,11 +4,13 @@
 
 @section('content')
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
+<script>
+    var trees = @json($trees);
+    console.log("TREES JSON:", trees);
+</script>
 <main class="flex-1 p-6 space-y-6">
     <section class="bg-[#e9eee9] rounded-lg p-4 relative">
         <x-card title="Tamarind Tree Location">
-
             <!-- Title + Actions -->
             <div class="flex items-center justify-between mb-4">
                 <!-- Search Box -->
@@ -41,24 +43,26 @@
             <div id="map" class="h-[500px] w-full rounded z-0"></div>
 
             <!-- Tree Details -->
-            <div id="tree-details" class="mt-6 hidden">
-                <h3 class="text-lg font-bold text-green-800 mb-2">Tree Record</h3>
-                <div class="bg-white p-4 rounded border shadow">
-                    <p><strong>Code:</strong> <span id="detail-code"></span></p>
-                    <p><strong>Age:</strong> <span id="detail-age"></span> years</p>
-                    <p><strong>Height:</strong> <span id="detail-height"></span> m</p>
-                    <p><strong>Stem Diameter:</strong> <span id="detail-stem"></span> cm</p>
-                    <p><strong>Canopy Diameter:</strong> <span id="detail-canopy"></span> m</p>
-                </div>
+            <div id="tree-details" class="hidden">
+                <h3>Tree Details</h3>
+                <p><strong>Code:</strong> <span id="detail-code"></span></p>
+                <p><strong>Age:</strong> <span id="detail-age"></span> years</p>
+                <p><strong>Height:</strong> <span id="detail-height"></span> m</p>
+                <p><strong>Stem Diameter:</strong> <span id="detail-stem"></span> cm</p>
+                <p><strong>Canopy Diameter:</strong> <span id="detail-canopy"></span> m</p>
+
+                <h4>Harvest Records</h4>
+                <ul id="detail-harvests"></ul>
             </div>
+
         </x-card>
     </section>
 </main>
-
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
+
     var map = L.map('map').setView([15.21912622129279, 120.69502532729408], 17);
 
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -130,13 +134,27 @@
     }
 
     function showTreeDetails(tree) {
-        document.getElementById("tree-details").classList.remove("hidden");
-        document.getElementById("detail-code").innerText = tree.code;
-        document.getElementById("detail-age").innerText = tree.age;
-        document.getElementById("detail-height").innerText = tree.height;
-        document.getElementById("detail-stem").innerText = tree.stem_diameter;
-        document.getElementById("detail-canopy").innerText = tree.canopy_diameter;
+    document.getElementById("tree-details").classList.remove("hidden");
+    document.getElementById("detail-code").innerText = tree.code;
+    document.getElementById("detail-age").innerText = tree.age;
+    document.getElementById("detail-height").innerText = tree.height;
+    document.getElementById("detail-stem").innerText = tree.stem_diameter;
+    document.getElementById("detail-canopy").innerText = tree.canopy_diameter;
+
+    // Harvest list
+    const harvestList = document.getElementById("detail-harvests");
+    harvestList.innerHTML = "";
+
+    if (tree.harvests && tree.harvests.length > 0) {
+        tree.harvests.forEach(h => {
+            const li = document.createElement("li");
+            li.textContent = `${h.harvest_date} — ${h.harvest_weight_kg}kg (Quality: ${h.quality})`;
+            harvestList.appendChild(li);
+        });
+    } else {
+        harvestList.innerHTML = "<li><i>No harvest records yet</i></li>";
     }
+}
 
     // Autocomplete suggestions
     function showSuggestions(query) {

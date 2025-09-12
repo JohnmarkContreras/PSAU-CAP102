@@ -31,7 +31,7 @@
 
         {{-- Visible to admin & superadmin --}}
         @hasanyrole('admin|superadmin')
-            <a href="{{ route('pages.farm-data') }}" class="hover:underline">Farm Data</a>
+            {{-- <a href="{{ route('pages.farm-data') }}" class="hover:underline">Farm Data</a> --}}
             <a href="{{ route('pages.harvest-management') }}" class="hover:underline">Harvest Management</a>
             <a href="{{ route('pages.backup') }}" class="hover:underline">Backup</a>
             <a href="{{ route('feedback.index') }}" class="hover:underline">

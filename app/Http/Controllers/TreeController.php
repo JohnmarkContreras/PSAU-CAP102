@@ -97,10 +97,7 @@ class TreeController extends Controller
         return redirect()->back()->with('success', 'Tamarind trees imported successfully!');
     }
 
-    public function showMap()
-    {
-        return view('trees.map');
-    }
+    
 
     public function getTreeData()
     {

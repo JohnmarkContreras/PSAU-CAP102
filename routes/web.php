@@ -30,6 +30,7 @@ Route::group(['middleware' => ['auth', 'role:user']], function () {
 // Superadmin routes
 Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
     Route::get('/superadmin', 'DashboardController@index')->name('superadmin.dashboard');
+    Route::get('/harvest-records/filter', 'DashboardController@filterHarvests')->name('harvest.filter');
     Route::get('/farm-data', 'SuperAdminController@farmData')->name('pages.farm-data');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
     Route::get('/harvest-management', 'HarvestManagementController@index')->name('pages.harvest-management');
@@ -75,7 +76,7 @@ Route::post('/trees/import', 'TreeController@importExcel');
 
 Route::get('/trees/codes', 'TreeController@getCodes');
 Route::get('/trees/check-code', 'TreeController@checkCode');
-Route::get('/trees/map', 'TreeController@showMap')->name('trees.map');
+Route::get('/trees/map', 'MapController@showMap')->name('trees.map');
 Route::get('/trees/data', 'TreeController@getTreeData')->name('trees.data');
 //store tree manually
 Route::post('/trees/store', 'TreeController@store')->name('trees.store');
