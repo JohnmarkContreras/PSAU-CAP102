@@ -12,6 +12,7 @@ class TreeController extends Controller
 
     public function index()
     {
+    
     $sweet = Tree::where('type', 'sweet')->count();
     $semi  = Tree::where('type', 'semi_sweet')->count();
     $sour  = Tree::where('type', 'sour')->count();
@@ -35,6 +36,8 @@ class TreeController extends Controller
         'sequestration' => $t->annual_sequestration_kg ?? 0,
     ])->toArray();
 
+    //display tree record
+    $trees= \App\Tree::with('harvests')->get();
     return view('pages.analytics', compact(
         'sweet', 'semi', 'sour', 'total', 'trees', 'chartData'
     ));
@@ -101,6 +104,7 @@ class TreeController extends Controller
 
     public function getTreeData()
     {
-        return response()->json(Tree::all());
+        $trees = Tree::with('harvests')->get();
+        return response()->json($trees);
     }
 }

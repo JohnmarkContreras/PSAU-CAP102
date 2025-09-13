@@ -6,7 +6,6 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script>
     var trees = @json($trees);
-    console.log("TREES JSON:", trees);
 </script>
 <main class="flex-1 p-6 space-y-6">
     <section class="bg-[#e9eee9] rounded-lg p-4 relative">
@@ -44,14 +43,14 @@
 
             <!-- Tree Details -->
             <div id="tree-details" class="hidden">
-                <h3>Tree Details</h3>
+                <h1>Tree Details</h1>
                 <p><strong>Code:</strong> <span id="detail-code"></span></p>
                 <p><strong>Age:</strong> <span id="detail-age"></span> years</p>
                 <p><strong>Height:</strong> <span id="detail-height"></span> m</p>
                 <p><strong>Stem Diameter:</strong> <span id="detail-stem"></span> cm</p>
                 <p><strong>Canopy Diameter:</strong> <span id="detail-canopy"></span> m</p>
 
-                <h4>Harvest Records</h4>
+                <h4><strong>Harvest Records</strong></h4>
                 <ul id="detail-harvests"></ul>
             </div>
 
@@ -118,7 +117,7 @@
         activeMarker.openPopup();
 
         // Show details
-        showTreeDetails(tree);
+        showTreeDetails(tree);  
     }
 
     function searchTree() {
@@ -140,6 +139,7 @@
     document.getElementById("detail-height").innerText = tree.height;
     document.getElementById("detail-stem").innerText = tree.stem_diameter;
     document.getElementById("detail-canopy").innerText = tree.canopy_diameter;
+
 
     // Harvest list
     const harvestList = document.getElementById("detail-harvests");

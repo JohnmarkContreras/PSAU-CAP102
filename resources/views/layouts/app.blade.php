@@ -8,10 +8,9 @@
     <title>@yield('title', 'PSAU Tamarind RDE')</title>
     <link href="{{ mix('css/app.css') }}" rel="stylesheet">
     <script src="{{ mix('js/app.js') }}" defer></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet" />
 </head>
 
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet" />
-    
 <body class="bg-gray-100 text-gray-900 min-h-screen flex">
 
     <!-- Sidebar (Desktop) -->
@@ -20,29 +19,39 @@
     </aside>
 
     <!-- Mobile Top Bar -->
-    <header class="md:hidden fixed top-0 left-0 right-0 bg-[#0b5a0b] text-white flex justify-between items-center px-4 py-3 z-40">
+    <header class="md:hidden fixed top-0 left-0 right-0 bg-[#0b5a0b] text-white flex justify-between items-center px-4 py-3 z-40 shadow">
         <span class="font-bold text-lg">PSAU Tamarind R&DE</span>
-        <button id="mobileMenuBtn" class="text-2xl" aria-controls="mobileSidebar" aria-expanded="false">
+        <button id="mobileMenuBtn" class="text-2xl p-2 rounded focus:outline-none focus:ring-2 focus:ring-white" aria-controls="mobileSidebar" aria-expanded="false">
             <i class="fa-solid fa-bars"></i>
         </button>
     </header>
 
     <!-- Mobile Sidebar (Slide-over) -->
     <div id="mobileSidebar"
-         class="fixed inset-0 z-50 hidden"
-         aria-hidden="true">
+        class="fixed inset-0 z-50 hidden md:hidden"
+        aria-hidden="true">
         <!-- Backdrop -->
         <div id="backdrop"
-             class="absolute inset-0 bg-black transition-opacity duration-300 opacity-0"></div>
+            class="absolute inset-0 bg-black transition-opacity duration-300 opacity-0"></div>
 
         <!-- Panel -->
-        <aside id="sidebarPanel"
-               class="relative bg-[#0b5a0b] w-60 h-full p-6 text-white transform -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto">
-            <button id="closeSidebar" class="text-white text-xl mb-6" aria-label="Close menu">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
+    <aside id="sidebarPanel"
+        class="relative bg-[#0b5a0b] w-3/4 max-w-xs h-full p-6 text-white transform -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto rounded-r-2xl shadow-lg">
+        
+        <!-- Close button -->
+        <button id="closeSidebar" 
+                class="text-white text-2xl mb-6 p-2 rounded focus:outline-none focus:ring-2 focus:ring-white" 
+                aria-label="Close menu">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <!-- Navbar links -->
+        <nav class="flex flex-col items-center space-y-6 text-2xl md:text-lg font-bold">
             @include('components.navbar')
-        </aside>
+        </nav>
+    </aside>
+
+
     </div>
 
     <!-- Page Wrapper -->
@@ -52,14 +61,14 @@
 
         <!-- Top Right User Info -->
         <div class="p-4 flex justify-end items-center gap-3">
-            <span class="text-sm md:text-base font-medium whitespace-nowrap">
+            <span class="text-sm md:text-base font-medium truncate max-w-[60%] md:max-w-none text-right">
                 {{ Auth::user()->name }} - {{ Auth::user()->getRoleNames()->first() }}
             </span>
             <div class="relative">
-                <button id="dropdownBtn" class="text-2xl" aria-haspopup="true" aria-expanded="false">
+                <button id="dropdownBtn" class="text-2xl p-2 rounded focus:outline-none focus:ring-2 focus:ring-gray-300" aria-haspopup="true" aria-expanded="false">
                     <i class="fa-solid fa-user"></i>
                 </button>
-                <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-36 bg-white shadow rounded overflow-hidden z-50">
+                <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-40 bg-white shadow rounded-md overflow-hidden z-50">
                     <a href="{{ route('profile.index') }}" class="block px-4 py-2 text-sm hover:bg-gray-100">Profile</a>
                     <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">@csrf</form>
                     <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
@@ -69,7 +78,7 @@
         </div>
 
         <!-- Page Content -->
-        <main class="flex-grow p-6 z-0">
+        <main class="flex-grow px-3 py-4 md:p-6 z-0">
             @yield('content')
         </main>
     </div>
@@ -97,7 +106,6 @@
 
         function openSidebar() {
             mobileSidebar.classList.remove('hidden');
-            // allow reflow so transitions apply
             requestAnimationFrame(() => {
                 sidebarPanel.classList.remove('-translate-x-full');
                 backdrop.classList.remove('opacity-0');
@@ -115,7 +123,7 @@
                 mobileSidebar.classList.add('hidden');
                 openBtn?.setAttribute('aria-expanded', 'false');
                 mobileSidebar.setAttribute('aria-hidden', 'true');
-            }, 300); // match duration-300
+            }, 300);
         }
 
         openBtn?.addEventListener('click', openSidebar);
@@ -123,7 +131,7 @@
         backdrop?.addEventListener('click', closeSidebar);
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
 
-        // If user resizes to md+ while open, reset
+        // Reset on resize
         window.addEventListener('resize', () => {
             if (window.innerWidth >= 768) {
                 mobileSidebar.classList.add('hidden');

@@ -15,47 +15,76 @@
         {{-- Dashboard redirect based on role --}}
         @auth
             @if(auth()->user()->hasRole('admin'))
-                <a href="{{ route('admin.dashboard') }}">Dashboard</a>
+                <a href="{{ route('admin.dashboard') }}" 
+                    class="px-3 py-2 rounded {{ request()->routeIs('admin.dashboard') ? 'bg-white text-[#0b5a0b]' : 'hover:underline' }}">
+                    Dashboard
+                </a>
             @elseif(auth()->user()->hasRole('superadmin'))
-                <a href="{{ route('superadmin.dashboard') }}">Dashboard</a>
+                <a href="{{ route('superadmin.dashboard') }}" 
+                    class="px-3 py-2 rounded {{ request()->routeIs('superadmin.dashboard') ? 'bg-white text-[#0b5a0b]' : 'hover:underline' }}">
+                    Dashboard
+                </a>
             @elseif(auth()->user()->hasRole('user'))
-                <a href="{{ route('user.dashboard') }}">Dashboard</a>
+                <a href="{{ route('user.dashboard') }}" 
+                    class="px-3 py-2 rounded {{ request()->routeIs('user.dashboard') ? 'bg-white text-[#0b5a0b]' : 'hover:underline' }}">
+                    Dashboard
+                </a>
             @endif
         @endauth
 
-        {{-- Visible to all roles: user, admin, superadmin --}}
+        {{-- Visible to all roles --}}
         @hasanyrole('user|admin|superadmin')
-            <a href="{{ route('trees.map') }}" class="hover:underline">Map</a>
-            <a href="{{ route('pages.analytics') }}" class="hover:underline">Analytics</a>
-        @endhasanyrole
-
-        {{-- Visible to admin & superadmin --}}
-        @hasanyrole('admin|superadmin')
-            {{-- <a href="{{ route('pages.farm-data') }}" class="hover:underline">Farm Data</a> --}}
-            <a href="{{ route('pages.harvest-management') }}" class="hover:underline">Harvest Management</a>
-            <a href="{{ route('pages.backup') }}" class="hover:underline">Backup</a>
-            <a href="{{ route('feedback.index') }}" class="hover:underline">
-            Manage Feedback
+            <a href="{{ route('trees.map') }}" 
+                class="px-3 py-2 rounded {{ request()->routeIs('trees.map') ? 'bg-white text-[#0b5a0b]' : 'hover:underline' }}">
+                Map
             </a>
-            {{-- <a href="{{ route('trees.import') }}" class="hover:underline">Add tree</a> --}}
+            <a href="{{ route('pages.analytics') }}" 
+                class="px-3 py-2 rounded {{ request()->routeIs('pages.analytics') ? 'bg-white text-[#0b5a0b]' : 'hover:underline' }}">
+                Analytics
+            </a>
         @endhasanyrole
 
-        {{-- Visible to superadmin only --}}
+        {{-- Admin + superadmin --}}
+        @hasanyrole('admin|superadmin')
+            <a href="{{ route('pages.harvest-management') }}" 
+                class="px-3 py-2 rounded {{ request()->routeIs('pages.harvest-management') ? 'bg-white text-[#0b5a0b]' : 'hover:underline' }}">
+                Harvest Management
+            </a>
+            <a href="{{ route('pages.backup') }}" 
+                class="px-3 py-2 rounded {{ request()->routeIs('pages.backup') ? 'bg-white text-[#0b5a0b]' : 'hover:underline' }}">
+                Backup
+            </a>
+            <a href="{{ route('feedback.index') }}" 
+                class="px-3 py-2 rounded {{ request()->routeIs('feedback.index') ? 'bg-white text-[#0b5a0b]' : 'hover:underline' }}">
+                Manage Feedback
+            </a>
+        @endhasanyrole
+
+        {{-- Superadmin --}}
         @role('superadmin')
-            <a href="{{ route('pages.accounts') }}" class="hover:underline">Accounts</a>
+            <a href="{{ route('pages.accounts') }}" 
+                class="px-3 py-2 rounded {{ request()->routeIs('pages.accounts') ? 'bg-white text-[#0b5a0b]' : 'hover:underline' }}">
+                Accounts
+            </a>
         @endrole
 
-        {{-- Activity log for all authenticated users --}}
+        {{-- Activity Log --}}
         @auth
-            <a href="{{ route('pages.activity-log') }}" class="hover:underline">Activity Log</a>
+            <a href="{{ route('pages.activity-log') }}" 
+                class="px-3 py-2 rounded {{ request()->routeIs('pages.activity-log') ? 'bg-white text-[#0b5a0b]' : 'hover:underline' }}">
+                Activity Log
+            </a>
         @endauth
 
+        {{-- User Feedback --}}
         @role('user')
-        <a href="{{ route('feedback.create') }}" class="hover:underline">
-            Feedback
-        </a>
+            <a href="{{ route('feedback.create') }}" 
+                class="px-3 py-2 rounded {{ request()->routeIs('feedback.create') ? 'bg-white text-[#0b5a0b]' : 'hover:underline' }}">
+                Feedback
+            </a>
         @endrole
     </nav>
+
 
     <div class="mt-auto text-[9px] px-2 text-white/80 select-text">
         © 2025 PSAU Tamarind RDE

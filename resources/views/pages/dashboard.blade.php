@@ -264,57 +264,67 @@ document.addEventListener('DOMContentLoaded', function () {
     <main id="dashboard-container" class="flex-1 p-6 space-y-6">
         <!-- Dashboard Summary with Chart -->
         <section class="bg-[#e9eee9] rounded-lg p-4 relative">
-            <x-card title="Dashboard">
-                <div class="text-l text-black/90 space-y-0.5">
-                    <p>Total Number of Trees: {{ $totaltrees }}</p>
-                    {{-- <p>Sour Trees: {{ $totalsour }}</p>
-                    <p>Sweet Trees: {{ $totalsweet }}</p>
-                    <p>Semi-Sweet Trees: {{ $totalsemi_sweet }}</p> --}}
+    <x-card title="Dashboard">
+        <div class="text-base text-black/90 space-y-0.5">
+            <p>Total Number of Trees: {{ $totaltrees }}</p>
+        </div>
+
+        <!-- Chart + Legend -->
+        <div class="mt-6 flex flex-col md:flex-row items-center justify-center gap-8 w-full">
+            <!-- Pie Chart -->
+            <div class="w-full md:w-auto flex justify-center">
+                <div class="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64">
+                    <canvas id="treePieChart" class="w-full h-full"></canvas>
                 </div>
+            </div>
+            
+            <!-- Legend -->
+            <div id="chartLegend" 
+                 class="mt-6 md:mt-0 w-full md:w-auto flex flex-wrap justify-center md:justify-start gap-4 text-sm">
+            </div>
+        </div>
+    </x-card>
 
-                <!-- Chart Container: compact and safe so it won't overlap -->
-                <div class="mt-6 flex flex-col md:flex-row items-center justify-center gap-6 w-full max-w-3xl mx-auto">
-                    <div class="mt-6 w-full max-w-md mx-auto h-48">
-                        <canvas id="treePieChart" class="w-full h-full"></canvas>
-                    </div>
-                    <div id="chartLegend" class="mt-4 w-full max-w-md mx-auto flex flex-wrap justify-center gap-3 text-sm"></div>
-            </x-card>
-            <br>
-            {{-- harvest-management record --}}
-            <section class="bg-[#e9eee9] rounded-lg p-4 relative">
-                <div class="space-y-4">
+    <br>
 
-                    <!-- Filters -->
-                    <form id="harvestFilterForm" class="flex flex-wrap gap-3 items-center">
-                        <select name="year" class="border rounded px-3 py-1">
-                            <option value="">All Years</option>
-                            @foreach($years as $year)
-                                <option value="{{ $year }}">{{ $year }}</option>
-                            @endforeach
-                        </select>
+    {{-- Harvest-management record --}}
+    <section class="bg-[#e9eee9] rounded-lg p-4 relative">
+        <div class="space-y-4">
 
-                        <select name="month" class="border rounded px-3 py-1">
-                            <option value="">All Months</option>
-                            @for ($m = 1; $m <= 12; $m++)
-                                <option value="{{ $m }}">{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
-                            @endfor
-                        </select>
+            <!-- Filters -->
+            <form id="harvestFilterForm" 
+                  class="flex flex-col sm:flex-row flex-wrap gap-3">
+                
+                <select name="year" class="border rounded px-3 py-2 w-full sm:w-auto">
+                    <option value="">All Years</option>
+                    @foreach($years as $year)
+                        <option value="{{ $year }}">{{ $year }}</option>
+                    @endforeach
+                </select>
 
-                        <button type="submit" class="bg-green-600 text-white px-4 py-1 rounded-lg hover:bg-green-700">
-                            Apply
-                        </button>
-                    </form>
+                <select name="month" class="border rounded px-3 py-2 w-full sm:w-auto">
+                    <option value="">All Months</option>
+                    @for ($m = 1; $m <= 12; $m++)
+                        <option value="{{ $m }}">{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
+                    @endfor
+                </select>
 
+                <button type="submit" 
+                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 w-full sm:w-auto">
+                    Apply
+                </button>
+            </form>
 
-                    <!-- Records Table -->
-                    <div class="overflow-x-auto">
-                        <div id="harvest-records-container">
-                            @include('partials.harvest-table', ['harvests' => $harvests])
-                        </div>
-
-                    </div>
+            <!-- Records Table -->
+            <div class="overflow-x-auto">
+                <div id="harvest-records-container">
+                    @include('partials.harvest-table', ['harvests' => $harvests])
                 </div>
-        </section>
+            </div>
+        </div>
+    </section>
+</section>
+
 
         </section>
 
