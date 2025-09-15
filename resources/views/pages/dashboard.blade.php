@@ -262,6 +262,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     <main id="dashboard-container" class="flex-1 p-6 space-y-6">
+
+        <section class="bg-[#e9eee9] rounded-lg p-4 relative">
+                <x-card title="">
+                    <div class="text-sm text-black/90 space-y-0.5">
+                        <div class="flex flex-row h-80 gap-6 px-6">
+                            <div class="flex-1 bg-[#e9eee9] p-6 rounded-xl shadow-2xl hover:shadow-3xl transition hover:-translate-y-1">test 1</div>
+                            <div class="flex-1 bg-[#e9eee9] p-6 rounded-xl shadow-2xl hover:shadow-3xl transition hover:-translate-y-1">test 2</div>
+                            <div class="flex-1 bg-[#e9eee9] p-6 rounded-xl shadow-2xl hover:shadow-3xl transition hover:-translate-y-1">test 3</div>
+                            <div class="flex-1 bg-[#e9eee9] p-6 rounded-xl shadow-2xl hover:shadow-3xl transition hover:-translate-y-1">test 4</div>
+                        </div>
+                    </div>
+                </x-card>
+        </section>
+
         <!-- Dashboard Summary with Chart -->
         <section class="bg-[#e9eee9] rounded-lg p-4 relative">
     <x-card title="Dashboard">
@@ -280,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function () {
             
             <!-- Legend -->
             <div id="chartLegend" 
-                 class="mt-6 md:mt-0 w-full md:w-auto flex flex-wrap justify-center md:justify-start gap-4 text-sm">
+                class="mt-6 md:mt-0 w-full md:w-auto flex flex-wrap justify-center md:justify-start gap-4 text-sm">
             </div>
         </div>
     </x-card>
@@ -293,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             <!-- Filters -->
             <form id="harvestFilterForm" 
-                  class="flex flex-col sm:flex-row flex-wrap gap-3">
+                class="flex flex-col sm:flex-row flex-wrap gap-3">
                 
                 <select name="year" class="border rounded px-3 py-2 w-full sm:w-auto">
                     <option value="">All Years</option>
