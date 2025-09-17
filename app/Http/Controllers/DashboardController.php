@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Tree;
 use App\Harvest;
 use App\User;
-
+use App\PendingGeotag;
 class DashboardController extends Controller
 {
     // Constructor to apply the 'auth' middleware
@@ -21,7 +21,7 @@ class DashboardController extends Controller
 
         $year = $request->input('year', now()->year); // default current year
         $month = $request->input('month'); // optional
-
+        $pendingtree = PendingGeotag::where('status', 'pending')->count();
         // Start harvest query
         $query = Harvest::query();
 
@@ -63,6 +63,7 @@ class DashboardController extends Controller
             'years',
             'selectedYear',
             'selectedMonth',
+            'pendingtree',
         ));
     }
 

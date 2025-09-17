@@ -39,9 +39,9 @@
             <label for="account_id" class="block text-sm font-semibold">Account ID</label>
             <select name="account_id" id="account_id" class="w-full border rounded px-3 py-2" required>
                 <option value="">-- Select Account ID --</option>
-                <option value="S1">S1 - Super Admin</option>
-                <option value="A1">A1 - Admin</option>
-                <option value="U1">U1 - User</option>
+                <option value="1">1 - Super Admin</option>
+                <option value="2">2 - Admin</option>
+                <option value="3">3 - User</option>
             </select>
         </div>
 

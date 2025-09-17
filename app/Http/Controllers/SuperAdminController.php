@@ -5,6 +5,8 @@ use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Tree;
+use Spatie\Permission\Models\Role;
+
 class SuperAdminController extends Controller
 {
     
@@ -55,23 +57,23 @@ class SuperAdminController extends Controller
     }
 
     public function deleteAccount($id)
-{
-    $user = User::findOrFail($id);
+    {
+        $user = User::findOrFail($id);
 
-    // Prevent deleting self
-    if (auth()->id() == $id) {
-        return redirect()->back()->withErrors(['error' => 'You cannot delete your own account.']);
+        // Prevent deleting self
+        if (auth()->id() == $id) {
+            return redirect()->back()->withErrors(['error' => 'You cannot delete your own account.']);
+        }
+
+        $user->delete();
+        return redirect()->back()->with('success', 'User deleted successfully.');
     }
 
-    $user->delete();
-    return redirect()->back()->with('success', 'User deleted successfully.');
-}
-
     public function createAccount()
-{
-    $role = 'superadmin';
-    return view('superadmin.create-account', compact('role'));
-}
+        {
+            $role = 'superadmin';
+            return view('superadmin.create-account', compact('role'));
+        }
 
 public function storeAccount(Request $request)
 {
@@ -89,14 +91,26 @@ public function storeAccount(Request $request)
         'account_id' => $request->account_id,
     ]);
 
-    if ($request->account_id === 'A1') {
-        $user->assignRole('admin');
-    } elseif ($request->account_id === 'S1') {
-        $user->assignRole('superadmin');
-    } elseif ($request->account_id === 'U1') {
-    $user->assignRole('user');
+    // Map request value → role name
+    if ($request->account_id === '1') {
+        $roleName = 'superadmin';
+    } elseif ($request->account_id === '2') {
+        $roleName = 'admin';
+    } elseif ($request->account_id === '3') {
+        $roleName = 'user';
     } else {
-        $user->assignRole('user');
+        $roleName = 'user';
+    }
+
+    // Assign role
+    $user->assignRole($roleName);
+
+    // Get role_id from roles table
+    $role = Role::where('name', $roleName)->first();
+
+    if ($role) {
+        $user->account_id = $role->id; // mirror role_id
+        $user->save();                 // 🔥 make sure to save it
     }
 
     return redirect()->route('create.account')->with('success', 'User account created successfully.');

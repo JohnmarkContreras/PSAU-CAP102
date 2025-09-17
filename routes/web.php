@@ -7,10 +7,13 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\CarbonRecordController;
 use App\Http\Controllers\HarvestManagementController;
+use App\Http\Controllers\PendingGeotagController;
 
+Route::middleware('prevent-back-history')->group(function () {
+    Route::get('/login', 'LoginController@index')->name('login');
+    Route::post('/login/check', 'LoginController@check')->name('login.check');
+});
 
-Route::get('/login', 'LoginController@index')->name('student.login');
-Route::post('/login/check', 'LoginController@check')->name('login.check');
 Route::get('/', 'LoginController@logout'); 
 
 Route::middleware('auth')->group(function () {
@@ -24,6 +27,13 @@ Route::middleware('auth')->group(function () {
 Route::group(['middleware' => ['auth', 'role:user']], function () {
     Route::get('/feedbacks/create', 'FeedbackController@create')->name('feedback.create');
     Route::post('/feedbacks', 'FeedbackController@store')->name('feedback.store');
+});
+
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/geotags/pending', [PendingGeotagController::class, 'index'])->name('pending-geotags.index');
+    Route::post('/geotags/{id}/approve', [PendingGeotagController::class, 'approve'])->name('pending-geotags.approve');
+    Route::post('/geotags/{id}/reject', [PendingGeotagController::class, 'reject'])->name('pending-geotags.reject');
 });
 
 
@@ -44,6 +54,7 @@ Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
     Route::get('/create-account', 'SuperAdminController@createAccount')->name('create.account');
     Route::post('/create-account', 'SuperAdminController@storeAccount')->name('store.account');
     Route::get('/activity-log', 'ActivityLogController@index')->name('pages.activity-log');
+
 });
 
 // Admin routes
@@ -56,8 +67,12 @@ Route::group(['middleware' => ['auth', 'role:admin|superadmin']], function () {
     Route::post('/harvest-management/import', 'HarvestManagementController@import')->name('harvest.import');
     Route::post('/harvest-management/predict-all', 'HarvestManagementController@predictAll')->name('harvest.predictAll');
     Route::get('/feedbacks', 'FeedbackController@index')->name('feedback.index');
+    Route::get('/user-table', 'AdminController@usertable')->name('admin.user-table');
     Route::post('/feedbacks/{feedback}/status', 'FeedbackController@updateStatus')->name('feedback.updateStatus');
     Route::get('/activity-log', 'ActivityLogController@index')->name('pages.activity-log');
+    Route::get('/geotags/pending', 'TreeController@pending')->name('geotags.pending');
+    Route::post('/geotags/{id}/approve', 'PendingGeotagController@approve')->name('pending-geotags.approve');
+    Route::post('/geotags/{id}/reject', 'PendingGeotagController@reject')->name('pending-geotags.reject');
 });
 
 // User routes
@@ -65,7 +80,6 @@ Route::group(['middleware' => ['auth', 'role:user|admin|superadmin']], function 
     Route::get('/user', 'DashboardController@index')->name('user.dashboard');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
     Route::get('/feedback', 'BackupController@index')->name('pages.feedback');
-    Route::get('/activity-log', 'ActivityLogController@index')->name('pages.activity-log');
 });
 
 //tree

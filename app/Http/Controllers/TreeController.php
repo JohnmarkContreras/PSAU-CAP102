@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Imports\TreesImport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Tree;
-
+use App\PendingGeotag;
 class TreeController extends Controller
 {
 
@@ -56,6 +56,15 @@ class TreeController extends Controller
         return response()->json(['exists' => $exists]);
     }
 
+    public function pending()
+    {
+        // Fetch all pending geotag requests
+        $pending = PendingGeotag::where('status', 'pending')->get();
+
+        // Send them to the Blade view
+        return view('geotags.pending', compact('pending'));
+    }
+
     // Store manual entry
     public function store(Request $request)
     {
@@ -70,16 +79,19 @@ class TreeController extends Controller
             'longitude' => 'required|numeric',
         ]);
 
-        Tree::create([
-            'code' => strtoupper($request->code),
-            'age' => $request->age,
-            'type' => $request->type,
-            'height' => $request->height,
-            'stem_diameter' => $request->stem_diameter,
-            'canopy_diameter' => $request->canopy_diameter,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-        ]);
+        PendingGeotag::create([
+        'user_id' => auth()->id(),
+        'code'            => strtoupper($request->code),
+        'type'            => $request->type,
+        'age'             => $request->age,
+        'height'          => $request->height,
+        'stem_diameter'   => $request->stem_diameter,
+        'canopy_diameter' => $request->canopy_diameter,
+        'latitude'        => $request->latitude,
+        'longitude'       => $request->longitude,
+        'status'          => 'pending',
+    ]);
+
 
         return redirect()->back()->with('success', 'Tree added successfully!');
     }

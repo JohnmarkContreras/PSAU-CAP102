@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Tree;
-
+use App\User;
 class AdminController extends Controller
 {
     public function index()
@@ -33,5 +33,11 @@ class AdminController extends Controller
     {
         $role = 'admin';
         return view('pages.harvest-management', compact('role'));
+    }
+
+    public function usertable()
+    {
+        $users = User::where('account_id', '3')->get();
+        return view('admin.user-table', compact('users'));
     }
 }

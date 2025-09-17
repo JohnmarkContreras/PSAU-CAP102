@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Spatie\Activitylog\Traits\LogsActivity; 
 use Illuminate\Support\Facades\Auth;
 
+
 class LoginController extends Controller
 {
     // Show login form
@@ -13,8 +14,6 @@ class LoginController extends Controller
     {
         return view('login'); // Make sure resources/views/login.blade.php exists
     }
-    
-
     // Handle login form submission
     public function check(Request $request)
     {

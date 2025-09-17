@@ -8,32 +8,25 @@
                 <x-card title="Accounts">
                     <div class="text-sm text-black/90 space-y-0.5">
                         <div class="overflow-x-auto">
-                        {{-- Create New User Button --}}
-                        <div class="mb-4">
-                            <a href="{{ route('create.account') }}" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
-                                + Create New Account
-                            </a>
-                        </div>
-
                         {{-- Users List Table --}}
-                        <table class="hidden sm:table w-full bg-white rounded">
+                        <table class="hidden sm:table w-full bg-white border rounded">
                             <thead>
                                 <tr class="bg-gray-100 text-left text-sm font-semibold">
-                                    <th class="px-4 py-2">ID</th>
-                                    <th class="px-4 py-2">Name</th>
-                                    <th class="px-4 py-2">Email</th>
-                                    <th class="px-4 py-2">Role</th>
-                                    <th class="px-4 py-2">Actions</th>
+                                    <th class="px-4 py-2 border">ID</th>
+                                    <th class="px-4 py-2 border">Name</th>
+                                    <th class="px-4 py-2 border">Email</th>
+                                    <th class="px-4 py-2 border">Role</th>
+                                    <th class="px-4 py-2 border">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="text-sm">
                                 @foreach ($users as $user)
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-4 py-2">{{ $user->id }}</td>
-                                        <td class="px-4 py-2">{{ $user->name }}</td>
-                                        <td class="px-4 py-2">{{ $user->email }}</td>
-                                        <td class="px-4 py-2 capitalize">{{ $user->getRoleNames()->implode(', ')}}</td>
-                                        <td class="px-4 py-2">
+                                    <tr class="border-t hover:bg-gray-50">
+                                        <td class="px-4 py-2 border">{{ $user->id }}</td>
+                                        <td class="px-4 py-2 border">{{ $user->name }}</td>
+                                        <td class="px-4 py-2 border">{{ $user->email }}</td>
+                                        <td class="px-4 py-2 border capitalize">{{ $user->getRoleNames()->implode(', ')}}</td>
+                                        <td class="px-4 py-2 border">
                                             {{-- Delete Button --}}
                                             <form action="{{ route('superadmin.delete.account', $user->id) }}" method="POST" onsubmit="return confirm('Are you sure?');" class="inline">
                                                 @csrf

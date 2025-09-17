@@ -5,7 +5,7 @@
 @section('content')
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         const canvas = document.getElementById('treePieChart');
@@ -262,81 +262,99 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     <main id="dashboard-container" class="flex-1 p-6 space-y-6">
+            <section class="bg-[#e9eee9] rounded-lg p-4 relative">
+                    <x-card title="Dashboard">
+                        <div class="text-sm text-black/90 space-y-0.5">
+                            <div class="flex flex-row justify-center h-36 gap-6 px-6">
+                                <div class="flex-1 bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center">
+                                    <div class="text-base items-center gap-2 text-black/90 space-y-0.5 text-center">
+                                        <i class="fa-solid fa-tree text-5xl"></i><br> 
+                                        <p>Total Tags <strong>{{ $totaltrees }}</strong></p>
+                                    </div>
+                                </div>
 
-        <section class="bg-[#e9eee9] rounded-lg p-4 relative">
-                <x-card title="">
-                    <div class="text-sm text-black/90 space-y-0.5">
-                        <div class="flex flex-row h-80 gap-6 px-6">
-                            <div class="flex-1 bg-[#e9eee9] p-6 rounded-xl shadow-2xl hover:shadow-3xl transition hover:-translate-y-1">test 1</div>
-                            <div class="flex-1 bg-[#e9eee9] p-6 rounded-xl shadow-2xl hover:shadow-3xl transition hover:-translate-y-1">test 2</div>
-                            <div class="flex-1 bg-[#e9eee9] p-6 rounded-xl shadow-2xl hover:shadow-3xl transition hover:-translate-y-1">test 3</div>
-                            <div class="flex-1 bg-[#e9eee9] p-6 rounded-xl shadow-2xl hover:shadow-3xl transition hover:-translate-y-1">test 4</div>
+                                <div class="flex-1 bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center">
+                                    <div class="text-base items-center gap-2 text-black/90 space-y-0.5 text-center">
+                                        <i class="fa-solid fa-tree text-5xl"></i><br> 
+                                        <p>Total tags <strong>{{ $totaltrees }}</strong></p>
+                                    </div>
+                                </div>
+
+                                <div class="flex-1 bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center">
+                                    <div class="text-base items-center gap-2 text-black/90 space-y-0.5 text-center">
+                                        <i class="fa-solid fa-tree text-5xl"></i><br> 
+                                        <p>Total tags <strong>{{ $totaltrees }}</strong></p>
+                                    </div>
+                                </div>
+
+                                <div class="flex-1 bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center">
+                                    <div class="text-base items-center gap-2 text-black/90 space-y-0.5 text-center">
+                                        <i class="fa-solid fa-hourglass-half text-5xl"></i><br> 
+                                        <p>Pending Approval <strong>{{ $pendingtree }}</strong></p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+
+                                
+
+            <!-- Dashboard Summary with Chart -->
+            <!-- Chart + Legend -->
+        <div class="flex flex-row justify-center h-96 gap-6 px-6">
+            <div class="flex-1 mt-6 flex flex-col md:flex-row items-center justify-center gap-8 bg-[#e9eee9]">
+                <!-- Pie Chart -->
+                <div class="w-full md:w-auto flex justify-center">
+                    <div class="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64">
+                        <canvas id="treePieChart" class="w-full h-full"></canvas>
                     </div>
-                </x-card>
-        </section>
-
-        <!-- Dashboard Summary with Chart -->
-        <section class="bg-[#e9eee9] rounded-lg p-4 relative">
-    <x-card title="Dashboard">
-        <div class="text-base text-black/90 space-y-0.5">
-            <p>Total Number of Trees: {{ $totaltrees }}</p>
-        </div>
-
-        <!-- Chart + Legend -->
-        <div class="mt-6 flex flex-col md:flex-row items-center justify-center gap-8 w-full">
-            <!-- Pie Chart -->
-            <div class="w-full md:w-auto flex justify-center">
-                <div class="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64">
-                    <canvas id="treePieChart" class="w-full h-full"></canvas>
                 </div>
-            </div>
-            
-            <!-- Legend -->
-            <div id="chartLegend" 
-                class="mt-6 md:mt-0 w-full md:w-auto flex flex-wrap justify-center md:justify-start gap-4 text-sm">
-            </div>
-        </div>
-    </x-card>
-
-    <br>
-
-    {{-- Harvest-management record --}}
-    <section class="bg-[#e9eee9] rounded-lg p-4 relative">
-        <div class="space-y-4">
-
-            <!-- Filters -->
-            <form id="harvestFilterForm" 
-                class="flex flex-col sm:flex-row flex-wrap gap-3">
                 
-                <select name="year" class="border rounded px-3 py-2 w-full sm:w-auto">
-                    <option value="">All Years</option>
-                    @foreach($years as $year)
-                        <option value="{{ $year }}">{{ $year }}</option>
-                    @endforeach
-                </select>
-
-                <select name="month" class="border rounded px-3 py-2 w-full sm:w-auto">
-                    <option value="">All Months</option>
-                    @for ($m = 1; $m <= 12; $m++)
-                        <option value="{{ $m }}">{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
-                    @endfor
-                </select>
-
-                <button type="submit" 
-                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 w-full sm:w-auto">
-                    Apply
-                </button>
-            </form>
-
-            <!-- Records Table -->
-            <div class="overflow-x-auto">
-                <div id="harvest-records-container">
-                    @include('partials.harvest-table', ['harvests' => $harvests])
+                <!-- Legend -->
+                <div id="chartLegend" 
+                    class="mt-6 md:mt-0 w-full md:w-auto flex flex-wrap justify-center md:justify-start gap-4 text-sm">
                 </div>
             </div>
+
+            <div class="flex-1 mt-6 flex flex-col md:flex-row items-center justify-center gap-8 bg-[#e9eee9]">
+                {{--  --}}
+            </div>
         </div>
-    </section>
+        <br>
+
+        {{-- Harvest-management record --}}
+            {{-- <div class="space-y-4">
+                <!-- Filters -->
+                <form id="harvestFilterForm" 
+                    class="flex flex-col sm:flex-row flex-wrap gap-3">
+                    
+                    <select name="year" class="border rounded px-3 py-2 w-full sm:w-auto">
+                        <option value="">All Years</option>
+                        @foreach($years as $year)
+                            <option value="{{ $year }}">{{ $year }}</option>
+                        @endforeach
+                    </select>
+
+                    <select name="month" class="border rounded px-3 py-2 w-full sm:w-auto">
+                        <option value="">All Months</option>
+                        @for ($m = 1; $m <= 12; $m++)
+                            <option value="{{ $m }}">{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
+                        @endfor
+                    </select>
+
+                    <button type="submit" 
+                            class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 w-full sm:w-auto">
+                        Apply
+                    </button>
+                </form>
+
+                <!-- Records Table -->
+                <div class="overflow-x-auto">
+                    <div id="harvest-records-container">
+                        @include('partials.harvest-table', ['harvests' => $harvests])
+                    </div>
+                </div>
+            </div> --}}
+    </x-card>
 </section>
 
 

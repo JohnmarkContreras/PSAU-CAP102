@@ -10,18 +10,45 @@ class RedirectIfAuthenticated
 {
     /**
      * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @param  string|null  $guard
-     * @return mixed
      */
-    public function handle($request, Closure $next, $guard = null)
+    public function dashboardUrl()
     {
-        if (Auth::guard($guard)->check()) {
-            return redirect(RouteServiceProvider::HOME);
+        return '/' . $this->role . '/dashboard';
+    }
+    public function handle($request, Closure $next, ...$guards)
+    {
+        foreach ($guards as $guard) {
+            if (Auth::guard($guard)->check()) {
+                $user = Auth::user();
+
+                // Redirect based on role
+                if ($user->role === 'superadmin') {
+                    return redirect('/superadmin');
+                } elseif ($user->role === 'admin') {
+                    return redirect('/admin');
+                } elseif ($user->role === 'user') {
+                    return redirect('/user');
+                }
+
+                return redirect("/" . Auth::user()->role);
+            }
         }
 
+        // fallback check if no guards passed
+        if (Auth::check()) {
+            $user = Auth::user();
+
+            if ($user->role === 'superadmin') {
+                return redirect('/superadmin');
+            } elseif ($user->role === 'admin') {
+                return redirect('/admin');
+            } elseif ($user->role === 'user') {
+                return redirect('/user');
+            }
+
+        return redirect("/" . Auth::user()->role);
+        }
         return $next($request);
     }
+
 }
