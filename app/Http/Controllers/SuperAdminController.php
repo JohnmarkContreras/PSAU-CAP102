@@ -1,119 +1,72 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use App\Tree;
-use Spatie\Permission\Models\Role;
+use App\Http\Requests\CreateAccountRequest;
+use App\Services\UserAccountService;
+use App\Services\CarbonTrackingService;
 
 class SuperAdminController extends Controller
 {
-    
+    private $accountService;
+    private $carbonService;
+
+    public function __construct(
+        UserAccountService $accountService,
+        CarbonTrackingService $carbonService
+    ) {
+        $this->accountService = $accountService;
+        $this->carbonService = $carbonService;
+    }
+
     public function farmData()
     {
-        $role = 'superadmin';
-        return view('pages.farm-data', compact('role'));
+        return view('pages.farm-data', ['role' => 'superadmin']);
     }
 
     public function analytics()
     {
-        $role = 'superadmin';
-        return view('pages.analytics', compact('role'));
-
-        foreach ($trees as $tree) {
-        if (!CarbonRecord::whereDate('recorded_at', now())->where('tree_id', $tree->id)->exists()) {
-            CarbonRecord::create([
-                'tree_id' => $tree->id,
-                'estimated_biomass_kg' => $tree->estimated_biomass_kg,
-                'carbon_stock_kg' => $tree->carbon_stock_kg,
-                'annual_sequestration_kg' => $tree->annual_sequestration_kg,
-                'recorded_at' => now(),
-            ]);
-        }
-    }
-        $chartData = CarbonRecord::whereBetween('recorded_at', [$startDate, $endDate])
-        ->get()
-        ->groupBy('tree_id')
-        ->map(fn($records, $treeId) => [
-            'tree_code' => $records->first()->tree->code,
-            'sequestration_series' => $records->pluck('annual_sequestration_kg'),
-            'dates' => $records->pluck('recorded_at'),
+        $chartData = $this->carbonService->generateChartData();
+        
+        return view('pages.analytics', [
+            'role' => 'superadmin',
+            'chartData' => $chartData
         ]);
-
-
     }
 
     public function harvestManagement()
     {
-        $role = 'superadmin';
-        return view('pages.harvest-management', compact('role'));
+        return view('pages.harvest-management', ['role' => 'superadmin']);
     }
 
     public function accounts()
     {
         $users = User::all();
+        
         return view('pages.accounts', compact('users'));
     }
 
     public function deleteAccount($id)
     {
-        $user = User::findOrFail($id);
-
-        // Prevent deleting self
-        if (auth()->id() == $id) {
+        if (!$this->accountService->canDeleteUser($id)) {
             return redirect()->back()->withErrors(['error' => 'You cannot delete your own account.']);
         }
 
-        $user->delete();
+        $this->accountService->deleteUser($id);
+        
         return redirect()->back()->with('success', 'User deleted successfully.');
     }
 
     public function createAccount()
-        {
-            $role = 'superadmin';
-            return view('superadmin.create-account', compact('role'));
-        }
-
-public function storeAccount(Request $request)
-{
-    $request->validate([
-        'name'     => 'required|string|max:255',
-        'email'    => 'required|string|email|max:255|unique:users',
-        'password' => 'required|string|min:5',
-        'account_id' => 'required|string|max:255',
-    ]);
-
-    $user = User::create([
-        'name'     => $request->name,
-        'email'    => $request->email,
-        'password' => Hash::make($request->password),
-        'account_id' => $request->account_id,
-    ]);
-
-    // Map request value → role name
-    if ($request->account_id === '1') {
-        $roleName = 'superadmin';
-    } elseif ($request->account_id === '2') {
-        $roleName = 'admin';
-    } elseif ($request->account_id === '3') {
-        $roleName = 'user';
-    } else {
-        $roleName = 'user';
+    {
+        return view('superadmin.create-account', ['role' => 'superadmin']);
     }
 
-    // Assign role
-    $user->assignRole($roleName);
-
-    // Get role_id from roles table
-    $role = Role::where('name', $roleName)->first();
-
-    if ($role) {
-        $user->account_id = $role->id; // mirror role_id
-        $user->save();                 // 🔥 make sure to save it
+    public function storeAccount(CreateAccountRequest $request)
+    {
+        $this->accountService->createUser($request->validated());
+        
+        return redirect()->route('create.account')->with('success', 'User account created successfully.');
     }
-
-    return redirect()->route('create.account')->with('success', 'User account created successfully.');
 }
-}
-

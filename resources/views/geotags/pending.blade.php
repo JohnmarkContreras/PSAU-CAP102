@@ -1,12 +1,23 @@
 @extends('layouts.app')
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
 @section('content')
     <section class="bg-[#e9eee9] rounded-lg p-4 relative">
         <x-card title="Pending tags">
             <div class="text-sm text-black/90 space-y-0.5">
                 @if($pending->isEmpty())
+                <div class="mb-4 text-right">
+                    <a href="{{ route('geotags.history') }}" class="text-blue-600 hover:underline font-medium">
+                        View Approved & Rejected Geotags
+                    </a>
+                </div>
                     <p>No pending geotags.</p>
                 @else
+                <div class="mb-4 text-right">
+                    <a href="{{ route('geotags.history') }}" class="text-blue-600 hover:underline font-medium">
+                        View Approved & Rejected Geotags
+                    </a>
+                </div>
                     <table class="w-full text-sm text-left border border-gray-200 rounded-lg mt-2">
                         <thead class="bg-gray-100">
                             <tr class="text-center">
@@ -24,33 +35,43 @@
                         </thead>
                             <tbody>
                                 @forelse($pending as $geo)
-                                    <tr class="hover:bg-gray-50 text-center">
-                                            <td class="px-4 py-2">{{ $geo->user->name }}</td>
-                                            <td class="px-4 py-2">{{ $geo->code }}</td>
-                                            <td class="px-4 py-2">{{ $geo->type }}</td>
-                                            <td class="px-4 py-2">{{ $geo->latitude }}</td>
-                                            <td class="px-4 py-2">{{ $geo->longitude }}</td>
-                                            <td class="px-4 py-2">{{ $geo->age }}</td>
-                                            <td class="px-4 py-2">{{ $geo->height }}</td>
-                                            <td class="px-4 py-2">{{ $geo->stem_diameter }}</td>
-                                            <td class="px-4 py-2">{{ $geo->canopy_diameter }}</td>
-                                            <td class="px-4 py-2 text-center">
-                                                <form action="{{ route('pending-geotags.approve', $geo->id) }}" method="POST" style="display:inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-success btn-sm p-2 w-20 rounded-xs mb-2 text-white cursor-pointer  bg-green-800 ">Approve</button>
-                                                    <i class="fa-solid fa-check text-2xl"></i>
-                                                </form>
-                                            </td>
-                                            <td class="px-4 py-2 text-center">
-                                                <form action="{{ route('pending-geotags.reject', $geo->id) }}" method="POST" style="display:inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-danger btn-sm p-2 w-20 rounded-xs mb-2 text-white cursor-pointer bg-red-700">Reject</button>
-                                                    <i class="fa-solid fa-xmark text-2xl"></i>
-                                                </form>
-                                            </td>
-                                    </tr>
-                                @empty
-                                @endforelse
+                                <tr class="hover:bg-gray-50 text-center">
+                                    <td class="px-4 py-2">{{ $geo->user->name }}</td>
+                                    <td class="px-4 py-2">{{ $geo->code }}</td>
+                                    <td class="px-4 py-2">{{ $geo->type }}</td>
+                                    <td class="px-4 py-2">{{ $geo->latitude }}</td>
+                                    <td class="px-4 py-2">{{ $geo->longitude }}</td>
+                                    <td class="px-4 py-2">{{ $geo->age }}</td>
+                                    <td class="px-4 py-2">{{ $geo->height }}</td>
+                                    <td class="px-4 py-2">{{ $geo->stem_diameter }}</td>
+                                    <td class="px-4 py-2">{{ $geo->canopy_diameter }}</td>
+
+                                    {{-- Approve Button --}}
+                                    <td class="px-4 py-2 text-center">
+                                        @if($geo->status === 'pending')
+                                            <form action="{{ route('pending-geotags.approve', $geo->id) }}" method="POST" style="display:inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-success btn-sm p-2 w-20 rounded-xs mb-2 text-white cursor-pointer bg-green-800">Approve</button>
+                                                <i class="fa-solid fa-check text-2xl"></i>
+                                            </form>
+                                        @else
+                                            <span class="text-gray-400 italic">—</span>
+                                        @endif
+                                    </td>
+
+                                    {{-- Reject Button or Reason --}}
+                                    <td class="px-4 py-2 text-center">
+                                        @if($geo->status === 'pending')
+                                            <form action="{{ route('pending-geotags.reject', $geo->id) }}" method="POST" style="display:inline">
+                                                @csrf
+                                                @include('partials.reject', ['geotag' => $geo])
+                                                <i class="fa-solid fa-xmark text-2xl"></i>
+                                            </form>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                            @endforelse
                             </tbody>
                     </table>
                 @endif

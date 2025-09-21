@@ -1,36 +1,37 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Http\Request;
-use App\Tree;
+
+use App\Services\TreeStatsService;
 
 class UserDashboardController extends Controller
 {
+    private $treeStatsService;
+
+    public function __construct(TreeStatsService $treeStatsService)
+    {
+        $this->treeStatsService = $treeStatsService;
+    }
+
     public function index()
     {
-        $role = 'user';
-        $totaltrees = Tree::count();
-        $totalsour = Tree::where('type', 'sour')->count();
-        $totalsweet = Tree::where('type', 'sweet')->count();
-        $totalsemi_sweet = Tree::where('type', 'semi_sweet')->count();
-        return view('pages.dashboard', compact('role', 'totaltrees', 'totalsour', 'totalsweet', 'totalsemi_sweet'));
+        $stats = $this->treeStatsService->getDashboardStats();
+        
+        return view('pages.dashboard', array_merge($stats, ['role' => 'user']));
     }
 
     public function farmData()
     {
-        $role = 'user';
-        return view('pages.farm-data', compact('role'));
+        return view('pages.farm-data', ['role' => 'user']);
     }
     
     public function analytics()
     {
-        $role = 'user';
-        return view('pages.analytics', compact('role'));
+        return view('pages.analytics', ['role' => 'user']);
     }
 
     public function harvestManagement()
     {
-        $role = 'user';
-        return view('pages.harvest-management', compact('role'));
+        return view('pages.harvest-management', ['role' => 'user']);
     }
 }

@@ -3,45 +3,67 @@
 namespace App\Http\Controllers;
 
 use App\PendingGeotag;
-use App\Tree;
+use App\Services\GeotagApprovalService;
 use Illuminate\Http\Request;
 
 class PendingGeotagController extends Controller
 {
-    // Show all pending requests
-    public function index()
+    private $approvalService;
+
+    public function __construct(GeotagApprovalService $approvalService)
     {
-        $pending = PendingGeotag::where('status', 'pending')->get();
+        $this->approvalService = $approvalService;
+    }
+
+    // Show all pending geotags
+    public function pending()
+    {
+        $pending = PendingGeotag::with(['user', 'processor'])
+            ->where('status', 'pending')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return view('geotags.pending', compact('pending'));
     }
 
-    // Approve request → move to trees
+
+    // Show a single pending geotag (optional if using modal or separate view)
+    public function show($id)
+    {
+        $geotag = PendingGeotag::with(['user', 'processor'])->findOrFail($id);
+
+        return view('geotags.show', compact('geotag'));
+    }
+
+    // Approve a geotag and create a Tree
     public function approve($id)
     {
-        $geotag = PendingGeotag::findOrFail($id);
-
-        Tree::create([
-            'code' => strtoupper($geotag->code),
-            'type' => $geotag->type ??'Unknown',
-            'age' => $geotag->age ?? 0,
-            'height' => $geotag->height ?? 0,
-            'stem_diameter' => $geotag->stem_diameter ?? 0,
-            'canopy_diameter' => $geotag->canopy_diameter ?? 0,
-            'latitude' => $geotag->latitude,
-            'longitude' => $geotag->longitude,
-        ]);
-
-        $geotag->update(['status' => 'approved']);
+        $this->approvalService->approveGeotag($id);
 
         return redirect()->back()->with('success', 'Geotag approved and added to Trees!');
     }
 
-    // Reject request
-    public function reject($id)
+    // Reject a geotag with optional reason
+    public function reject($id, Request $request)
     {
-        $geotag = PendingGeotag::findOrFail($id);
-        $geotag->update(['status' => 'rejected']);
+        $request->validate([
+            'rejection_reason' => 'nullable|string|max:255',
+        ]);
 
-        return redirect()->back()->with('error', 'Geotag rejected.');
+        $this->approvalService->rejectGeotag($id, $request->input('rejection_reason'));
+
+        return redirect()->back()->with('status', 'Geotag rejected successfully.');
     }
+
+    // View approved and rejected geotags (audit trail)
+    public function history()
+    {
+        $geotags = PendingGeotag::with(['user', 'processor'])
+            ->whereIn('status', ['approved', 'rejected'])
+            ->orderBy('code', 'desc')
+            ->get();
+
+        return view('geotags.history', compact('geotags'));
+    }
+
 }

@@ -54,7 +54,6 @@ Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
     Route::get('/create-account', 'SuperAdminController@createAccount')->name('create.account');
     Route::post('/create-account', 'SuperAdminController@storeAccount')->name('store.account');
     Route::get('/activity-log', 'ActivityLogController@index')->name('pages.activity-log');
-
 });
 
 // Admin routes
@@ -70,9 +69,11 @@ Route::group(['middleware' => ['auth', 'role:admin|superadmin']], function () {
     Route::get('/user-table', 'AdminController@usertable')->name('admin.user-table');
     Route::post('/feedbacks/{feedback}/status', 'FeedbackController@updateStatus')->name('feedback.updateStatus');
     Route::get('/activity-log', 'ActivityLogController@index')->name('pages.activity-log');
-    Route::get('/geotags/pending', 'TreeController@pending')->name('geotags.pending');
-    Route::post('/geotags/{id}/approve', 'PendingGeotagController@approve')->name('pending-geotags.approve');
-    Route::post('/geotags/{id}/reject', 'PendingGeotagController@reject')->name('pending-geotags.reject');
+    Route::get('/geotags', 'PendingGeotagController@pending')->name('geotags.pending');
+    Route::patch('/pending-geotags/{id}/reject', 'PendingGeotagController@reject')->name('pending-geotags.reject');
+    Route::post('/pending-geotags/{id}/approve', 'PendingGeotagController@approve')->name('pending-geotags.approve');
+    Route::get('/geotags/pending', 'PendingGeotagController@pending')->name('geotags.pending');
+    Route::get('/geotags/history', 'PendingGeotagController@history')->name('geotags.history');
 });
 
 // User routes
