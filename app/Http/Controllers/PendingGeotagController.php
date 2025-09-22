@@ -66,4 +66,8 @@ class PendingGeotagController extends Controller
         return view('geotags.history', compact('geotags'));
     }
 
+    public function mobileMetadata()
+    {
+        return $this->hasOne(MobileGeotagMetadata::class);
+    }
 }

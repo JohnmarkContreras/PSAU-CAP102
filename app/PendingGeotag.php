@@ -55,4 +55,10 @@ class PendingGeotag extends Model
     {
         return $query->where('status', 'rejected');
     }
+    
+    public function mobileMetadata()
+    {
+        return $this->hasOne(MobileGeotagMetadata::class);
+    }
+
 }

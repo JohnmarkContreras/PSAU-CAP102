@@ -9,63 +9,70 @@ use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
 {
-    // Show login form
     public function index()
     {
-        return view('login'); // Make sure resources/views/login.blade.php exists
+        return view('auth.login');
     }
-    // Handle login form submission
+
     public function check(Request $request)
     {
-        // Validate input
-        $request->validate([
-            'email' => 'required|email',
+        $credentials = $request->validate([
+            'email'    => 'required|email',
             'password' => 'required',
         ]);
 
-        // Attempt login
-        $credentials = $request->only('email', 'password');
-        
-        if (Auth::attempt($credentials)) {
+        if (!Auth::attempt($credentials)) {
+            // If request is API (expects JSON), return JSON error
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Invalid credentials'], 401);
+            }
+
+            // Otherwise (web), return back with error
+            return back()->with('error', 'Invalid credentials');
+        }
+
         $user = Auth::user();
 
-        //Role-based redirects using Spatie
-        if ($user->hasRole('superadmin')) {
-            return redirect('/superadmin');
-        } elseif ($user->hasRole('admin')) {
-            return redirect('/admin');
-        } elseif ($user->hasRole('user')) {
-            return redirect('/user');
-        } else {
-            Auth::logout(); // Unknown role
-            return redirect('/login')->withErrors(['role' => 'Unauthorized role.']);
+        // 🔹 If API request → return token
+        if ($request->expectsJson()) {
+            $token = $user->createToken('mobile-token')->plainTextToken;
+
+            return response()->json([
+                'token' => $token,
+                'user'  => $user,
+                'roles' => $user->getRoleNames(), // returns ["superadmin"], ["admin"], or ["user"]
+            ]);
         }
-    }
-    if (!Auth::attempt($credentials)) {
-        return back()->with('error', 'Incorrect username or password')
-                    ->withInput(); // ✅ this makes old('email') work
+
+        // 🔹 Otherwise → web login redirect by role
+        if ($user->hasRole('superadmin')) {
+            return redirect()->route('superadmin.dashboard');
+        } elseif ($user->hasRole('admin')) {
+            return redirect()->route('admin.dashboard');
+        } elseif ($user->hasRole('user')) {
+            return redirect()->route('user.dashboard');
+        }
+
+
+        // fallback if role not valid
+        Auth::logout();
+        return back()->with('error', 'Invalid role assigned to your account.');
     }
 
-    // Login failed
-    return back()->withErrors([
-        'email' => 'Invalid credentials.',
-    ]);
-    }
-    // Logout method
     public function logout(Request $request)
     {
+        // If API request → revoke token
+        if ($request->expectsJson()) {
+            $request->user()->tokens()->delete();
+            return response()->json(['message' => 'Logged out successfully']);
+        }
+
+        // Otherwise → web logout
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/login')->with('success', 'You have been logged out.');
+        return redirect()->route('login');
     }
 
-    #activity log
-    protected function authenticated(Request $request, $user)
-    {
-        activity()
-            ->causedBy($user)
-            ->log('Logged in');
-    }
 }

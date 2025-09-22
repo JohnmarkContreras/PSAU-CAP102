@@ -1,0 +1,5 @@
+include ':app'
+include ':capacitor-cordova-android-plugins'
+def file = project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')
+file
+apply from: 'capacitor.settings.gradle'
