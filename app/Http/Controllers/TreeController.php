@@ -15,6 +15,7 @@ class TreeController extends Controller
     private $analyticsService;
     private $importService;
     private $geolocationService;
+    protected $treeService;
 
     public function __construct(
         TreeAnalyticsService $analyticsService,

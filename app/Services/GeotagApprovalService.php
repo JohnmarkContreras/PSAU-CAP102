@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\PendingGeotag;
 use App\Tree;
+use App\Notifications\GeotagStatusChanged;
 
 class GeotagApprovalService
 {
@@ -15,6 +16,8 @@ class GeotagApprovalService
 
         $this->markGeotagAsApproved($geotag);
 
+        $geotag->user->notify(new GeotagStatusChanged('approved', $geotag->id));
+
         return $tree;
     }
 
@@ -22,6 +25,10 @@ class GeotagApprovalService
     {
         $geotag = $this->findPendingGeotag($geotagId);
 
+        $this->markGeotagAsRejected($geotag, $reason);
+        
+        $geotag->user->notify(new GeotagStatusChanged('rejected', $geotag->id));
+        
         return $this->markGeotagAsRejected($geotag, $reason);
     }
 

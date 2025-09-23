@@ -16,17 +16,20 @@
         @auth
             @if(auth()->user()->hasRole('admin'))
                 <a href="{{ route('admin.dashboard') }}" 
-                    class="px-3 py-2 rounded {{ request()->routeIs('admin.dashboard') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                    class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('admin.dashboard') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                    <i class="fas fa-grip-horizontal text-lg text-gray-400"></i>
                     Dashboard
                 </a>
             @elseif(auth()->user()->hasRole('superadmin'))
                 <a href="{{ route('superadmin.dashboard') }}" 
-                    class="px-3 py-2 rounded {{ request()->routeIs('superadmin.dashboard') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                    class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('superadmin.dashboard') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                    <i class="fas fa-grip-horizontal text-lg text-gray-400"></i>
                     Dashboard
                 </a>
             @elseif(auth()->user()->hasRole('user'))
                 <a href="{{ route('user.dashboard') }}" 
-                    class="px-3 py-2 rounded {{ request()->routeIs('user.dashboard') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                    class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('user.dashboard') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                    <i class="fas fa-grip-horizontal text-lg text-gray-400"></i>
                     Dashboard
                 </a>
             @endif
@@ -35,35 +38,62 @@
         {{-- Visible to all roles --}}
         @hasanyrole('user|admin|superadmin')
             <a href="{{ route('trees.map') }}" 
-                class="px-3 py-2 rounded {{ request()->routeIs('trees.map') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                class="px-3 py-2 rounded flex items-center gap-3  {{ request()->routeIs('trees.map') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                <i class="fas fa-map-pin text-2xl text-gray-400"></i>
                 Map
             </a>
             <a href="{{ route('pages.analytics') }}" 
-                class="px-3 py-2 rounded {{ request()->routeIs('pages.analytics') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('pages.analytics') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                <i class="fa-solid fa-chart-line text-lg text-gray-400"></i>
                 Analytics
             </a>
+            @php
+                $unreadCount = auth()->user()->unreadNotifications()->count();
+            @endphp
+
+            <a href="{{ route('pages.notifications') }}" 
+            class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('pages.notifications') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                
+                <div class="relative">
+                    <i class="fa-solid fa-bell text-lg text-gray-400"></i>
+                </div>
+                <span>Notifications</span>
+                @if($unreadCount > 0)
+                    <span class="relative top-0 right-0 bg-red-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                        {{ $unreadCount }}
+                    </span>
+                @endif
+            </a>
+
+
+
         @endhasanyrole
 
         {{-- Admin + superadmin --}}
         @hasanyrole('admin|superadmin')
             <a href="{{ route('pages.harvest-management') }}" 
-                class="px-3 py-2 rounded {{ request()->routeIs('pages.harvest-management') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('pages.harvest-management') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                <i class="fa-solid fa-chart-pie text-lg text-gray-400"></i>
                 Harvest Management
             </a>
             <a href="{{ route('pages.backup') }}" 
-                class="px-3 py-2 rounded {{ request()->routeIs('pages.backup') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('pages.backup') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                <i class="fa-solid fa-bars-progress text-lg text-gray-400"></i>
                 Backup
             </a>
             <a href="{{ route('feedback.index') }}" 
-                class="px-3 py-2 rounded {{ request()->routeIs('feedback.index') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('feedback.index') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                <i class="fa-solid fa-comment text-lg text-gray-400"></i>
                 Manage Feedback
             </a>
             <a href="{{ route('pages.activity-log') }}" 
-                class="px-3 py-2 rounded {{ request()->routeIs('pages.activity-log') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('pages.activity-log') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                <i class="fa-solid fa-list-check text-lg text-gray-400"></i>
                 Activity Log
             </a>
             <a href="{{ route('geotags.pending') }}" 
-                class="px-3 py-2 rounded {{ request()->routeIs('geotags.pending') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('geotags.pending') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                <i class="fa-solid fa-hourglass-half text-lg text-gray-400"></i>
                 Pending tags
             </a>
         @endhasanyrole
@@ -71,7 +101,8 @@
         {{-- Superadmin --}}
         @role('superadmin')
             <a href="{{ route('pages.accounts') }}" 
-                class="px-3 py-2 rounded {{ request()->routeIs('pages.accounts') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('pages.accounts') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                <i class="fa-solid fa-user text-lg text-gray-400"></i>
                 Accounts
             </a>
         @endrole
@@ -79,7 +110,8 @@
         {{-- User Feedback --}}
         @role('admin')
             <a href="{{ route('admin.user-table') }}" 
-                class="px-3 py-2 rounded {{ request()->routeIs('admin.user-table') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('admin.user-table') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                <i class="fa-solid fa-user text-lg text-gray-400"></i>
                 User
             </a>
         @endrole
@@ -87,7 +119,8 @@
         {{-- User Feedback --}}
         @role('user')
             <a href="{{ route('feedback.create') }}" 
-                class="px-3 py-2 rounded {{ request()->routeIs('feedback.create') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('feedback.create') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                <i class="fa-solid fa-comment text-lg text-gray-400"></i>
                 Feedback
             </a>
         @endrole

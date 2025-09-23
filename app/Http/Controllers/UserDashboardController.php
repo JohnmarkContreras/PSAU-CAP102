@@ -16,8 +16,11 @@ class UserDashboardController extends Controller
     public function index()
     {
         $stats = $this->treeStatsService->getDashboardStats();
-        
-        return view('pages.dashboard', array_merge($stats, ['role' => 'user']));
+        $unreadCount = auth()->user()->unreadNotifications()->count();
+        return view('pages.dashboard', array_merge($stats, [
+            'role' => 'user',
+            'unreadCount' => $unreadCount,
+        ]));
     }
 
     public function farmData()

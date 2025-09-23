@@ -8,6 +8,7 @@ use App\Http\Requests\HarvestStoreRequest;
 use App\Http\Requests\HarvestImportRequest;
 use App\Services\HarvestPredictionService;
 use App\Services\HarvestImportService;
+use App\Services\GeotagNotificationService;
 
 class HarvestManagementController extends Controller
 {
@@ -36,7 +37,6 @@ class HarvestManagementController extends Controller
     public function store(HarvestStoreRequest $request)
     {
         Harvest::create($request->validated());
-        
         return back()->with('success', 'Harvest record added.');
     }
 

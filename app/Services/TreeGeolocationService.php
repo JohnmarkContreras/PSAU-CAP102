@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\PendingGeotag;
+use App\Notifications\TreeNotification;
+use App\Services\GeotagNotificationService;
 
 class TreeGeolocationService
 {
     public function createPendingGeotag(array $data)
     {
-        return PendingGeotag::create([
+        $geotag = PendingGeotag::create([
             'user_id' => auth()->id(),
             'code' => $data['code'],
             'type' => $data['type'],
@@ -20,5 +22,9 @@ class TreeGeolocationService
             'longitude' => $data['longitude'],
             'status' => 'pending',
         ]);
+        //notification
+        app(GeotagNotificationService::class)->notifyAdmins($geotag);
+        
+        return $geotag;
     }
 }

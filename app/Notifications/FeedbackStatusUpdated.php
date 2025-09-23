@@ -6,6 +6,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Tree;
 use App\Feedback;
 
 class FeedbackStatusUpdated extends Notification
@@ -13,7 +14,8 @@ class FeedbackStatusUpdated extends Notification
     use Queueable;
 
     public $feedback;
-
+    public $tree;
+    
     public function __construct(Feedback $feedback)
     {
         $this->feedback = $feedback;
@@ -26,6 +28,13 @@ class FeedbackStatusUpdated extends Notification
 
     public function toDatabase($notifiable)
     {
+        if ($notifiable->hasRole(['admin','superadmin'])) {
+        return [
+            'message' => 'A new geotagged tree was added and is pending approval.',
+            'tree_id' => $this->tree->code,
+            'user'    => $this->tree->user->name ?? 'Unknown',
+        ];
+    }
         return [
             'feedback_id' => $this->feedback->id,
             'status'      => $this->feedback->status,

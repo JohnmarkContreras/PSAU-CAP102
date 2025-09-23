@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\PendingGeotag;
 use App\Services\GeotagApprovalService;
 use Illuminate\Http\Request;
+use App\Notifications\GeotagStatusChanged;
 
 class PendingGeotagController extends Controller
 {
@@ -24,15 +25,6 @@ class PendingGeotagController extends Controller
             ->get();
 
         return view('geotags.pending', compact('pending'));
-    }
-
-
-    // Show a single pending geotag (optional if using modal or separate view)
-    public function show($id)
-    {
-        $geotag = PendingGeotag::with(['user', 'processor'])->findOrFail($id);
-
-        return view('geotags.show', compact('geotag'));
     }
 
     // Approve a geotag and create a Tree

@@ -29,6 +29,10 @@ Route::group(['middleware' => ['auth', 'role:user']], function () {
     Route::post('/feedbacks', 'FeedbackController@store')->name('feedback.store');
 });
 
+//notifications
+// Route::post('/notifications/{id}/read', 'NotificationController@markAsRead')->name('notifications.markAsRead');
+// Route::get('/geotags/{id}', [PendingGeotagController::class, 'show'])->name('geotags.pending');
+
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/geotags/pending', [PendingGeotagController::class, 'index'])->name('pending-geotags.index');
@@ -65,6 +69,7 @@ Route::group(['middleware' => ['auth', 'role:admin|superadmin']], function () {
     Route::post('/harvest-management/store', 'HarvestManagementController@store')->name('harvest.store');
     Route::post('/harvest-management/import', 'HarvestManagementController@import')->name('harvest.import');
     Route::post('/harvest-management/predict-all', 'HarvestManagementController@predictAll')->name('harvest.predictAll');
+    Route::get('/backup', 'BackupController@index')->name('pages.backup');
     Route::get('/feedbacks', 'FeedbackController@index')->name('feedback.index');
     Route::get('/user-table', 'AdminController@usertable')->name('admin.user-table');
     Route::post('/feedbacks/{feedback}/status', 'FeedbackController@updateStatus')->name('feedback.updateStatus');
@@ -74,6 +79,12 @@ Route::group(['middleware' => ['auth', 'role:admin|superadmin']], function () {
     Route::post('/pending-geotags/{id}/approve', 'PendingGeotagController@approve')->name('pending-geotags.approve');
     Route::get('/geotags/pending', 'PendingGeotagController@pending')->name('geotags.pending');
     Route::get('/geotags/history', 'PendingGeotagController@history')->name('geotags.history');
+    Route::post('/notifications/{id}/read', 'NotificationController@markAsRead')->name('notifications.markAsRead');
+    Route::get('/notifications', 'NotificationController@index')->name('pages.notifications');
+    // Mark all as read
+    Route::post('/notifications/mark-all-read', 'NotificationController@markAllRead')->name('notifications.markAllRead');
+    // Delete a notification
+    Route::delete('/notifications/{id}', 'NotificationController@destroy')->name('notifications.destroy');
 });
 
 // User routes
@@ -81,6 +92,12 @@ Route::group(['middleware' => ['auth', 'role:user|admin|superadmin']], function 
     Route::get('/user', 'DashboardController@index')->name('user.dashboard');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
     Route::get('/feedback', 'BackupController@index')->name('pages.feedback');
+    Route::post('/notifications/{id}/read', 'NotificationController@markAsRead')->name('notifications.markAsRead');
+    Route::get('/notifications/filter', 'NotificationController@index')->name('pages.notifications');
+    // Mark all as read
+    Route::post('/notifications/mark-all-read', 'NotificationController@markAllRead')->name('notifications.markAllRead');
+    // Delete a notification
+    Route::delete('/notifications/{id}', 'NotificationController@destroy')->name('notifications.destroy');
 });
 
 //tree
