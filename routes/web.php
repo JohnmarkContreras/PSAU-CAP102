@@ -8,6 +8,9 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\CarbonRecordController;
 use App\Http\Controllers\HarvestManagementController;
 use App\Http\Controllers\PendingGeotagController;
+use App\Http\Controllers\TreeController;
+use App\Http\Controllers\DeadTreeRequestController;
+use App\Tree;
 
 Route::middleware('prevent-back-history')->group(function () {
     Route::get('/login', 'LoginController@index')->name('login');
@@ -38,6 +41,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/geotags/pending', [PendingGeotagController::class, 'index'])->name('pending-geotags.index');
     Route::post('/geotags/{id}/approve', [PendingGeotagController::class, 'approve'])->name('pending-geotags.approve');
     Route::post('/geotags/{id}/reject', [PendingGeotagController::class, 'reject'])->name('pending-geotags.reject');
+    // Route::get('/trees/{tree:code}/edit', 'TreeController@edit')->name('trees.edit');
+    // Route::post('/trees/report-dead/{code}', 'TreeController@reportDead')->name('trees.reportDead');
+    Route::get('/dead-tree-requests/create', [DeadTreeRequestController::class, 'create'])->name('dead-tree-requests.create');
+    Route::get('/dead-tree-requests', [DeadTreeRequestController::class, 'index'])->name('dead-tree-requests.index');
+    Route::get('/dead-tree-requests/{id}', [DeadTreeRequestController::class, 'show'])->name('dead-tree-requests.show');
+    Route::post('/dead-tree-requests/{id}/approve', [DeadTreeRequestController::class, 'approve'])->name('dead-tree-requests.approve');
+    Route::post('/dead-tree-requests/{id}/reject', [DeadTreeRequestController::class, 'reject'])->name('dead-tree-requests.reject');
+    Route::post('/dead-tree-requests', [DeadTreeRequestController::class, 'store'])->name('dead-tree-requests.store');
 });
 
 
@@ -115,5 +126,3 @@ Route::post('/trees/store', 'TreeController@store')->name('trees.store');
 
 //logout
 Route::post('/logout', 'LoginController@logout')->name('logout');
-
-

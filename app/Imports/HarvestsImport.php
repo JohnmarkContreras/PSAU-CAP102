@@ -19,7 +19,7 @@ class HarvestsImport implements ToModel, WithHeadingRow
         // Make sure tree exists
         $tree = Tree::where('code', $treeCode)->first();
         if (!$tree) {
-            return null; // skip if tree not found
+            throw new \Exception("Tree with code {$treeCode} not found");
         }
 
         // Prevent duplicate harvest (same tree + date)

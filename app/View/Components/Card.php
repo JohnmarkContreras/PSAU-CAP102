@@ -13,7 +13,7 @@ class Card extends Component
      */
     public $title;
 
-    public function __construct($title)
+    public function __construct($title = null, $loading = false)
     {
         $this->title = $title;
     }

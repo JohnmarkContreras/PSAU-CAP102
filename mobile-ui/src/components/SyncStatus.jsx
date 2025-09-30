@@ -1,16 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import { Preferences } from "@capacitor/preferences";
 
 export default function SyncStatus() {
 const [summary, setSummary] = useState({ queued: 0, synced: 0, failed: 0 });
 
-useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('pendingGeotags') || '[]');
+const loadSummary = async () => {
+    const { value } = await Preferences.get({ key: "pendingGeotags" });
+    const stored = value ? JSON.parse(value) : [];
     const counts = {
-    queued: stored.filter(i => i.sync_status === 'queued').length,
-    synced: stored.filter(i => i.sync_status === 'synced').length,
-    failed: stored.filter(i => i.sync_status === 'failed').length,
+    queued: stored.filter((i) => i.sync_status === "queued").length,
+    synced: stored.filter((i) => i.sync_status === "synced").length,
+    failed: stored.filter((i) => i.sync_status === "failed").length,
     };
     setSummary(counts);
+};
+
+useEffect(() => {
+    loadSummary();
+    const handler = () => loadSummary();
+    window.addEventListener("pendingGeotagsUpdated", handler);
+    return () => window.removeEventListener("pendingGeotagsUpdated", handler);
 }, []);
 
 return (

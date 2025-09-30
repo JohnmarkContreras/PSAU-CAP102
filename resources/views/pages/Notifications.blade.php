@@ -1,5 +1,5 @@
 @extends('layouts.app') <!-- Inherit the layout -->
-
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 @section('title', 'Notifications')
 
 @section('content')
@@ -7,34 +7,37 @@
         <section class="bg-[#e9eee9] rounded-lg p-4 relative">
                 <x-card title="Notifications">
                     <div class="text-sm text-black/90 space-y-0.5">
-                        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-                            <form method="POST" action="{{ route('notifications.markAllRead') }}">
-                                @csrf
-                                <button type="submit" class="text-sm bg-[#e9eee9] rounded-sm w-32 h-10  text-green-800 hover:underline font-medium float-right cursor-pointer">
-                                    Mark all as read
+                        <div class="mb-4">
+                            <!-- Tree filter buttons -->
+                            <div class="flex space-x-6 mb-4 border-b border-gray-300">
+                                <button type="button" data-filter="all"
+                                    class="tab-btn p-2 text-sm font-medium pb-2 border-b-2 transition duration-150 ease-in-out cursor-pointer
+                                        {{ $filter === 'all' ? 'border-green-600 text-green-800' : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-400' }}">
+                                    All
                                 </button>
-                            </form>
-                            <div class="flex space-x-4 mb-4">
-                                <div class="flex space-x-6 mb-4 border-b border-gray-300">
-                                    <button type="button" data-filter="all"
-                                        class="tab-btn p-2 text-sm font-medium pb-2 border-b-2 transition duration-150 ease-in-out cursor-pointer
-                                            {{ $filter === 'all' ? 'border-green-600 text-green-800' : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-400' }}">
-                                        All
-                                    </button>
 
-                                    <button type="button" data-filter="new"
-                                        class="tab-btn p-2 text-sm font-medium pb-2 border-b-2 transition duration-150 ease-in-out cursor-pointer
-                                            {{ $filter === 'new' ? 'border-green-600 text-green-800' : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-400' }}">
-                                        New
-                                    </button>
+                                <button type="button" data-filter="new"
+                                    class="tab-btn p-2 text-sm font-medium pb-2 border-b-2 transition duration-150 ease-in-out cursor-pointer
+                                        {{ $filter === 'new' ? 'border-green-600 text-green-800' : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-400' }}">
+                                    New
+                                </button>
 
-                                    <button type="button" data-filter="unread"
-                                        class="tab-btn p-2 text-sm font-medium pb-2 border-b-2 transition duration-150 ease-in-out cursor-pointer
-                                            {{ $filter === 'unread' ? 'border-green-600 text-green-800' : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-400' }}">
-                                        Unread
-                                    </button>
-                                </div>
+                                <button type="button" data-filter="unread"
+                                    class="tab-btn p-2 text-sm font-medium pb-2 border-b-2 transition duration-150 ease-in-out cursor-pointer
+                                        {{ $filter === 'unread' ? 'border-green-600 text-green-800' : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-blue-400' }}">
+                                    Unread
+                                </button>
                             </div>
+    <!-- Mark all button under filters -->
+    <form method="POST" action="{{ route('notifications.markAllRead') }}">
+        @csrf
+        <button type="submit"
+            class="text-sm bg-[#e9eee9] rounded-sm w-32 h-10 text-green-800 hover:underline font-medium cursor-pointer">
+            Mark all as read
+        </button>
+    </form>
+</div>
+
                         </div>
                             {{-- Tabs --}}
                             <div id="notification-list">

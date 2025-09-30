@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     @php $role = Auth::user()->role; @endphp
-    @livewireStyles
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@yield('title', 'PSAU Tamarind RDE')</title>
@@ -13,7 +12,6 @@
 </head>
 
 <body class="bg-gray-100 text-gray-900 min-h-screen flex">
-
     <!-- Sidebar (Desktop) -->
     <aside class="hidden md:flex fixed top-0 left-0 bg-green-800 w-60 h-screen flex-col items-center py-6 text-white z-50">
         @include('components.navbar')
@@ -142,7 +140,5 @@
             }
         });
     </script>
-
-    @livewireScripts
 </body>
 </html>

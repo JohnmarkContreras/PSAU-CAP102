@@ -1,6 +1,6 @@
 <!-- Trigger Button -->
 <button type="button" onclick="document.getElementById('modal-{{ $geotag->id }}').classList.remove('hidden')"
-        class="btn btn-success btn-sm p-2 w-20 rounded-xs mb-2 text-white cursor-pointer bg-red-600">
+        class="btn btn-success p-2 w-20 rounded text-white cursor-pointer bg-red-600">
     Reject
 </button>
 

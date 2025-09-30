@@ -3,6 +3,8 @@
 namespace App;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\DeadTree;
 
 class Tree extends Model
 {
@@ -56,6 +58,18 @@ class Tree extends Model
         ]);
     });
 }
+    
+    public function getRouteKeyName()
+    {
+        return 'code';
+    }
+
+
+    public function deathReport()
+    {
+        return $this->hasOne(DeadTree::class, 'tree_code', 'code');
+    }
+
     #activity log
     use LogsActivity;
 

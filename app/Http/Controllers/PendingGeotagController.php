@@ -22,8 +22,7 @@ class PendingGeotagController extends Controller
         $pending = PendingGeotag::with(['user', 'processor'])
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
-            ->get();
-
+            ->paginate(10);
         return view('geotags.pending', compact('pending'));
     }
 
@@ -53,7 +52,7 @@ class PendingGeotagController extends Controller
         $geotags = PendingGeotag::with(['user', 'processor'])
             ->whereIn('status', ['approved', 'rejected'])
             ->orderBy('code', 'desc')
-            ->get();
+            ->paginate(15);
 
         return view('geotags.history', compact('geotags'));
     }

@@ -16,7 +16,7 @@
 <body class="min-h-screen bg-gray-100 flex flex-col items-center justify-start pt-2">
 
 <img
-src="{{ asset('PSAU_Logo.png') }}"
+src="{{ asset('PSAU_logo.png') }}"
 alt="Seal of Pampanga State Agricultural University"
 class="w-40 h-40 mb-4"
 />

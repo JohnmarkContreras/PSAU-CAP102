@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use App\Services\TreeAnalyticsService;
 use App\Tree;
 use App\Harvest;
 use App\User;
 use App\PendingGeotag;
+
 class DashboardController extends Controller
 {
     // Constructor to apply the 'auth' middleware
@@ -18,7 +20,6 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
-
         $year = $request->input('year', now()->year); // default current year
         $month = $request->input('month'); // optional
         $pendingtree = PendingGeotag::where('status', 'pending')->count();
@@ -51,7 +52,7 @@ class DashboardController extends Controller
         $notifications = auth()->user()->notifications()->latest()->take(5)->get();
         $selectedYear = $year;
         $selectedMonth = $month;
-
+        
         return view('pages.dashboard', compact(
             'role',
             'totaltrees',

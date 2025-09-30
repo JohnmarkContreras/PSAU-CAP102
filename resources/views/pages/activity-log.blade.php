@@ -38,37 +38,10 @@
                                     @endforelse
                                 </tbody>
                             </table>
-                        </div>
-
-                        {{-- CUSTOM PAGINATION --}}
-                        @if ($logs->lastPage() > 1)
-                            <div class="mt-6 flex justify-center">
-                                <ul class="inline-flex items-center space-x-1">
-                                    {{-- Prev Button --}}
-                                    @if ($logs->onFirstPage())
-                                        <li><span class="px-3 py-2 bg-gray-200 text-gray-400 rounded-l-lg">Prev</span></li>
-                                    @else
-                                        <li><a href="{{ $logs->previousPageUrl() }}" class="px-3 py-2 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100">Prev</a></li>
-                                    @endif
-
-                                    {{-- Page Numbers (1–9 only) --}}
-                                    @for ($i = 1; $i <= min(9, $logs->lastPage()); $i++)
-                                        @if ($i == $logs->currentPage())
-                                            <li><span class="px-3 py-2 bg-blue-500 text-white border border-blue-500">{{ $i }}</span></li>
-                                        @else
-                                            <li><a href="{{ $logs->url($i) }}" class="px-3 py-2 bg-white border border-gray-300 hover:bg-gray-100">{{ $i }}</a></li>
-                                        @endif
-                                    @endfor
-
-                                    {{-- Next Button --}}
-                                    @if ($logs->hasMorePages())
-                                        <li><a href="{{ $logs->nextPageUrl() }}" class="px-3 py-2 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-100">Next</a></li>
-                                    @else
-                                        <li><span class="px-3 py-2 bg-gray-200 text-gray-400 rounded-r-lg">Next</span></li>
-                                    @endif
-                                </ul>
+                            <div class="pagination mt-4">
+                                {{ $logs->links('pagination::tailwind') }}
                             </div>
-                        @endif
+                        </div>
                 </x-card>
         </section>
     </main>

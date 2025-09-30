@@ -14,6 +14,7 @@
                         Back to Pending Geotags
                     </a>
                 </div>
+                <div class="overflow-x-auto min-h-[600px]">
                     <table class="w-full text-sm text-left border border-gray-200 rounded-lg mt-2">
                         <thead class="bg-gray-100">
                             <tr class="text-center">
@@ -88,6 +89,10 @@
                                 @endforelse
                             </tbody>
                     </table>
+                </div>
+                <div class="pagination mt-4">
+                    {{ $geotags->links('pagination::tailwind') }}
+                </div>
                 @endif
             </div>
         </x-card>
