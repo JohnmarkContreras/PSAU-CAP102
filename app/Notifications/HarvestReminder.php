@@ -5,7 +5,7 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Messages\NexmoMessage;
+use Illuminate\Notifications\Messages\TwilioMessage;
 use App\HarvestPrediction;
 
 class HarvestReminder extends Notification
@@ -23,9 +23,9 @@ class HarvestReminder extends Notification
     {
         $channels = ['mail', 'database'];
 
-        // Enable SMS via Nexmo/Vonage if configured
-        if (config('services.nexmo.key') && config('services.nexmo.sms_from')) {
-            $channels[] = 'nexmo';
+        // Enable SMS via Twilio if configured
+        if (config('services.twilio.sid') && config('services.twilio.from')) {
+            $channels[] = 'twilio';
         }
 
         return $channels;
@@ -43,14 +43,14 @@ class HarvestReminder extends Notification
             ->line('This is an automated reminder.');
     }
 
-    public function toNexmo($notifiable)
+    public function toTwilio($notifiable)
     {
         $date = $this->prediction->predicted_date;
         $qty  = number_format((float) $this->prediction->predicted_quantity, 2);
         $code = $this->prediction->code;
 
-        return (new NexmoMessage)
-            ->content("Tamarind harvest reminder: Tree {$code} ~{$date} (est {$qty} kg).");
+        return (new TwilioMessage)
+            ->content("Tamarind harvest: Tree {$code} ~{$date} (est {$qty} kg)");
     }
 
     public function toDatabase($notifiable)

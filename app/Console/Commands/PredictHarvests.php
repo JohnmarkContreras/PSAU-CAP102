@@ -18,6 +18,9 @@ class PredictHarvests extends Command
     {
         $python = env('PYTHON_BIN', 'python');
         $script = base_path('scripts/sarima_predict.py');
+        $order = config('services.harvest.sarima_order', '4,1,4');
+        $seasonal = config('services.harvest.sarima_seasonal', '0,1,0,12');
+        $months = config('services.harvest.harvest_months', '12,1,2,3');
 
         foreach (Tree::all() as $tree) {
             $rows = $tree->harvests()->select('harvest_date','harvest_weight_kg')->orderBy('harvest_date')->get();
@@ -32,7 +35,7 @@ class PredictHarvests extends Command
             Storage::disk('local')->put($path, $csv);
             $full = storage_path("app/$path");
 
-            $process = new Process([$python, $script, $full, '--order', '4,1,4', '--seasonal', '0,1,0,12']);
+            $process = new Process([$python, $script, $full, '--order', $order, '--seasonal', $seasonal, '--harvest_months', $months]);
             $process->run();
 
             if (!$process->isSuccessful()) continue;

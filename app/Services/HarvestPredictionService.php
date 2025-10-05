@@ -39,6 +39,12 @@ class HarvestPredictionService
             $harvests = $this->getTreeHarvests($tree);
 
             if ($harvests->count() < self::MIN_RECORDS_REQUIRED) {
+                // Fallback: estimate from DBH & Height when history is insufficient
+                $estimate = $this->estimateYieldFromMorphology($tree);
+                if ($estimate) {
+                    $saved = $this->savePrediction($tree->code, $estimate);
+                    return $this->successResult($tree->code, $saved);
+                }
                 return $this->errorResult($tree->code, 'Need at least 6 records to forecast.');
             }
 
@@ -56,6 +62,57 @@ class HarvestPredictionService
         } catch (\Throwable $e) {
             return $this->errorResult($tree->code, $e->getMessage());
         }
+    }
+
+    /**
+     * Fallback estimator if harvest history is insufficient.
+     * Uses the latest TreeData (dbh cm, height m) to estimate next harvest quantity and date.
+     */
+    private function estimateYieldFromMorphology(Tree $tree): ?array
+    {
+        $treeData = \App\TreeData::whereHas('treeCode', function ($q) use ($tree) {
+            $q->where('code', $tree->code);
+        })->latest('id')->first();
+
+        if (! $treeData || $treeData->dbh === null || $treeData->height === null) {
+            return null;
+        }
+
+        $dbh = max(0.0, (float) $treeData->dbh);     // cm
+        $height = max(0.0, (float) $treeData->height); // m
+
+        // Simple heuristic: yield (kg) ~ k * dbh^2 * height (scaled)
+        // k derived as a small scaling factor to keep values in realistic range
+        $k = 0.0006; // tune as data becomes available
+        $predictedQty = round($k * $dbh * $dbh * $height, 2);
+
+        // Choose upcoming season start month from config
+        $monthsCsv = config('services.harvest.harvest_months', '12,1,2,3');
+        $harvestMonths = array_values(array_filter(array_map('intval', explode(',', $monthsCsv))));
+        if (empty($harvestMonths)) {
+            $harvestMonths = [12,1,2,3];
+        }
+        sort($harvestMonths);
+
+        $today = now();
+        $year = (int) $today->year;
+        // Find next upcoming harvest month
+        $targetMonth = null;
+        foreach ($harvestMonths as $m) {
+            $candidate = now()->setDate($year, $m, 1);
+            if ($candidate->isFuture()) { $targetMonth = $m; break; }
+        }
+        if ($targetMonth === null) {
+            // All this season months passed; pick first month next year
+            $targetMonth = $harvestMonths[0];
+            $year += 1;
+        }
+        $predictedDate = now()->setDate($year, $targetMonth, 15)->toDateString(); // mid-month
+
+        return [
+            'predicted_quantity' => $predictedQty,
+            'predicted_date' => $predictedDate,
+        ];
     }
 
     private function getTreeHarvests(Tree $tree)
@@ -116,11 +173,13 @@ class HarvestPredictionService
         $python = env('PYTHON_BIN', 'python');
         $order = config('services.harvest.sarima_order', '4,1,4');
         $seasonal = config('services.harvest.sarima_seasonal', '0,1,0,12');
+        $months = config('services.harvest.harvest_months', '12,1,2,3');
 
         $process = new Process([
             $python, $script, $csvPath, 
             '--order', $order, 
-            '--seasonal', $seasonal
+            '--seasonal', $seasonal,
+            '--harvest_months', $months,
         ]);
 
         $process->setTimeout(self::TIMEOUT_SECONDS);
