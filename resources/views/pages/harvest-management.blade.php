@@ -31,8 +31,8 @@
                         <div>
                             <label class="block text-sm font-medium mb-1">Tree</label>
                             <select name="code" class="w-full border rounded-lg p-2">
-                                @foreach($allTrees as $t)
-                                    <option value="{{ $t->code }}">{{ $t->code }}</option>
+                                @foreach($codes as $tc)
+                                    <option value="{{ $tc->code }}">{{ $tc->code }}</option>
                                 @endforeach
                             </select>
                             @error('code') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
