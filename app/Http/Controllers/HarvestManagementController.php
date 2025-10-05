@@ -34,8 +34,9 @@ class HarvestManagementController extends Controller
         $yieldingOnly = (bool) request('yielding', false);
         $hasRecordsOnly = (bool) request('has_records', false);
 
-        $minDbh = (float) config('services.harvest.min_dbh_cm', 10);
-        $minHeight = (float) config('services.harvest.min_height_m', 2);
+        // Use stricter yielding thresholds per request (DBH ≥ 15–20 cm, Height ≥ 4–6 m)
+        $minDbh = (float) request('min_dbh', config('services.harvest.min_dbh_cm', 15));
+        $minHeight = (float) request('min_height', config('services.harvest.min_height_m', 4));
 
         // Load codes with latest measurement and prediction
         $codes = TreeCode::with(['latestTreeData', 'latestPrediction'])
@@ -71,9 +72,8 @@ class HarvestManagementController extends Controller
             return $tc;
         });
 
-        if ($yieldingOnly) {
-            $codes = $codes->where('is_yielding', true)->values();
-        }
+        // Always hide non-yielding from page per requirement
+        $codes = $codes->where('is_yielding', true)->values();
         if ($hasRecordsOnly) {
             $codes = $codes->filter(fn($c) => $c->records_count > 0)->values();
         }
