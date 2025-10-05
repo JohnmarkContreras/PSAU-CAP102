@@ -47,7 +47,8 @@ class HarvestPredictionService
         try {
             $harvests = $this->getCombinedHarvests($code);
 
-            // Require at least 6 distinct months of data
+            // Require at least 6 total points OR 6 distinct months
+            $numPoints = count($harvests);
             $monthKeys = [];
             foreach ($harvests as $h) {
                 if (!empty($h['harvest_date'])) {
@@ -56,14 +57,14 @@ class HarvestPredictionService
             }
             $distinctMonths = count($monthKeys);
 
-            if ($distinctMonths < self::MIN_RECORDS_REQUIRED) {
+            if ($numPoints < self::MIN_RECORDS_REQUIRED && $distinctMonths < self::MIN_RECORDS_REQUIRED) {
                 // Fallback: estimate from DBH & Height when history is insufficient
                 $estimate = $this->estimateYieldFromMorphologyByCode($code);
                 if ($estimate) {
                     $saved = $this->savePrediction($code, $estimate);
                     return $this->successResult($code, $saved);
                 }
-                return $this->errorResult($code, 'Need at least 6 months of records to forecast.');
+                return $this->errorResult($code, 'Need at least 6 records or 6 months to forecast.');
             }
 
             $csvPath = $this->generateCsvFileForCode($code, $harvests);
