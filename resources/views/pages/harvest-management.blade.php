@@ -60,32 +60,62 @@
                         </div>
                     </form>
 
+                    {{-- Search / Filters --}}
+                    <form method="get" class="mb-4 grid grid-cols-1 md:grid-cols-6 gap-2">
+                        <input type="text" name="q" value="{{ $q ?? '' }}" placeholder="Search code..." class="border rounded px-3 py-2 md:col-span-2">
+                        <select name="sort" class="border rounded px-3 py-2">
+                            <option value="code" {{ ($sort ?? '')==='code' ? 'selected' : '' }}>Sort by Code</option>
+                            <option value="dbh" {{ ($sort ?? '')==='dbh' ? 'selected' : '' }}>Sort by DBH</option>
+                            <option value="height" {{ ($sort ?? '')==='height' ? 'selected' : '' }}>Sort by Height</option>
+                            <option value="records" {{ ($sort ?? '')==='records' ? 'selected' : '' }}>Sort by Records</option>
+                        </select>
+                        <select name="dir" class="border rounded px-3 py-2">
+                            <option value="asc" {{ ($dir ?? '')==='asc' ? 'selected' : '' }}>Asc</option>
+                            <option value="desc" {{ ($dir ?? '')==='desc' ? 'selected' : '' }}>Desc</option>
+                        </select>
+                        <label class="inline-flex items-center gap-2"><input type="checkbox" name="yielding" value="1" {{ request('yielding') ? 'checked' : '' }}> Yielding only (≥ {{ $minDbh }}cm & ≥ {{ $minHeight }}m)</label>
+                        <label class="inline-flex items-center gap-2"><input type="checkbox" name="has_records" value="1" {{ request('has_records') ? 'checked' : '' }}> With records only</label>
+                        <div>
+                            <button class="rounded-lg bg-emerald-600 text-white py-2 px-4">Apply</button>
+                        </div>
+                    </form>
+
                     {{-- Trees + Predictions + Past Harvests --}}
 
                     <div class="space-y-6">
-                            {{-- Single Predict All Button --}}
-                            <div class="mb-6">
-                                <button id="predict-all-btn"
-                                    class="rounded-xl bg-emerald-600 text-white py-2 px-4 hover:bg-emerald-700">
-                                    Predict All Trees (SARIMA 4,1,4)
-                                </button>
+                        <div class="mb-6 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                            <button id="predict-all-btn"
+                                class="rounded-xl bg-emerald-600 text-white py-2 px-4 hover:bg-emerald-700">
+                                Predict All (SARIMA 4,1,4 or fallback)
+                            </button>
+                            <button id="predict-yielding-btn"
+                                class="rounded-xl bg-amber-600 text-white py-2 px-4 hover:bg-amber-700">
+                                Predict Yielding Only
+                            </button>
                             </div>
-                        @foreach ($trees as $tree)
+                            <span class="text-xs text-gray-600">Season months: {{ config('services.harvest.harvest_months','12,1,2,3') }}</span>
+                        </div>
+
+                        @foreach ($codes as $tc)
                             <div class="rounded-2xl border p-4">
                                 
                                 <div class="flex items-center justify-between mb-3">
                                     
                                     <div>
                                         <h3 class="text-lg font-semibold text-gray-800">
-                                            Tree <span class="font-mono">{{ $tree->code }}</span>
+                                            Code <span class="font-mono">{{ $tc->code }}</span>
+                                            @if($tc->is_yielding)
+                                                <span class="ml-2 text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">Yielding</span>
+                                            @endif
                                         </h3>
-                                        @if($tree->latestPrediction)
+                                        @if($tc->latestPrediction)
                                             <p class="text-sm text-gray-600">
                                                 Predicted next harvest:
                                                 <span class="font-medium">
-                                                    {{ \Carbon\Carbon::parse($tree->latestPrediction->predicted_date)->toFormattedDateString() }}
+                                                    {{ \Carbon\Carbon::parse($tc->latestPrediction->predicted_date)->toFormattedDateString() }}
                                                 </span>
-                                                — ~ <span class="font-medium">{{ number_format($tree->latestPrediction->predicted_quantity, 2) }}</span> kg
+                                                — ~ <span class="font-medium">{{ number_format($tc->latestPrediction->predicted_quantity, 2) }}</span> kg
                                             </p>
                                         @else
                                             <p class="text-sm text-gray-500">No prediction yet.</p>
@@ -104,7 +134,8 @@
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y">
-                                            @forelse ($tree->harvests as $h)
+                                            @php $hs = \App\Harvest::where('code',$tc->code)->orderBy('harvest_date','desc')->take(10)->get(); @endphp
+                                            @forelse ($hs as $h)
                                                 <tr class="hover:bg-gray-50">
                                                     <td class="px-4 py-2">{{ \Carbon\Carbon::parse($h->harvest_date)->toFormattedDateString() }}</td>
                                                     <td class="px-4 py-2">{{ number_format($h->harvest_weight_kg, 2) }}</td>
@@ -121,52 +152,55 @@
                         @endforeach
                     </div>
 
-                    {{-- ✅ Custom Pagination --}}
-                    @if ($trees->lastPage() > 1)
-                        <div class="mt-6 flex justify-center">
-                            <ul class="inline-flex items-center space-x-1">
-                                {{-- Prev Button --}}
-                                @if ($trees->onFirstPage())
-                                    <li><span class="px-3 py-2 bg-gray-200 text-gray-400 rounded-l-lg">Prev</span></li>
-                                @else
-                                    <li><a href="{{ $trees->previousPageUrl() }}" class="px-3 py-2 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100">Prev</a></li>
-                                @endif
-
-                                {{-- Page Numbers (1–9 only) --}}
-                                @for ($i = 1; $i <= min(9, $trees->lastPage()); $i++)
-                                    @if ($i == $trees->currentPage())
-                                        <li><span class="px-3 py-2 bg-blue-500 text-white border border-blue-500">{{ $i }}</span></li>
-                                    @else
-                                        <li><a href="{{ $trees->url($i) }}" class="px-3 py-2 bg-white border border-gray-300 hover:bg-gray-100">{{ $i }}</a></li>
-                                    @endif
-                                @endfor
-
-                                {{-- Next Button --}}
-                                @if ($trees->hasMorePages())
-                                    <li><a href="{{ $trees->nextPageUrl() }}" class="px-3 py-2 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-100">Next</a></li>
-                                @else
-                                    <li><span class="px-3 py-2 bg-gray-200 text-gray-400 rounded-r-lg">Next</span></li>
-                                @endif
-                            </ul>
-                        </div>
-                    @endif
+                    {{-- Calendar placeholder (per-tree and all-trees will render via JS later) --}}
+                    <div id="calendar" class="mt-8 border rounded p-4 bg-white">
+                        <div class="text-sm text-gray-700 font-semibold mb-2">Best Harvest Calendar</div>
+                        <div id="calendar-all" class="text-xs text-gray-600 mb-4">All trees</div>
+                        <div id="calendar-per-tree" class="text-xs text-gray-600">Per tree</div>
+                    </div>
                 
 
                     <script>
+                        async function runPredict(yieldingOnly = false) {
+                            const url = `{{ route('harvest.predictAll') }}`;
+                            const res = await fetch(url + (yieldingOnly ? '?yielding=1' : ''), {
+                                method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+                            });
+                            return res.json();
+                        }
+
+                        function renderCalendar(data) {
+                            try {
+                                const allEl = document.getElementById('calendar-all');
+                                const perTreeEl = document.getElementById('calendar-per-tree');
+                                const entries = Object.entries(data.results || {});
+                                const allDates = {};
+                                entries.forEach(([code, result]) => {
+                                    if (!result.ok) return;
+                                    const d = result.predicted_date;
+                                    allDates[d] = (allDates[d] || 0) + 1;
+                                });
+                                const allSummary = Object.entries(allDates)
+                                    .sort((a,b)=>a[0].localeCompare(b[0]))
+                                    .map(([d,n])=>`${d}: ${n} tree(s)`) 
+                                    .join(' | ');
+                                allEl.textContent = allSummary || 'No predictions';
+
+                                // Per tree lines
+                                perTreeEl.innerHTML = entries
+                                   .filter(([,r])=>r.ok)
+                                   .map(([code,r])=>`<div>${code}: ${r.predicted_date} (~${r.predicted_quantity} kg)</div>`)
+                                   .join('');
+                            } catch (e) { console.error(e); }
+                        }
+
                         document.getElementById('predict-all-btn').addEventListener('click', async () => {
                             const btn = document.getElementById('predict-all-btn');
                             btn.disabled = true; const old = btn.textContent; btn.textContent = 'Predicting...';
 
                             try {
-                                const res = await fetch(`{{ route('harvest.predictAll') }}`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                        'Accept': 'application/json'
-                                    }
-                                });
-
-                                const data = await res.json();
+                                const data = await runPredict(false);
                                 console.log("Prediction results:", data);
 
                                 if (!data.ok) {
@@ -181,7 +215,7 @@
                                         }
                                     }
                                     alert(summary);
-                                    location.reload();
+                                    renderCalendar(data);
                                 }
                             } catch (e) {
                                 console.error(e);
@@ -189,6 +223,18 @@
                             } finally {
                                 btn.disabled = false; btn.textContent = old;
                             }
+                        });
+
+                        document.getElementById('predict-yielding-btn').addEventListener('click', async () => {
+                            const btn = document.getElementById('predict-yielding-btn');
+                            btn.disabled = true; const old = btn.textContent; btn.textContent = 'Predicting...';
+                            try {
+                                const data = await runPredict(true);
+                                if (!data.ok) { alert('Prediction failed.'); return; }
+                                renderCalendar(data);
+                                alert('Predicted yielding trees only.');
+                            } catch (e) { console.error(e); alert('Prediction error'); }
+                            finally { btn.disabled = false; btn.textContent = old; }
                         });
                     </script>
                 </x-card>

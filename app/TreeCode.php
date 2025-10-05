@@ -49,4 +49,16 @@ class TreeCode extends Model
     {
         return $this->hasMany(TreeData::class);
     }
+
+    // Latest measurement for convenience
+    public function latestTreeData()
+    {
+        return $this->hasOne(TreeData::class)->latest('id');
+    }
+
+    // Latest harvest prediction by code
+    public function latestPrediction()
+    {
+        return $this->hasOne(HarvestPrediction::class, 'code', 'code')->orderBy('predicted_date', 'desc');
+    }
 }

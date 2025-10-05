@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use App\Tree;
+use App\TreeCode;
+use App\Harvest;
 use App\HarvestPrediction;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\Process;
@@ -15,52 +16,60 @@ class HarvestPredictionService
     private const MIN_HEIGHT_M = 2.0;
     private const TIMEOUT_SECONDS = 60;
 
-    public function predictAllTrees()
+    public function predictAllTrees(bool $yieldingOnly = false)
     {
-        $trees = Tree::all();
+        $codes = TreeCode::orderBy('code')->get();
         $results = [];
 
-        foreach ($trees as $tree) {
-            // Skip trees without sufficient DBH/Height if data available via latest TreeData or Tree attributes
-            if (! $this->meetsSizeThreshold($tree)) {
-                $results[$tree->code] = $this->errorResult($tree->code, 'Tree below DBH/Height thresholds');
-                continue;
+        foreach ($codes as $tc) {
+            $code = $tc->code;
+            // Skip trees based on requested policy
+            if ($yieldingOnly) {
+                if (! $this->isYieldingByCode($code)) {
+                    $results[$code] = $this->errorResult($code, 'Not yielding (below DBH/Height thresholds)');
+                    continue;
+                }
+            } else {
+                if (! $this->meetsSizeThresholdByCode($code)) {
+                    $results[$code] = $this->errorResult($code, 'Tree below DBH/Height thresholds');
+                    continue;
+                }
             }
 
-            $results[$tree->code] = $this->predictForTree($tree);
+            $results[$code] = $this->predictForCode($code);
         }
 
         return $results;
     }
 
-    private function predictForTree(Tree $tree)
+    private function predictForCode(string $code)
     {
         try {
-            $harvests = $this->getTreeHarvests($tree);
+            $harvests = $this->getCombinedHarvests($code);
 
             if ($harvests->count() < self::MIN_RECORDS_REQUIRED) {
                 // Fallback: estimate from DBH & Height when history is insufficient
-                $estimate = $this->estimateYieldFromMorphology($tree);
+                $estimate = $this->estimateYieldFromMorphologyByCode($code);
                 if ($estimate) {
-                    $saved = $this->savePrediction($tree->code, $estimate);
-                    return $this->successResult($tree->code, $saved);
+                    $saved = $this->savePrediction($code, $estimate);
+                    return $this->successResult($code, $saved);
                 }
-                return $this->errorResult($tree->code, 'Need at least 6 records to forecast.');
+                return $this->errorResult($code, 'Need at least 6 records to forecast.');
             }
 
-            $csvPath = $this->generateCsvFile($tree, $harvests);
+            $csvPath = $this->generateCsvFileForCode($code, $harvests);
             $prediction = $this->runPredictionScript($csvPath);
 
             if (!$this->isValidPrediction($prediction)) {
-                return $this->errorResult($tree->code, 'Invalid prediction output from Python.');
+                return $this->errorResult($code, 'Invalid prediction output from Python.');
             }
 
-            $savedPrediction = $this->savePrediction($tree->code, $prediction);
+            $savedPrediction = $this->savePrediction($code, $prediction);
 
-            return $this->successResult($tree->code, $savedPrediction);
+            return $this->successResult($code, $savedPrediction);
 
         } catch (\Throwable $e) {
-            return $this->errorResult($tree->code, $e->getMessage());
+            return $this->errorResult($code, $e->getMessage());
         }
     }
 
@@ -68,10 +77,10 @@ class HarvestPredictionService
      * Fallback estimator if harvest history is insufficient.
      * Uses the latest TreeData (dbh cm, height m) to estimate next harvest quantity and date.
      */
-    private function estimateYieldFromMorphology(Tree $tree): ?array
+    private function estimateYieldFromMorphologyByCode(string $code): ?array
     {
-        $treeData = \App\TreeData::whereHas('treeCode', function ($q) use ($tree) {
-            $q->where('code', $tree->code);
+        $treeData = \App\TreeData::whereHas('treeCode', function ($q) use ($code) {
+            $q->where('code', $code);
         })->latest('id')->first();
 
         if (! $treeData || $treeData->dbh === null || $treeData->height === null) {
@@ -115,19 +124,47 @@ class HarvestPredictionService
         ];
     }
 
-    private function getTreeHarvests(Tree $tree)
+    private function getCombinedHarvests(string $code): array
     {
-        return $tree->harvests()
+        // DB harvests
+        $rows = Harvest::where('code', $code)
             ->select('harvest_date', 'harvest_weight_kg')
             ->orderBy('harvest_date')
-            ->get();
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'harvest_date' => (string) $r->harvest_date,
+                    'harvest_weight_kg' => (float) $r->harvest_weight_kg,
+                ];
+            })->toArray();
+
+        // JSON harvests from latest TreeData
+        $td = \App\TreeData::whereHas('treeCode', function ($q) use ($code) { $q->where('code', $code); })
+            ->latest('id')->first();
+        if ($td && !empty($td->harvests)) {
+            $rows = array_merge($rows, $this->parseHarvestsJson($td->harvests));
+        }
+
+        // Deduplicate by date (sum weights per month-day)
+        $byDate = [];
+        foreach ($rows as $row) {
+            $d = date('Y-m-d', strtotime($row['harvest_date']));
+            $byDate[$d] = ($byDate[$d] ?? 0.0) + (float) $row['harvest_weight_kg'];
+        }
+        ksort($byDate);
+
+        $out = [];
+        foreach ($byDate as $d => $kg) {
+            $out[] = ['harvest_date' => $d, 'harvest_weight_kg' => round((float) $kg, 3)];
+        }
+        return $out;
     }
 
-    private function meetsSizeThreshold(Tree $tree): bool
+    private function meetsSizeThresholdByCode(string $code): bool
     {
         // Try TreeData latest
-        $treeData = \App\TreeData::whereHas('treeCode', function ($q) use ($tree) {
-            $q->where('code', $tree->code);
+        $treeData = \App\TreeData::whereHas('treeCode', function ($q) use ($code) {
+            $q->where('code', $code);
         })->latest('id')->first();
 
         $dbhCm = null;
@@ -137,10 +174,6 @@ class HarvestPredictionService
             // Source may be inches/feet; normalize to metric if needed
             $dbhCm = is_null($treeData->dbh) ? null : (float) $treeData->dbh; // assume cm already based on model
             $heightM = is_null($treeData->height) ? null : (float) $treeData->height; // assume meters
-        } else {
-            // Fallback from Tree model if available
-            $dbhCm = property_exists($tree, 'stem_diameter') ? (float) $tree->stem_diameter : null;
-            $heightM = property_exists($tree, 'height') ? (float) $tree->height : null;
         }
 
         if ($dbhCm === null || $heightM === null) {
@@ -153,15 +186,35 @@ class HarvestPredictionService
         return $dbhCm >= $minDbh && $heightM >= $minHeight;
     }
 
-    private function generateCsvFile(Tree $tree, $harvests)
+    private function isYieldingByCode(string $code): bool
+    {
+        $treeData = \App\TreeData::whereHas('treeCode', function ($q) use ($code) {
+            $q->where('code', $code);
+        })->latest('id')->first();
+
+        if (! $treeData) {
+            return false;
+        }
+
+        $dbhCm = is_null($treeData->dbh) ? null : (float) $treeData->dbh;
+        $heightM = is_null($treeData->height) ? null : (float) $treeData->height;
+        if ($dbhCm === null || $heightM === null) {
+            return false;
+        }
+        $minDbh = (float) config('services.harvest.min_dbh_cm', self::MIN_DBH_CM);
+        $minHeight = (float) config('services.harvest.min_height_m', self::MIN_HEIGHT_M);
+        return $dbhCm >= $minDbh && $heightM >= $minHeight;
+    }
+
+    private function generateCsvFileForCode(string $code, array $harvests)
     {
         $csv = "harvest_date,harvest_weight_kg\n";
         
         foreach ($harvests as $harvest) {
-            $csv .= "{$harvest->harvest_date},{$harvest->harvest_weight_kg}\n";
+            $csv .= sprintf("%s,%s\n", $harvest['harvest_date'], $harvest['harvest_weight_kg']);
         }
 
-        $path = "harvest_data/{$tree->code}.csv";
+        $path = "harvest_data/{$code}.csv";
         Storage::disk('local')->put($path, $csv);
 
         return storage_path("app/$path");
@@ -224,5 +277,29 @@ class HarvestPredictionService
             'ok' => false,
             'message' => $message
         ];
+    }
+
+    /**
+     * Parse flexible JSON stored in tree_data.harvests into normalized rows
+     * of ['harvest_date' => Y-m-d, 'harvest_weight_kg' => float]
+     */
+    private function parseHarvestsJson($json): array
+    {
+        try {
+            $data = is_array($json) ? $json : json_decode($json, true) ?? [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+        $rows = [];
+        foreach ($data as $row) {
+            $date = $row['harvest_date'] ?? $row['date'] ?? null;
+            $kg = $row['harvest_weight_kg'] ?? $row['weight'] ?? $row['kg'] ?? null;
+            if (!$date || $kg === null) continue;
+            $rows[] = [
+                'harvest_date' => date('Y-m-d', strtotime($date)),
+                'harvest_weight_kg' => (float) $kg,
+            ];
+        }
+        return $rows;
     }
 }
