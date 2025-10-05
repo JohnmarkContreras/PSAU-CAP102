@@ -47,24 +47,27 @@ class HarvestPredictionService
         try {
             $harvests = $this->getCombinedHarvests($code);
 
-            // Require at least 6 total points OR 6 distinct months
+            // Require at least 6 total points OR 6 distinct months OR 6 distinct years
             $numPoints = count($harvests);
             $monthKeys = [];
+            $yearKeys = [];
             foreach ($harvests as $h) {
                 if (!empty($h['harvest_date'])) {
                     $monthKeys[date('Y-m', strtotime($h['harvest_date']))] = true;
+                    $yearKeys[date('Y', strtotime($h['harvest_date']))] = true;
                 }
             }
             $distinctMonths = count($monthKeys);
+            $distinctYears = count($yearKeys);
 
-            if ($numPoints < self::MIN_RECORDS_REQUIRED && $distinctMonths < self::MIN_RECORDS_REQUIRED) {
+            if ($numPoints < self::MIN_RECORDS_REQUIRED && $distinctMonths < self::MIN_RECORDS_REQUIRED && $distinctYears < self::MIN_RECORDS_REQUIRED) {
                 // Fallback: estimate from DBH & Height when history is insufficient
                 $estimate = $this->estimateYieldFromMorphologyByCode($code);
                 if ($estimate) {
                     $saved = $this->savePrediction($code, $estimate);
                     return $this->successResult($code, $saved);
                 }
-                return $this->errorResult($code, 'Need at least 6 records or 6 months to forecast.');
+                return $this->errorResult($code, 'Need ≥6 records (points/months/years) to forecast.');
             }
 
             $csvPath = $this->generateCsvFileForCode($code, $harvests);
