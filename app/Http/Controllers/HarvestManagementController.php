@@ -106,7 +106,13 @@ class HarvestManagementController extends Controller
 
     public function store(HarvestStoreRequest $request)
     {
-        Harvest::create($request->validated());
+        $payload = $request->validated();
+        // Normalize code casing to canonical stored value in tree_code
+        $tc = \App\TreeCode::whereRaw('LOWER(code) = ?', [mb_strtolower(trim($payload['code']))])->first();
+        if ($tc) {
+            $payload['code'] = $tc->code;
+        }
+        Harvest::create($payload);
         return back()->with('success', 'Harvest record added.');
     }
 
