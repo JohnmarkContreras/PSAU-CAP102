@@ -5,13 +5,14 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Messages\NexmoMessage;
 use App\HarvestPrediction;
 
-class HarvestScheduleNotification extends Notification
+class HarvestReminder extends Notification
 {
     use Queueable;
 
-    protected $prediction;
+    public HarvestPrediction $prediction;
 
     public function __construct(HarvestPrediction $prediction)
     {
@@ -20,8 +21,14 @@ class HarvestScheduleNotification extends Notification
 
     public function via($notifiable)
     {
-        // You can send via 'mail', 'database', 'broadcast', etc.
-        return ['mail', 'database'];
+        $channels = ['mail', 'database'];
+
+        // Enable SMS via Nexmo/Vonage if configured
+        if (config('services.nexmo.key') && config('services.nexmo.sms_from')) {
+            $channels[] = 'nexmo';
+        }
+
+        return $channels;
     }
 
     public function toMail($notifiable)
@@ -29,10 +36,21 @@ class HarvestScheduleNotification extends Notification
         return (new MailMessage)
             ->subject('Upcoming Tamarind Harvest')
             ->greeting("Hello {$notifiable->name},")
-            ->line("Your tree (Code: {$this->prediction->code}) is expected to be ready for harvest around {$this->prediction->predicted_date}.")
-            ->line("Predicted yield: {$this->prediction->predicted_quantity} kg.")
-            ->action('View Details', url('/harvest-management'))
-            ->line('Please prepare for harvest!');
+            ->line("Tree Code: {$this->prediction->code}")
+            ->line("Expected harvest window: around {$this->prediction->predicted_date}.")
+            ->line("Predicted yield: " . number_format((float) $this->prediction->predicted_quantity, 2) . " kg.")
+            ->action('Open Harvest Manager', url('/harvest-management'))
+            ->line('This is an automated reminder.');
+    }
+
+    public function toNexmo($notifiable)
+    {
+        $date = $this->prediction->predicted_date;
+        $qty  = number_format((float) $this->prediction->predicted_quantity, 2);
+        $code = $this->prediction->code;
+
+        return (new NexmoMessage)
+            ->content("Tamarind harvest reminder: Tree {$code} ~{$date} (est {$qty} kg).");
     }
 
     public function toDatabase($notifiable)

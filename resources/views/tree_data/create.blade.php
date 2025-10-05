@@ -27,7 +27,7 @@
 
                         <!-- DBH -->
                         <div>
-                            <label for="dbh" class="block font-semibold">DBH (inches)</label>
+                            <label for="dbh" class="block font-semibold">DBH (cm)</label>
                             <input type="text" pattern="\d+(\.\d{1,2})?" title="Enter a valid number" name="dbh" id="dbh" class="w-full border rounded p-2" required>
                         </div>
 
@@ -45,15 +45,17 @@
 
                         <!-- Stem Diameter (optional) -->
                         <div>
-                            <label for="stem_diameter" class="block font-semibold">Stem Diameter (inches)</label>
+                            <label for="stem_diameter" class="block font-semibold">Stem Diameter (cm)</label>
                             <input type="text" pattern="\d+(\.\d{1,2})?" title="Enter a valid number" name="stem_diameter" id="stem_diameter" class="w-full border rounded p-2">
                         </div>
 
                         <!-- Canopy Diameter (optional) -->
                         <div>
-                            <label for="canopy_diameter" class="block font-semibold">Canopy Diameter (feet)</label>
+                            <label for="canopy_diameter" class="block font-semibold">Canopy Diameter (m)</label>
                             <input type="text" pattern="\d+(\.\d{1,2})?" title="Enter a valid number" name="canopy_diameter" id="canopy_diameter" class="w-full border rounded p-2">
                         </div>
+
+                        <p class="text-xs text-gray-600">Only trees meeting minimum thresholds (DBH ≥ 10 cm and Height ≥ 2 m) are used in yield predictions.</p>
 
                         <!-- Submit Button -->
                         <div>
