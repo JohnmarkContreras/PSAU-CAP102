@@ -5,7 +5,8 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Messages\TwilioMessage;
+use NotificationChannels\Twilio\TwilioChannel;
+use NotificationChannels\Twilio\TwilioSmsMessage;
 use App\HarvestPrediction;
 
 class HarvestReminder extends Notification
@@ -25,7 +26,7 @@ class HarvestReminder extends Notification
 
         // Enable SMS via Twilio if configured
         if (config('services.twilio.sid') && config('services.twilio.from')) {
-            $channels[] = 'twilio';
+            $channels[] = TwilioChannel::class;
         }
 
         return $channels;
@@ -49,7 +50,7 @@ class HarvestReminder extends Notification
         $qty  = number_format((float) $this->prediction->predicted_quantity, 2);
         $code = $this->prediction->code;
 
-        return (new TwilioMessage)
+        return (new TwilioSmsMessage())
             ->content("Tamarind harvest: Tree {$code} ~{$date} (est {$qty} kg)");
     }
 
