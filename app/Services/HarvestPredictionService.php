@@ -47,7 +47,7 @@ class HarvestPredictionService
         try {
             $harvests = $this->getCombinedHarvests($code);
 
-            if ($harvests->count() < self::MIN_RECORDS_REQUIRED) {
+            if (count($harvests) < self::MIN_RECORDS_REQUIRED) {
                 // Fallback: estimate from DBH & Height when history is insufficient
                 $estimate = $this->estimateYieldFromMorphologyByCode($code);
                 if ($estimate) {
