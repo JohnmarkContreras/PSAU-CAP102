@@ -78,13 +78,17 @@ class HarvestManagementController extends Controller
             $codes = $codes->filter(fn($c) => $c->records_count > 0)->values();
         }
 
-        // Sorting
-        $codes = match ($sort) {
-            'dbh' => $codes->sortBy('computed_dbh', SORT_REGULAR, $dir === 'desc'),
-            'height' => $codes->sortBy('computed_height', SORT_REGULAR, $dir === 'desc'),
-            'records' => $codes->sortBy('records_count', SORT_REGULAR, $dir === 'desc'),
-            default => $codes->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE, $dir === 'desc'),
-        }->values();
+        // Sorting (PHP 7 compatible)
+        if ($sort === 'dbh') {
+            $codes = $codes->sortBy('computed_dbh', SORT_REGULAR, $dir === 'desc');
+        } elseif ($sort === 'height') {
+            $codes = $codes->sortBy('computed_height', SORT_REGULAR, $dir === 'desc');
+        } elseif ($sort === 'records') {
+            $codes = $codes->sortBy('records_count', SORT_REGULAR, $dir === 'desc');
+        } else {
+            $codes = $codes->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE, $dir === 'desc');
+        }
+        $codes = $codes->values();
 
         // Recent harvests list for sidebar/table
         $harvests = Harvest::latest('harvest_date')->take(50)->get();
@@ -115,7 +119,8 @@ class HarvestManagementController extends Controller
 
     public function predictAll()
     {
-        $results = $this->predictionService->predictAllTrees();
+        $yieldingOnly = (bool) request('yielding', false);
+        $results = $this->predictionService->predictAllTrees($yieldingOnly);
         
         return response()->json([
             'ok' => true,
