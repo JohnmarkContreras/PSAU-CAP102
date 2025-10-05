@@ -21,20 +21,23 @@ class UpdateHarvestsFkToTreeCode extends Migration
             // ignore if index already exists
         }
 
-        Schema::table('harvests', function (Blueprint $table) {
-            // Drop existing foreign key to trees.code if present
-            try {
-                $table->dropForeign('harvests_code_foreign');
-            } catch (\Throwable $e) {
-                // ignore if FK name differs or doesn't exist
+        // Drop existing foreign key to trees.code if present (discover constraint name dynamically)
+        try {
+            $fk = DB::selectOne("SELECT CONSTRAINT_NAME AS name FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'harvests' AND COLUMN_NAME = 'code' AND REFERENCED_TABLE_NAME IS NOT NULL LIMIT 1");
+            if ($fk && isset($fk->name)) {
+                DB::statement("ALTER TABLE harvests DROP FOREIGN KEY `{$fk->name}`");
             }
-        });
+        } catch (\Throwable $e) {
+            // ignore if cannot drop
+        }
 
         Schema::table('harvests', function (Blueprint $table) {
             // Ensure code column exists
             if (! Schema::hasColumn('harvests', 'code')) {
                 $table->string('code');
             }
+            // Ensure index on referencing column (MySQL requirement)
+            try { DB::statement('CREATE INDEX harvests_code_index ON harvests (code)'); } catch (\Throwable $e) {}
             // Add new FK to tree_code.code
             $table->foreign('code')->references('code')->on('tree_code')->onDelete('cascade');
         });
