@@ -8,21 +8,29 @@ use App\TreeCode;
 class TreeDataController extends Controller
 {
     
-    // Show form to create new tree data entry
-public function create(Request $request)
-{
-    $treeCodes = TreeCode::all();
-    $defaultCode = $request->query('code');
-    $defaultCodeId = null;
-    if ($defaultCode) {
-        $matched = TreeCode::where('code', $defaultCode)->first();
-        if ($matched) $defaultCodeId = $matched->id;
+    public function create(Request $request)
+    {
+        $treeCodes = TreeCode::all();
+        $defaultCodeId = null;
+
+        // ✅ 1. Prefer explicit tree_image_id in the URL
+        if ($request->query('tree_image_id')) {
+            $defaultCodeId = $request->query('tree_image_id');
+        }
+        // ✅ 2. If not, check for ?tree_code= or ?code=
+        elseif ($request->query('tree_code')) {
+            $matched = TreeCode::where('code', $request->query('tree_code'))->first();
+            if ($matched) $defaultCodeId = $matched->id;
+        }
+        elseif ($request->query('code')) {
+            $matched = TreeCode::where('code', $request->query('code'))->first();
+            if ($matched) $defaultCodeId = $matched->id;
+        }
+
+        return view('tree_data.create', compact('treeCodes', 'defaultCodeId'));
     }
-    if (!$defaultCodeId && $request->query('tree_code_id')) {
-        $defaultCodeId = $request->query('tree_code_id');
-    }
-    return view('tree_data.create', compact('treeCodes', 'defaultCodeId'));
-}
+
+
     // Store new tree data entry
     public function store(Request $request)
 {
@@ -56,7 +64,7 @@ public function create(Request $request)
 
     $row->computeAndSaveCarbon($params, true);
 
-    return redirect()->route('trees-images.index')->with('success', 'Tree data added successfully!');
+    return redirect()->route('tree-images.index')->with('success', 'Tree data added successfully!');
 }
 
 public function update(Request $request, TreeData $treeData)

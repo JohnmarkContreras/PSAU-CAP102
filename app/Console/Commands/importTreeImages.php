@@ -55,17 +55,26 @@ public function handle()
             $note = $matches[1] ?? null;
         }
 
-        if ($note === 'PS') {
-        $note = "N/A"; //null; if you want to skip saving it
-    }
+    //     if ($note === 'PS') {
+    //     $note = "N/A"; //null; if you want to skip saving it
+    // }
+
         // ✅ Save TreeCode if note exists
         if ($note) {
-            TreeCode::create([
-                'tree_image_id' => $treeImage->id,
-                'code'          => $note,
-                'created_by'    => auth()->id(),
-            ]);
-        }
+    // Check if code already exists
+    $existingCode = TreeCode::where('code', $note)->first();
+
+    if ($existingCode) {
+        $this->warn("Duplicate code '{$note}' found — skipping.");
+    } else {
+        TreeCode::create([
+            'tree_image_id' => $treeImage->id,
+            'code'          => $note,
+            'created_by'    => auth()->id() ?? 1,
+        ]);
+        $this->info("Added new TreeCode: {$note}");
+    }
+}
 
         $this->info("Imported: " . basename($file));
     }
