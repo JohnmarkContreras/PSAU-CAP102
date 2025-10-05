@@ -126,8 +126,13 @@ class HarvestPredictionService
 
     private function getCombinedHarvests(string $code): array
     {
-        // DB harvests
-        $rows = Harvest::where('code', $code)
+        // DB harvests (match common Sl/SI code prefix variants case-insensitively)
+        $variants = $this->codeVariants($code);
+        $rows = Harvest::where(function ($q) use ($variants) {
+                foreach ($variants as $v) {
+                    $q->orWhereRaw('LOWER(code) = ?', [mb_strtolower($v)]);
+                }
+            })
             ->select('harvest_date', 'harvest_weight_kg')
             ->orderBy('harvest_date')
             ->get()
@@ -158,6 +163,23 @@ class HarvestPredictionService
             $out[] = ['harvest_date' => $d, 'harvest_weight_kg' => round((float) $kg, 3)];
         }
         return $out;
+    }
+
+    private function codeVariants(string $code): array
+    {
+        $code = trim($code);
+        $low = mb_strtolower($code);
+        $pfx = mb_substr($low, 0, 2);
+        $rest = mb_substr($code, 2);
+        $variants = [$code];
+        // canonicalize to 'Sl' prefix
+        if ($pfx === 'si' || $pfx === 'sl') {
+            $variants[] = 'Sl' . $rest;
+            $variants[] = 'SI' . $rest;
+            $variants[] = 'si' . $rest;
+            $variants[] = 'sl' . $rest;
+        }
+        return array_values(array_unique($variants));
     }
 
     private function meetsSizeThresholdByCode(string $code): bool
