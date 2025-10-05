@@ -38,7 +38,7 @@ class HarvestPredictionService
     private function predictForCode(string $code)
     {
         try {
-            $harvests = $this->getHarvestsByCode($code);
+            $harvests = $this->getCombinedHarvests($code);
 
             if ($harvests->count() < self::MIN_RECORDS_REQUIRED) {
                 // Fallback: estimate from DBH & Height when history is insufficient
@@ -117,12 +117,40 @@ class HarvestPredictionService
         ];
     }
 
-    private function getHarvestsByCode(string $code)
+    private function getCombinedHarvests(string $code): array
     {
-        return Harvest::where('code', $code)
+        // DB harvests
+        $rows = Harvest::where('code', $code)
             ->select('harvest_date', 'harvest_weight_kg')
             ->orderBy('harvest_date')
-            ->get();
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'harvest_date' => (string) $r->harvest_date,
+                    'harvest_weight_kg' => (float) $r->harvest_weight_kg,
+                ];
+            })->toArray();
+
+        // JSON harvests from latest TreeData
+        $td = \App\TreeData::whereHas('treeCode', function ($q) use ($code) { $q->where('code', $code); })
+            ->latest('id')->first();
+        if ($td && !empty($td->harvests)) {
+            $rows = array_merge($rows, $this->parseHarvestsJson($td->harvests));
+        }
+
+        // Deduplicate by date (sum weights per month-day)
+        $byDate = [];
+        foreach ($rows as $row) {
+            $d = date('Y-m-d', strtotime($row['harvest_date']));
+            $byDate[$d] = ($byDate[$d] ?? 0.0) + (float) $row['harvest_weight_kg'];
+        }
+        ksort($byDate);
+
+        $out = [];
+        foreach ($byDate as $d => $kg) {
+            $out[] = ['harvest_date' => $d, 'harvest_weight_kg' => round((float) $kg, 3)];
+        }
+        return $out;
     }
 
     private function meetsSizeThresholdByCode(string $code): bool
@@ -151,12 +179,12 @@ class HarvestPredictionService
         return $dbhCm >= $minDbh && $heightM >= $minHeight;
     }
 
-    private function generateCsvFileForCode(string $code, $harvests)
+    private function generateCsvFileForCode(string $code, array $harvests)
     {
         $csv = "harvest_date,harvest_weight_kg\n";
         
         foreach ($harvests as $harvest) {
-            $csv .= "{$harvest->harvest_date},{$harvest->harvest_weight_kg}\n";
+            $csv .= sprintf("%s,%s\n", $harvest['harvest_date'], $harvest['harvest_weight_kg']);
         }
 
         $path = "harvest_data/{$code}.csv";
@@ -222,5 +250,29 @@ class HarvestPredictionService
             'ok' => false,
             'message' => $message
         ];
+    }
+
+    /**
+     * Parse flexible JSON stored in tree_data.harvests into normalized rows
+     * of ['harvest_date' => Y-m-d, 'harvest_weight_kg' => float]
+     */
+    private function parseHarvestsJson($json): array
+    {
+        try {
+            $data = is_array($json) ? $json : json_decode($json, true) ?? [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+        $rows = [];
+        foreach ($data as $row) {
+            $date = $row['harvest_date'] ?? $row['date'] ?? null;
+            $kg = $row['harvest_weight_kg'] ?? $row['weight'] ?? $row['kg'] ?? null;
+            if (!$date || $kg === null) continue;
+            $rows[] = [
+                'harvest_date' => date('Y-m-d', strtotime($date)),
+                'harvest_weight_kg' => (float) $kg,
+            ];
+        }
+        return $rows;
     }
 }
