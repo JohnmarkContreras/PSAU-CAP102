@@ -12,7 +12,7 @@ parser.add_argument('csv_path')
 parser.add_argument('--order', default='4,1,4')           # p,d,q
 parser.add_argument('--seasonal', default='1,0,0,12')     # P,D,Q,s (yearly seasonality)
 parser.add_argument('--steps', type=int, default=24)      # forecast horizon (months)
-parser.add_argument('--harvest_months', default='10,11,12')  # Oct–Dec by default
+parser.add_argument('--harvest_months', default='12,1,2,3')  # Default Dec–Mar (configurable)
 args = parser.parse_args()
 
 order = tuple(map(int, args.order.split(',')))
