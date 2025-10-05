@@ -31,6 +31,16 @@ class UpdateHarvestsFkToTreeCode extends Migration
             // ignore if cannot drop
         }
 
+        // Normalize harvests.code to canonical tree_code.code casing
+        try {
+            DB::statement("UPDATE harvests h JOIN tree_code t ON LOWER(h.code) = LOWER(t.code) SET h.code = t.code");
+        } catch (\Throwable $e) {}
+
+        // Remove any orphan harvest rows whose code does not exist in tree_code
+        try {
+            DB::statement("DELETE h FROM harvests h LEFT JOIN tree_code t ON h.code = t.code WHERE t.code IS NULL");
+        } catch (\Throwable $e) {}
+
         Schema::table('harvests', function (Blueprint $table) {
             // Ensure code column exists
             if (! Schema::hasColumn('harvests', 'code')) {
