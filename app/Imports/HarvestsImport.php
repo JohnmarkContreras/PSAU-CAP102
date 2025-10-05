@@ -13,17 +13,24 @@ class HarvestsImport implements ToModel, WithHeadingRow
 {
     public function model(array $row)
     {
-        // Normalize tree code (e.g., TM001)
-        $treeCode = strtoupper(trim($row['code'] ?? $row['tree_code'] ?? ''));
+        // Normalize tree code: force 'Sl' prefix casing (Sl00-00 / SL10-10 -> Sl10-10)
+        $raw = trim($row['code'] ?? $row['tree_code'] ?? '');
+        $treeCode = preg_replace_callback('/^([A-Za-z]{2})(.*)$/', function ($m) {
+            $prefix = $m[1];
+            $rest = $m[2];
+            // Force prefix to 'Sl' specifically
+            return 'Sl' . $rest;
+        }, $raw);
+        $treeCode = trim($treeCode);
 
         // Make sure tree exists
-        $tree = Tree::where('code', $treeCode)->first();
+        $tree = \App\TreeCode::whereRaw('LOWER(code) = ?', [mb_strtolower($treeCode)])->first();
         if (!$tree) {
             throw new \Exception("Tree with code {$treeCode} not found");
         }
 
         // Prevent duplicate harvest (same tree + date)
-        $existing = Harvest::where('code', $treeCode)
+        $existing = Harvest::where('code', $tree->code)
             ->whereDate('harvest_date', $row['harvest_date'])
             ->first();
 
@@ -32,7 +39,7 @@ class HarvestsImport implements ToModel, WithHeadingRow
         }
 
         return new Harvest([
-        'code' => strtoupper(trim($row['code'])),
+        'code' => $tree->code,
         'harvest_date' => $this->transformDate($row['harvest_date']),
         'harvest_weight_kg' => $row['harvest_weight_kg'],
         'quality' => $row['quality'] ?? null,
