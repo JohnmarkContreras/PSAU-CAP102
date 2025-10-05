@@ -30,4 +30,20 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // SMS via Vonage (Nexmo)
+    'nexmo' => [
+        'key' => env('VONAGE_KEY'),
+        'secret' => env('VONAGE_SECRET'),
+        'sms_from' => env('VONAGE_SMS_FROM'),
+    ],
+
+    // Harvest prediction thresholds and model defaults
+    'harvest' => [
+        'min_dbh_cm' => env('HARVEST_MIN_DBH_CM', 10),
+        'min_height_m' => env('HARVEST_MIN_HEIGHT_M', 2),
+        'sarima_order' => env('HARVEST_SARIMA_ORDER', '4,1,4'),
+        'sarima_seasonal' => env('HARVEST_SARIMA_SEASONAL', '0,1,0,12'),
+        'harvest_months' => env('HARVEST_MONTHS', '10,11,12'),
+    ],
+
 ];
