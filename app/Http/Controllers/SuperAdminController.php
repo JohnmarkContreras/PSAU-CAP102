@@ -6,6 +6,7 @@ use App\User;
 use App\Http\Requests\CreateAccountRequest;
 use App\Services\UserAccountService;
 use App\Services\CarbonTrackingService;
+use Illuminate\Support\Facades\DB;
 
 class SuperAdminController extends Controller
 {
@@ -42,8 +43,8 @@ class SuperAdminController extends Controller
 
     public function accounts()
     {
-        $users = User::all();
-        
+        $users = \App\User::all();
+                
         return view('pages.accounts', compact('users'));
     }
 

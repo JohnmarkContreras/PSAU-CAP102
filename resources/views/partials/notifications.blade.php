@@ -6,7 +6,7 @@
             <div class="h-12 flex justify-between items-center py-2">
                 @if(isset($notification->data['geotag_id']))
                     @if(auth()->user()->hasAnyRole(['admin', 'superadmin']))
-                            <a href="{{ route('geotags.pending', $notification->data['geotag_id']) }}" class="text-blue-600 underline">
+                            <a href="{{ route('pending-geotags.index', $notification->data['geotag_id']) }}" class="text-blue-600 underline">
                                 View Geotag
                             </a>
                         @else

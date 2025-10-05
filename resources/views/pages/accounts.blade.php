@@ -10,7 +10,7 @@
                         <div class="overflow-x-auto">
                         {{-- Create New User Button --}}
                         <div class="mb-4">
-                            <a href="{{ route('create.account') }}" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                            <a href="{{ route('create.account') }}" class="bg-green-800 hover:bg-green-700 text-white py-2 px-4 rounded">
                                 + Create New Account
                             </a>
                         </div>

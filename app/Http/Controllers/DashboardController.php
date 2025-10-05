@@ -7,7 +7,10 @@ use App\Services\TreeAnalyticsService;
 use App\Tree;
 use App\Harvest;
 use App\User;
-use App\PendingGeotag;
+use App\PendingGeotagTree;
+use App\TreeCode;
+use App\TreeData;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -22,7 +25,10 @@ class DashboardController extends Controller
     {
         $year = $request->input('year', now()->year); // default current year
         $month = $request->input('month'); // optional
-        $pendingtree = PendingGeotag::where('status', 'pending')->count();
+        $pendingtree = PendingGeotagTree::where('status', 'pending')->count();
+        //Total Carbon Sequestration
+        $totalAnnualSequestrationKg = TreeData::query()->sum('annual_sequestration_kgco2');
+
         // Start harvest query
         $query = Harvest::query();
 
@@ -45,10 +51,10 @@ class DashboardController extends Controller
 
         // Other dashboard data
         $role = Auth::user()->getRoleNames()->first();
-        $totaltrees = Tree::count();
-        $totalsour = Tree::where('type', 'sour')->count();
-        $totalsweet = Tree::where('type', 'sweet')->count();
-        $totalsemi_sweet = Tree::where('type', 'semi_sweet')->count();
+        $totaltrees = TreeCode::count();
+        $totalsour = TreeCode::where('tree_type_id', '1')->count();
+        $totalsweet = TreeCode::where('tree_type_id', '2')->count();
+        $totalsemi_sweet = TreeCode::where('tree_type_id', '3')->count();
         $notifications = auth()->user()->notifications()->latest()->take(5)->get();
         $selectedYear = $year;
         $selectedMonth = $month;
@@ -65,6 +71,7 @@ class DashboardController extends Controller
             'selectedYear',
             'selectedMonth',
             'pendingtree',
+            'totalAnnualSequestrationKg',
         ));
     }
 

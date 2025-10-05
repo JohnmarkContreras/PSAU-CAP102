@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
-use App\PendingGeotag;
-use App\Tree;
+use App\PendingGeotagTree;
+use App\TreeImage;
+use App\TreeCode;
 use App\Notifications\GeotagStatusChanged;
+use Illuminate\Support\Facades\Storage;
 
 class GeotagApprovalService
 {
@@ -12,65 +14,88 @@ class GeotagApprovalService
     {
         $geotag = $this->findPendingGeotag($geotagId);
 
-        $tree = $this->createTreeFromGeotag($geotag);
+        // Prevent duplicate TreeCode (which means duplicate tree)
+        $existingCode = TreeCode::where('code', $geotag->code)->first();
+        if ($existingCode) {
+            $this->markGeotagAsApproved($geotag); // Still mark as approved
+            return TreeImage::find($existingCode->tree_image_id);
+        }
+
+        // Move image from pending folder to tree_images folder if not already there
+        $oldPath = $geotag->image_path;
+        $filename = basename($oldPath);
+        $newPath = 'tree_images/' . $filename;
+
+        if (Storage::disk('public')->exists($oldPath) && $oldPath !== $newPath) {
+            Storage::disk('public')->move($oldPath, $newPath);
+        }
+
+        // Create TreeImage record (no code column here)
+        $treeImage = TreeImage::create([
+            'latitude' => $geotag->latitude,
+            'longitude' => $geotag->longitude,
+            'filename' => $filename,
+            'taken_at' => $geotag->taken_at,
+            'created_by' => auth()->id(),
+        ]);
+
+        // Create TreeCode record (code is here)
+        TreeCode::create([
+            'code' => $geotag->code,
+            'tree_image_id' => $treeImage->id,
+            'tree_type_id' => $geotag->tree_type_id,
+            'created_by' => auth()->id(),
+        ]);
 
         $this->markGeotagAsApproved($geotag);
 
-        $geotag->user->notify(new GeotagStatusChanged('approved', $geotag->id));
+        // Notify user if user_id exists and user relation is set up
+        if ($geotag->user) {
+            $geotag->user->notify(new GeotagStatusChanged('approved', $geotag->id));
+        }
 
-        return $tree;
+        return $treeImage;
     }
-
+    // Reject a geotag with optional reason
     public function rejectGeotag($geotagId, $reason = null)
     {
         $geotag = $this->findPendingGeotag($geotagId);
 
         $this->markGeotagAsRejected($geotag, $reason);
-        
-        $geotag->user->notify(new GeotagStatusChanged('rejected', $geotag->id));
-        
-        return $this->markGeotagAsRejected($geotag, $reason);
+
+
+        // When rejecting
+        if ($geotag->user) {
+            $geotag->user->notify(new GeotagStatusChanged('rejected', $geotag->id, $reason));
+        }
+
+        return $geotag;
     }
 
     private function findPendingGeotag($geotagId)
     {
-        return PendingGeotag::where('id', $geotagId)
+        return PendingGeotagTree::where('id', $geotagId)
                             ->where('status', 'pending')
                             ->firstOrFail();
     }
 
-    private function createTreeFromGeotag(PendingGeotag $geotag)
+    private function markGeotagAsApproved(PendingGeotagTree $geotag)
     {
-        return Tree::create([
-            'code' => $geotag->code,
-            'type' => $geotag->type,
-            'age' => $geotag->age,
-            'height' => $geotag->height,
-            'stem_diameter' => $geotag->stem_diameter,
-            'canopy_diameter' => $geotag->canopy_diameter,
-            'latitude' => $geotag->latitude,
-            'longitude' => $geotag->longitude,
-            'geotag_id' => $geotag->id,
-            'created_by' => auth()->id(),
-        ]);
+        $geotag->status = 'approved';
+        $geotag->updated_at = now();
+        $geotag->processed_at = now();
+        $geotag->processed_by = auth()->id();
+        $geotag->save();
     }
 
-    private function markGeotagAsApproved(PendingGeotag $geotag)
+    private function markGeotagAsRejected(PendingGeotagTree $geotag, $reason = null)
     {
-        return $geotag->update([
-            'status' => 'approved',
-            'processed_at' => now(),
-            'processed_by' => auth()->id(),
-        ]);
-    }
-
-    private function markGeotagAsRejected(PendingGeotag $geotag, $reason = null)
-    {
-        return $geotag->update([
-            'status' => 'rejected',
-            'processed_at' => now(),
-            'processed_by' => auth()->id(),
-            'rejection_reason' => $reason,
-        ]);
+    
+        $geotag->status = 'rejected';
+        $geotag->updated_at = now();
+        $geotag->rejection_reason = $reason;
+        $geotag->processed_at = now();
+        $geotag->processed_by = auth()->id();
+        $geotag->save();
     }
 }

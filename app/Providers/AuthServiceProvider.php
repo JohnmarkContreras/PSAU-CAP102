@@ -4,6 +4,13 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Spatie\Permission\Traits\HasRoles;
+use App\User;
+
+// Define a gate for archiving users
+Gate::define('archive-users', function ($user) {
+    return in_array($user->role, ['admin', 'superadmin']);
+});
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -25,6 +32,9 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        //
+        Gate::define('archive-users', function ($user) {
+            return $user && $user->hasAnyRole(['admin', 'superadmin']);
+        });
     }
+
 }

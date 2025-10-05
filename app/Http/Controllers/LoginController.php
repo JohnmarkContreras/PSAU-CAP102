@@ -21,17 +21,27 @@ class LoginController extends Controller
             'password' => 'required',
         ]);
 
+        // Attempt login
         if (!Auth::attempt($credentials)) {
-            // If request is API (expects JSON), return JSON error
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Invalid credentials'], 401);
             }
 
-            // Otherwise (web), return back with error
             return back()->with('error', 'Invalid credentials');
         }
 
         $user = Auth::user();
+
+        // 🔹 Prevent inactive users from logging in
+        if ($user->status !== 'active') {
+            Auth::logout();
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Your account is inactive. Please contact admin.'], 403);
+            }
+
+            return back()->with('error', 'Your account is inactive. Please contact admin.');
+        }
 
         // 🔹 If API request → return token
         if ($request->expectsJson()) {
@@ -40,11 +50,11 @@ class LoginController extends Controller
             return response()->json([
                 'token' => $token,
                 'user'  => $user,
-                'roles' => $user->getRoleNames(), // returns ["superadmin"], ["admin"], or ["user"]
+                'roles' => $user->getRoleNames(),
             ]);
         }
 
-        // 🔹 Otherwise → web login redirect by role
+        // 🔹 Web login → redirect by role
         if ($user->hasRole('superadmin')) {
             return redirect()->route('superadmin.dashboard');
         } elseif ($user->hasRole('admin')) {
@@ -52,7 +62,6 @@ class LoginController extends Controller
         } elseif ($user->hasRole('user')) {
             return redirect()->route('user.dashboard');
         }
-
 
         // fallback if role not valid
         Auth::logout();

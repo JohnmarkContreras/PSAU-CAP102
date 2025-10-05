@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\PendingGeotag;
-use App\MobileGeotagMetadata;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+use App\Models\TreeImage;
+use App\Models\TreeCode;
+use App\Models\TreesData;
+use Illuminate\Support\Facades\Auth;
 
-class MobileGeotagMetadataController extends Controller
+class MobileGeotagController extends Controller
 {
     public function store(Request $request)
     {
@@ -17,47 +18,52 @@ class MobileGeotagMetadataController extends Controller
             'code' => 'required|string',
             'age' => 'nullable|numeric',
             'height' => 'nullable|numeric',
+            'dbh' => 'nullable|numeric',
             'stem_diameter' => 'nullable|numeric',
             'canopy_diameter' => 'nullable|numeric',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
             'image' => 'required|string', // base64
-            'device_id' => 'nullable|string',
         ]);
 
-        // Decode and store image
+        // 1️⃣ Save image
         $imageData = base64_decode($validated['image']);
         $filename = 'trees/' . Str::uuid() . '.jpg';
         Storage::disk('public')->put($filename, $imageData);
 
-        // Create pending geotag
-        $pending = PendingGeotag::create([
-            'code' => $validated['code'],
-            'age' => $validated['age'] ?? null,
-            'height' => $validated['height'] ?? null,
-            'stem_diameter' => $validated['stem_diameter'] ?? null,
-            'canopy_diameter' => $validated['canopy_diameter'] ?? null,
+        $treeImage = TreeImage::create([
+            'filename' => $filename,
             'latitude' => $validated['latitude'],
             'longitude' => $validated['longitude'],
-            'type' => 'mobile',
-            'user_id' => Auth::id(),
-            'status' => 'pending',
+            'accuracy' => 0, // optional
+            'taken_at' => now(),
+            'source_type' => 'mobile-app',
         ]);
 
-        // Create metadata
-        MobileGeotagMetadata::create([
-            'pending_geotag_id' => $pending->id,
-            'tree_id' => null,
-            'image' => $filename,
-            'device_id' => $validated['device_id'] ?? null,
-            'source' => 'mobile-react',
-            'created_at' => now(),
-            'updated_at' => now(),
+        // 2️⃣ Save tree code
+        $treeCode = TreeCode::create([
+            'tree_type_id' => null, // optional
+            'tree_image_id' => $treeImage->id,
+            'code' => $validated['code'],
+            'created_by' => Auth::id() ?? 0,
+        ]);
+
+        // 3️⃣ Save tree measurements
+        $treeData = TreesData::create([
+            'tree_code_id' => $treeCode->id,
+            'dbh' => $validated['dbh'] ?? null,
+            'height' => $validated['height'] ?? null,
+            'age' => $validated['age'] ?? null,
+            'stem_diameter' => $validated['stem_diameter'] ?? null,
+            'canopy_diameter' => $validated['canopy_diameter'] ?? null,
+            'created_by' => Auth::id() ?? 0,
         ]);
 
         return response()->json([
-            'message' => 'Mobile geotag stored and image decoded',
-            'pending_id' => $pending->id,
+            'message' => 'Geotag saved successfully',
+            'tree_data_id' => $treeData->id,
+            'tree_code_id' => $treeCode->id,
+            'tree_image_id' => $treeImage->id,
             'image_url' => Storage::url($filename),
         ]);
     }

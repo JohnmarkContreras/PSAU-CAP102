@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 use App\Notifications\FeedbackStatusUpdated;
 use Illuminate\Http\Request;
+use App\Notifications\FeedbackSubmitted;
+use Spatie\Permission\Models\Role;
 use App\Feedback;
+use App\User;
 
 class FeedbackController extends Controller
 {
@@ -20,15 +23,24 @@ class FeedbackController extends Controller
             'message' => 'required|string|max:1000',
         ]);
 
-        Feedback::create([
+        // Create the feedback
+        $feedback = Feedback::create([
             'user_id' => auth()->id(),
             'type' => $request->type,
             'rating' => $request->rating,
             'message' => $request->message,
+            'status' => 'pending', // optional: mark new feedback as pending
         ]);
+
+        // Notify all admins & superadmins
+        $admins = User::role(['admin', 'superadmin'])->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new FeedbackSubmitted($feedback));
+        }
 
         return redirect()->back()->with('success', 'Thank you for your feedback!');
     }
+
 
     public function index()
     {

@@ -27,6 +27,7 @@
                             <p class="text-sm text-gray-500">{{ $feedback->created_at->diffForHumans() }}</p>
                             <p class="mt-2"><strong>Type:</strong> {{ $feedback->type }}</p>
                             <p><strong>Rating:</strong> {{ $feedback->rating ?? 'N/A' }}</p>
+                            <p><strong>Message:</strong> {{ $feedback->message ?? 'N/A' }}</p>
 
                             <form action="{{ route('feedback.updateStatus', $feedback) }}" method="POST" class="mt-3 flex items-center space-x-2">
                                 @csrf

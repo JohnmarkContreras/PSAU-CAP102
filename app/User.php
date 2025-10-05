@@ -7,10 +7,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use Laravel\Sanctum\HasApiTokens;
+use App\Traits\ArchivesModel;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, Notifiable;
+    use HasApiTokens, Notifiable, ArchivesModel, HasRoles;
 
     public function syncAccountId()
     {
@@ -21,7 +22,6 @@ class User extends Authenticatable
         }
     }
     
-    use HasRoles;
     /**
      * The attributes that are mass assignable.
      *

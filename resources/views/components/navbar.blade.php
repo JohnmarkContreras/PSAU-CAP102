@@ -37,13 +37,13 @@
 
         {{-- Visible to all roles --}}
         @hasanyrole('user|admin|superadmin')
-            <a href="{{ route('trees.map') }}" 
+            <a href="{{ route('tree-images.index') }}" 
                 class="px-3 py-2 rounded flex items-center gap-3  {{ request()->routeIs('trees.map') ? 'bg-white text-green-800' : 'hover:underline' }}">
                 <i class="fas fa-map-pin text-2xl text-gray-400"></i>
                 Map
             </a>
-            <a href="{{ route('pages.analytics') }}" 
-                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('pages.analytics') ? 'bg-white text-green-800' : 'hover:underline' }}">
+            <a href="{{ route('analytics.carbon') }}" 
+                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('analytics.carbon') ? 'bg-white text-green-800' : 'hover:underline' }}">
                 <i class="fa-solid fa-chart-line text-lg text-gray-400"></i>
                 Analytics
             </a>
@@ -91,8 +91,8 @@
                 <i class="fa-solid fa-list-check text-lg text-gray-400"></i>
                 Activity Log
             </a>
-            <a href="{{ route('geotags.pending') }}" 
-                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('geotags.pending') ? 'bg-white text-green-800' : 'hover:underline' }}">
+            <a href="{{ route('pending-geotags.index') }}" 
+                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('pending-geotags.index') ? 'bg-white text-green-800' : 'hover:underline' }}">
                 <i class="fa-solid fa-hourglass-half text-lg text-gray-400"></i>
                 Pending tags
             </a>
@@ -109,8 +109,8 @@
 
         {{-- User Feedback --}}
         @role('admin')
-            <a href="{{ route('admin.user-table') }}" 
-                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('admin.user-table') ? 'bg-white text-green-800' : 'hover:underline' }}">
+            <a href="{{ route('admin.user_table') }}" 
+                class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('admin.user_table') ? 'bg-white text-green-800' : 'hover:underline' }}">
                 <i class="fa-solid fa-user text-lg text-gray-400"></i>
                 User
             </a>

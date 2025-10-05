@@ -270,7 +270,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center min-h-40 relative">
                         <div class="flex flex-row items-center gap-4 text-black/90">
                             <img src="{{ asset('Carbon_sequestration.png') }}" class="w-20 h-20 p-2 float-left"/>
-                                <p>Carbon sequestration <strong>{{ $totaltrees }}</strong></p>
+                                <h2>Total Carbon Sequestration:</h2><br>
+                                <a href="{{ route('analytics.carbon') }}" class="text-blue-600 hover:underline">
+                                    <strong>{{ $totalAnnualSequestrationKg }}</strong>kg
+                                </a>
                         </div>
                     </div>
                     
@@ -294,7 +297,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center min-h-40">
                         <div class="flex flex-row items-center gap-4 text-black/90">
                             <img src="{{ asset('pending.png') }}" class="w-20 h-25 p-2"/>
-                            <p>Pending Approval: <strong>{{ $pendingtree }}</strong></p>
+                            <p>
+                                Pending Approval: 
+                                <a href="{{ route('pending-geotags.index') }}" class="text-blue-600 hover:underline">
+                                    <strong>{{ $pendingtree }}</strong>
+                                </a>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -320,42 +328,6 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>                    
 
             <br>
-
-            {{-- Harvest-management record --}}
-            {{-- 
-            <div class="space-y-4">
-                <!-- Filters -->
-                <form id="harvestFilterForm" 
-                    class="flex flex-col sm:flex-row flex-wrap gap-3">
-                    
-                    <select name="year" class="border rounded px-3 py-2 w-full sm:w-auto">
-                        <option value="">All Years</option>
-                        @foreach($years as $year)
-                            <option value="{{ $year }}">{{ $year }}</option>
-                        @endforeach
-                    </select>
-
-                    <select name="month" class="border rounded px-3 py-2 w-full sm:w-auto">
-                        <option value="">All Months</option>
-                        @for ($m = 1; $m <= 12; $m++)
-                            <option value="{{ $m }}">{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
-                        @endfor
-                    </select>
-
-                    <button type="submit" 
-                            class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 w-full sm:w-auto">
-                        Apply
-                    </button>
-                </form>
-
-                <!-- Records Table -->
-                <div class="overflow-x-auto">
-                    <div id="harvest-records-container">
-                        @include('partials.harvest-table', ['harvests' => $harvests])
-                    </div>
-                </div>
-            </div> 
-            --}}
         </x-card>
     </section>
 </main>

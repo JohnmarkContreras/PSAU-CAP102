@@ -1,31 +1,18 @@
-import { useState } from 'react';
+import React from 'react';
 import GeotagForm from './components/GeotagForm';
 import PendingList from './components/PendingList';
 import SyncStatus from './components/SyncStatus';
-
+import "./index.css";
 export default function App() {
-  const [tab, setTab] = useState('form');
-
-  const renderTab = () => {
-    switch (tab) {
-      case 'form': return <GeotagForm />;
-      case 'pending': return <PendingList />;
-      case 'status': return <SyncStatus />;
-      default: return <GeotagForm />;
-    }
-  };
-
   return (
-    <div className="flex flex-col h-screen">
-      <div className="flex-grow overflow-y-auto">
-        {renderTab()}
-      </div>
+    <div className="p-4 space-y-6 bg-gray-50 min-h-screen">
+      <h1 className="text-2xl font-bold text-center text-green-700 mb-4">
+        🌳 Tamarind App
+      </h1>
 
-      <nav className="flex justify-around bg-gray-100 border-t p-2">
-        <button onClick={() => setTab('form')} className={`text-sm ${tab === 'form' ? 'font-bold text-blue-600' : ''}`}>🌱 Form</button>
-        <button onClick={() => setTab('pending')} className={`text-sm ${tab === 'pending' ? 'font-bold text-yellow-600' : ''}`}>📋 Pending</button>
-        <button onClick={() => setTab('status')} className={`text-sm ${tab === 'status' ? 'font-bold text-green-600' : ''}`}>📊 Status</button>
-      </nav>
+      <GeotagForm />
+      <PendingList />
+      <SyncStatus />
     </div>
   );
 }
