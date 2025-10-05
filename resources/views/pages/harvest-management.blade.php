@@ -84,10 +84,16 @@
 
                     <div class="space-y-6">
                         <div class="mb-6 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
                             <button id="predict-all-btn"
                                 class="rounded-xl bg-emerald-600 text-white py-2 px-4 hover:bg-emerald-700">
                                 Predict All (SARIMA 4,1,4 or fallback)
                             </button>
+                            <button id="predict-yielding-btn"
+                                class="rounded-xl bg-amber-600 text-white py-2 px-4 hover:bg-amber-700">
+                                Predict Yielding Only
+                            </button>
+                            </div>
                             <span class="text-xs text-gray-600">Season months: {{ config('services.harvest.harvest_months','12,1,2,3') }}</span>
                         </div>
 
@@ -148,25 +154,53 @@
 
                     {{-- Calendar placeholder (per-tree and all-trees will render via JS later) --}}
                     <div id="calendar" class="mt-8 border rounded p-4 bg-white">
-                        <div class="text-sm text-gray-600">Calendar of predicted best harvest dates will appear here.</div>
+                        <div class="text-sm text-gray-700 font-semibold mb-2">Best Harvest Calendar</div>
+                        <div id="calendar-all" class="text-xs text-gray-600 mb-4">All trees</div>
+                        <div id="calendar-per-tree" class="text-xs text-gray-600">Per tree</div>
                     </div>
                 
 
                     <script>
+                        async function runPredict(yieldingOnly = false) {
+                            const url = `{{ route('harvest.predictAll') }}`;
+                            const res = await fetch(url + (yieldingOnly ? '?yielding=1' : ''), {
+                                method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+                            });
+                            return res.json();
+                        }
+
+                        function renderCalendar(data) {
+                            try {
+                                const allEl = document.getElementById('calendar-all');
+                                const perTreeEl = document.getElementById('calendar-per-tree');
+                                const entries = Object.entries(data.results || {});
+                                const allDates = {};
+                                entries.forEach(([code, result]) => {
+                                    if (!result.ok) return;
+                                    const d = result.predicted_date;
+                                    allDates[d] = (allDates[d] || 0) + 1;
+                                });
+                                const allSummary = Object.entries(allDates)
+                                    .sort((a,b)=>a[0].localeCompare(b[0]))
+                                    .map(([d,n])=>`${d}: ${n} tree(s)`) 
+                                    .join(' | ');
+                                allEl.textContent = allSummary || 'No predictions';
+
+                                // Per tree lines
+                                perTreeEl.innerHTML = entries
+                                   .filter(([,r])=>r.ok)
+                                   .map(([code,r])=>`<div>${code}: ${r.predicted_date} (~${r.predicted_quantity} kg)</div>`)
+                                   .join('');
+                            } catch (e) { console.error(e); }
+                        }
+
                         document.getElementById('predict-all-btn').addEventListener('click', async () => {
                             const btn = document.getElementById('predict-all-btn');
                             btn.disabled = true; const old = btn.textContent; btn.textContent = 'Predicting...';
 
                             try {
-                                const res = await fetch(`{{ route('harvest.predictAll') }}`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                        'Accept': 'application/json'
-                                    }
-                                });
-
-                                const data = await res.json();
+                                const data = await runPredict(false);
                                 console.log("Prediction results:", data);
 
                                 if (!data.ok) {
@@ -181,7 +215,7 @@
                                         }
                                     }
                                     alert(summary);
-                                    location.reload();
+                                    renderCalendar(data);
                                 }
                             } catch (e) {
                                 console.error(e);
@@ -189,6 +223,18 @@
                             } finally {
                                 btn.disabled = false; btn.textContent = old;
                             }
+                        });
+
+                        document.getElementById('predict-yielding-btn').addEventListener('click', async () => {
+                            const btn = document.getElementById('predict-yielding-btn');
+                            btn.disabled = true; const old = btn.textContent; btn.textContent = 'Predicting...';
+                            try {
+                                const data = await runPredict(true);
+                                if (!data.ok) { alert('Prediction failed.'); return; }
+                                renderCalendar(data);
+                                alert('Predicted yielding trees only.');
+                            } catch (e) { console.error(e); alert('Prediction error'); }
+                            finally { btn.disabled = false; btn.textContent = old; }
                         });
                     </script>
                 </x-card>

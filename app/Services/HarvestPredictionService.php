@@ -16,17 +16,24 @@ class HarvestPredictionService
     private const MIN_HEIGHT_M = 2.0;
     private const TIMEOUT_SECONDS = 60;
 
-    public function predictAllTrees()
+    public function predictAllTrees(bool $yieldingOnly = false)
     {
         $codes = TreeCode::orderBy('code')->get();
         $results = [];
 
         foreach ($codes as $tc) {
             $code = $tc->code;
-            // Skip trees without sufficient DBH/Height if data available via latest TreeData
-            if (! $this->meetsSizeThresholdByCode($code)) {
-                $results[$code] = $this->errorResult($code, 'Tree below DBH/Height thresholds');
-                continue;
+            // Skip trees based on requested policy
+            if ($yieldingOnly) {
+                if (! $this->isYieldingByCode($code)) {
+                    $results[$code] = $this->errorResult($code, 'Not yielding (below DBH/Height thresholds)');
+                    continue;
+                }
+            } else {
+                if (! $this->meetsSizeThresholdByCode($code)) {
+                    $results[$code] = $this->errorResult($code, 'Tree below DBH/Height thresholds');
+                    continue;
+                }
             }
 
             $results[$code] = $this->predictForCode($code);
@@ -174,6 +181,26 @@ class HarvestPredictionService
             return true;
         }
 
+        $minDbh = (float) config('services.harvest.min_dbh_cm', self::MIN_DBH_CM);
+        $minHeight = (float) config('services.harvest.min_height_m', self::MIN_HEIGHT_M);
+        return $dbhCm >= $minDbh && $heightM >= $minHeight;
+    }
+
+    private function isYieldingByCode(string $code): bool
+    {
+        $treeData = \App\TreeData::whereHas('treeCode', function ($q) use ($code) {
+            $q->where('code', $code);
+        })->latest('id')->first();
+
+        if (! $treeData) {
+            return false;
+        }
+
+        $dbhCm = is_null($treeData->dbh) ? null : (float) $treeData->dbh;
+        $heightM = is_null($treeData->height) ? null : (float) $treeData->height;
+        if ($dbhCm === null || $heightM === null) {
+            return false;
+        }
         $minDbh = (float) config('services.harvest.min_dbh_cm', self::MIN_DBH_CM);
         $minHeight = (float) config('services.harvest.min_height_m', self::MIN_HEIGHT_M);
         return $dbhCm >= $minDbh && $heightM >= $minHeight;
