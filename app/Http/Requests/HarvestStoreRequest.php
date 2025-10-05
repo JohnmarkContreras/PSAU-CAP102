@@ -14,7 +14,17 @@ class HarvestStoreRequest extends FormRequest
     public function rules()
     {
         return [
-            'code' => 'required|exists:trees,code',
+            // Accept codes from tree_code table (case-insensitive)
+            'code' => [
+                'required',
+                function ($attribute, $value, $fail) {
+                    $normalized = trim((string) $value);
+                    $exists = \App\TreeCode::whereRaw('LOWER(code) = ?', [mb_strtolower($normalized)])->exists();
+                    if (! $exists) {
+                        $fail('The selected tree code is invalid.');
+                    }
+                },
+            ],
             'harvest_date' => 'required|date',
             'harvest_weight_kg' => 'required|numeric|min:0',
             'quality' => 'nullable|string|max:50',
