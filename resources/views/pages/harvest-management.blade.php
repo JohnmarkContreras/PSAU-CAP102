@@ -189,9 +189,9 @@
 
                                 // Per tree lines
                                 perTreeEl.innerHTML = entries
-                                   .filter(([,r])=>r.ok)
-                                   .map(([code,r])=>`<div>${code}: ${r.predicted_date} (~${r.predicted_quantity} kg)</div>`)
-                                   .join('');
+                                    .filter(([,r])=>r.ok)
+                                    .map(([code,r])=>`<div>${code}: ${r.predicted_date} (~${r.predicted_quantity} kg)</div>`)
+                                    .join('');
                             } catch (e) { console.error(e); }
                         }
 
