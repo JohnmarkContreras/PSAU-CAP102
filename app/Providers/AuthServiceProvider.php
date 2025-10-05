@@ -7,11 +7,6 @@ use Illuminate\Support\Facades\Gate;
 use Spatie\Permission\Traits\HasRoles;
 use App\User;
 
-// Define a gate for archiving users
-Gate::define('archive-users', function ($user) {
-    return in_array($user->role, ['admin', 'superadmin']);
-});
-
 class AuthServiceProvider extends ServiceProvider
 {
     /**
