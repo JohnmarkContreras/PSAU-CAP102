@@ -30,11 +30,11 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    // SMS via Vonage (Nexmo)
-    'nexmo' => [
-        'key' => env('VONAGE_KEY'),
-        'secret' => env('VONAGE_SECRET'),
-        'sms_from' => env('VONAGE_SMS_FROM'),
+    // SMS via Twilio
+    'twilio' => [
+        'sid' => env('TWILIO_SID'),
+        'token' => env('TWILIO_TOKEN'),
+        'from' => env('TWILIO_FROM'),
     ],
 
     // Harvest prediction thresholds and model defaults
