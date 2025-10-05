@@ -47,14 +47,23 @@ class HarvestPredictionService
         try {
             $harvests = $this->getCombinedHarvests($code);
 
-            if (count($harvests) < self::MIN_RECORDS_REQUIRED) {
+            // Require at least 6 distinct months of data
+            $monthKeys = [];
+            foreach ($harvests as $h) {
+                if (!empty($h['harvest_date'])) {
+                    $monthKeys[date('Y-m', strtotime($h['harvest_date']))] = true;
+                }
+            }
+            $distinctMonths = count($monthKeys);
+
+            if ($distinctMonths < self::MIN_RECORDS_REQUIRED) {
                 // Fallback: estimate from DBH & Height when history is insufficient
                 $estimate = $this->estimateYieldFromMorphologyByCode($code);
                 if ($estimate) {
                     $saved = $this->savePrediction($code, $estimate);
                     return $this->successResult($code, $saved);
                 }
-                return $this->errorResult($code, 'Need at least 6 records to forecast.');
+                return $this->errorResult($code, 'Need at least 6 months of records to forecast.');
             }
 
             $csvPath = $this->generateCsvFileForCode($code, $harvests);
@@ -150,19 +159,11 @@ class HarvestPredictionService
             $rows = array_merge($rows, $this->parseHarvestsJson($td->harvests));
         }
 
-        // Deduplicate by date (sum weights per month-day)
-        $byDate = [];
-        foreach ($rows as $row) {
-            $d = date('Y-m-d', strtotime($row['harvest_date']));
-            $byDate[$d] = ($byDate[$d] ?? 0.0) + (float) $row['harvest_weight_kg'];
-        }
-        ksort($byDate);
-
-        $out = [];
-        foreach ($byDate as $d => $kg) {
-            $out[] = ['harvest_date' => $d, 'harvest_weight_kg' => round((float) $kg, 3)];
-        }
-        return $out;
+        // Sort by date and return raw rows (Python groups by month)
+        usort($rows, function ($a, $b) {
+            return strcmp($a['harvest_date'], $b['harvest_date']);
+        });
+        return $rows;
     }
 
     private function codeVariants(string $code): array
