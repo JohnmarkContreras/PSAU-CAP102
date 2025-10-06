@@ -8,6 +8,7 @@ use App\HarvestPrediction;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
+use App\Notifications\HarvestPredictionNotification;
 
 class HarvestPredictionService
 {
@@ -260,6 +261,7 @@ class HarvestPredictionService
             '--order', $order, 
             '--seasonal', $seasonal,
             '--harvest_months', $months,
+            '--mode', 'annual',
         ]);
 
         $process->setTimeout(self::TIMEOUT_SECONDS);
@@ -281,10 +283,20 @@ class HarvestPredictionService
 
     private function savePrediction($treeCode, $prediction)
     {
-        return HarvestPrediction::updateOrCreate(
+        $prediction = HarvestPrediction::updateOrCreate(
             ['code' => $treeCode, 'predicted_date' => $prediction['predicted_date']],
             ['predicted_quantity' => $prediction['predicted_quantity']]
         );
+    // Get the user associated with this prediction
+    $user = auth()->user();
+
+    if ($user) {
+        // Send Laravel Notification (email + SMS + database)
+        $user->notify(new HarvestPredictionNotification($harvestPrediction));
+    }
+
+    // Just return the model (the controller can handle redirect or response)
+    return $harvestPrediction;
     }
 
     private function successResult($code, $prediction)

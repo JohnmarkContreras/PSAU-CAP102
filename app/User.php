@@ -54,4 +54,10 @@ class User extends Authenticatable
     {
         return $this->phone ?? null;
     }
+    // Relation with Notification model
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
 }

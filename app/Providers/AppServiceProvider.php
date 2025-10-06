@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Notifications\ChannelManager;
+use App\Notifications\Channels\TwilioChannel;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +26,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-
+        app(ChannelManager::class)->extend('twilio', function ($app) {
+            return new TwilioChannel();
+        });
     }
 }

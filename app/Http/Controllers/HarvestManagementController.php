@@ -12,6 +12,9 @@ use App\Http\Requests\HarvestImportRequest;
 use App\Services\HarvestPredictionService;
 use App\Services\HarvestImportService;
 use App\Services\GeotagNotificationService;
+use App\Services\NotificationService;
+use Carbon\Carbon;
+use App\Reminder;
 
 class HarvestManagementController extends Controller
 {
@@ -156,5 +159,18 @@ class HarvestManagementController extends Controller
             ];
         }
         return $rows;
+    }
+
+    // Send due reminders (called via scheduled command)
+    public function sendDueReminders(NotificationService $service)
+    {
+        $dueReminders = Reminder::where('due_date', '<=', Carbon::now())
+                                ->where('notified', false)
+                                ->get();
+
+        foreach ($dueReminders as $reminder) {
+            $service->sendReminder($reminder);
+            $reminder->update(['notified' => true]);
+        }
     }
 }

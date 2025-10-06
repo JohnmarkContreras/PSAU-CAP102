@@ -26,131 +26,203 @@
                     </form>
 
                     {{-- Manual Entry --}}
-                    <form action="{{ route('harvest.store') }}" method="POST" class="mb-8 grid grid-cols-1 md:grid-cols-5 gap-3">
-                        @csrf
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Tree</label>
-                            <select name="code" class="w-full border rounded-lg p-2">
-                                @foreach($codes as $tc)
-                                    <option value="{{ $tc->code }}">{{ $tc->code }}</option>
-                                @endforeach
-                            </select>
-                            @error('code') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Harvest Date</label>
-                            <input type="date" name="harvest_date" class="w-full border rounded-lg p-2" required>
-                            @error('harvest_date') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Weight (kg)</label>
-                            <input type="number" step="0.01" name="harvest_weight_kg" class="w-full border rounded-lg p-2" required>
-                            @error('harvest_weight_kg') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Quality</label>
-                            <input type="text" name="quality" placeholder="A/B/C" class="w-full border rounded-lg p-2">
-                        </div>
-                        <div class="md:col-span-1 flex items-end">
-                            <button class="w-full rounded-xl bg-blue-600 text-white py-2 px-4 hover:bg-blue-700">Add Harvest</button>
-                        </div>
-                        <div class="md:col-span-5">
-                            <label class="block text-sm font-medium mb-1">Notes</label>
-                            <textarea name="notes" class="w-full border rounded-lg p-2" rows="2"></textarea>
-                        </div>
-                    </form>
+<div class="bg-white shadow-md rounded-2xl p-6 mb-8 border border-gray-200">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11V5a1 1 0 10-2 0v2H7a1 1 0 000 2h2v2a1 1 0 102 0V9h2a1 1 0 100-2h-2z" clip-rule="evenodd" />
+        </svg>
+        Add Harvest Record
+    </h2>
 
-                    {{-- Search / Filters --}}
-                    <form method="get" class="mb-4 grid grid-cols-1 md:grid-cols-6 gap-2">
-                        <input type="text" name="q" value="{{ $q ?? '' }}" placeholder="Search code..." class="border rounded px-3 py-2 md:col-span-2">
-                        <select name="sort" class="border rounded px-3 py-2">
-                            <option value="code" {{ ($sort ?? '')==='code' ? 'selected' : '' }}>Sort by Code</option>
-                            <option value="dbh" {{ ($sort ?? '')==='dbh' ? 'selected' : '' }}>Sort by DBH</option>
-                            <option value="height" {{ ($sort ?? '')==='height' ? 'selected' : '' }}>Sort by Height</option>
-                            <option value="records" {{ ($sort ?? '')==='records' ? 'selected' : '' }}>Sort by Records</option>
-                        </select>
-                        <select name="dir" class="border rounded px-3 py-2">
-                            <option value="asc" {{ ($dir ?? '')==='asc' ? 'selected' : '' }}>Asc</option>
-                            <option value="desc" {{ ($dir ?? '')==='desc' ? 'selected' : '' }}>Desc</option>
-                        </select>
-                        <label class="inline-flex items-center gap-2"><input type="checkbox" name="yielding" value="1" {{ request('yielding') ? 'checked' : '' }}> Yielding only (≥ {{ $minDbh }}cm & ≥ {{ $minHeight }}m)</label>
-                        <label class="inline-flex items-center gap-2"><input type="checkbox" name="has_records" value="1" {{ request('has_records') ? 'checked' : '' }}> With records only</label>
-                        <div>
-                            <button class="rounded-lg bg-emerald-600 text-white py-2 px-4">Apply</button>
-                        </div>
-                    </form>
+                        <form action="{{ route('harvest.store') }}" method="POST" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            @csrf
 
-                    {{-- Trees + Predictions + Past Harvests --}}
-
-                    <div class="space-y-6">
-                        <div class="mb-6 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                            <button id="predict-all-btn"
-                                class="rounded-xl bg-emerald-600 text-white py-2 px-4 hover:bg-emerald-700">
-                                Predict All (SARIMA 4,1,4 or fallback)
-                            </button>
-                            <button id="predict-yielding-btn"
-                                class="rounded-xl bg-amber-600 text-white py-2 px-4 hover:bg-amber-700">
-                                Predict Yielding Only
-                            </button>
+                            <!-- Tree Code -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Tree Code</label>
+                                <select name="code" class="w-full border-gray-300 focus:ring-green-500 focus:border-green-500 rounded-lg p-2">
+                                    <option value="">Select tree...</option>
+                                    @foreach($codes as $tc)
+                                        <option value="{{ $tc->code }}">{{ $tc->code }}</option>
+                                    @endforeach
+                                </select>
+                                @error('code') 
+                                    <p class="text-xs text-red-600 mt-1">{{ $message }}</p> 
+                                @enderror
                             </div>
-                            <span class="text-xs text-gray-600">Season months: {{ config('services.harvest.harvest_months','12,1,2,3') }}</span>
-                        </div>
 
-                        @foreach ($codes as $tc)
-                            <div class="rounded-2xl border p-4">
-                                
-                                <div class="flex items-center justify-between mb-3">
-                                    
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-gray-800">
-                                            Code <span class="font-mono">{{ $tc->code }}</span>
-                                            @if($tc->is_yielding)
-                                                <span class="ml-2 text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">Yielding</span>
+                            <!-- Harvest Date -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Harvest Date</label>
+                                <input type="date" name="harvest_date" class="w-full border-gray-300 focus:ring-green-500 focus:border-green-500 rounded-lg p-2" required>
+                                @error('harvest_date') 
+                                    <p class="text-xs text-red-600 mt-1">{{ $message }}</p> 
+                                @enderror
+                            </div>
+
+                            <!-- Harvest Weight -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Weight (kg)</label>
+                                <input type="number" step="0.5" name="harvest_weight_kg" placeholder="e.g. 12.5" class="w-full border-gray-300 focus:ring-green-500 focus:border-green-500 rounded-lg p-2" required>
+                                @error('harvest_weight_kg') 
+                                    <p class="text-xs text-red-600 mt-1">{{ $message }}</p> 
+                                @enderror
+                            </div>
+
+                            <!-- Quality -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Quality</label>
+                                <input type="text" name="quality" placeholder="A / B / C" class="w-full border-gray-300 focus:ring-green-500 focus:border-green-500 rounded-lg p-2">
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="col-span-1 flex items-end">
+                                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-all">
+                                    Add Harvest
+                                </button>
+                            </div>
+
+                            <!-- Notes -->
+                            <div class="md:col-span-5">
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Notes</label>
+                                <textarea name="notes" rows="2" placeholder="Optional notes..." class="w-full border-gray-300 focus:ring-green-500 focus:border-green-500 rounded-lg p-2"></textarea>
+                            </div>
+                        </form>
+                    </div>
+
+
+                    {{--Search / Filters --}}
+                        <form method="get" class="mb-6 bg-white shadow-sm border border-gray-200 rounded-2xl p-4">
+                            <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Search Tree Code</label>
+                                    <input type="text" name="q" value="{{ $q ?? '' }}" placeholder="Enter tree code..."
+                                        class="w-full border-gray-300 rounded-lg px-3 py-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                                    <select name="sort"
+                                        class="w-full border-gray-300 rounded-lg px-3 py-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                        <option value="code" {{ ($sort ?? '')==='code' ? 'selected' : '' }}>Tree Code</option>
+                                        <option value="dbh" {{ ($sort ?? '')==='dbh' ? 'selected' : '' }}>DBH</option>
+                                        <option value="height" {{ ($sort ?? '')==='height' ? 'selected' : '' }}>Height</option>
+                                        <option value="records" {{ ($sort ?? '')==='records' ? 'selected' : '' }}>Records</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Direction</label>
+                                    <select name="dir"
+                                        class="w-full border-gray-300 rounded-lg px-3 py-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                        <option value="asc" {{ ($dir ?? '')==='asc' ? 'selected' : '' }}>Ascending</option>
+                                        <option value="desc" {{ ($dir ?? '')==='desc' ? 'selected' : '' }}>Descending</option>
+                                    </select>
+                                </div>
+
+                                <div class="flex flex-col md:col-span-2 gap-1">
+                                    <label class="inline-flex items-center text-sm text-gray-700">
+                                        <input type="checkbox" name="yielding" value="1" {{ request('yielding') ? 'checked' : '' }}
+                                            class="rounded text-emerald-600 border-gray-300 mr-2">
+                                        Yielding only (≥ {{ $minDbh }}cm & ≥ {{ $minHeight }}m)
+                                    </label>
+                                    <label class="inline-flex items-center text-sm text-gray-700">
+                                        <input type="checkbox" name="has_records" value="1" {{ request('has_records') ? 'checked' : '' }}
+                                            class="rounded text-emerald-600 border-gray-300 mr-2">
+                                        With records only
+                                    </label>
+                                </div>
+
+                                <div>
+                                    <button
+                                        class="w-full rounded-lg bg-emerald-600 text-white py-2 px-4 hover:bg-emerald-700 transition-colors">
+                                        Apply Filters
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        {{-- 🌴 Trees + Predictions + Past Harvests --}}
+                        <div class="space-y-6">
+                            <div class="mb-6 flex flex-col md:flex-row items-center justify-between gap-3">
+                                <div class="flex flex-wrap gap-2">
+                                    <button id="predict-all-btn"
+                                        class="rounded-xl bg-emerald-600 text-white py-2 px-4 hover:bg-emerald-700 shadow-sm transition">
+                                        Predict All (SARIMA 4,1,4 or fallback)
+                                    </button>
+                                    <button id="predict-yielding-btn"
+                                        class="rounded-xl bg-emerald-600 text-white py-2 px-4 hover:bg-amber-700 shadow-sm transition">
+                                        Predict Yielding Only
+                                    </button>
+                                </div>
+                                <span class="text-xs text-gray-500">
+                                    Season months: {{ config('services.harvest.harvest_months','12,1,2,3') }}
+                                </span>
+                            </div>
+
+                            @foreach ($codes as $tc)
+                                <div class="rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition p-5">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-gray-800">
+                                                Tree Code: <span class="font-mono text-emerald-700">{{ $tc->code }}</span>
+                                                @if($tc->is_yielding)
+                                                    <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Yielding</span>
+                                                @endif
+                                            </h3>
+
+                                            @if($tc->latestPrediction)
+                                                <p class="text-sm text-gray-600 mt-1">
+                                                    Predicted next harvest:
+                                                    <span class="font-medium text-gray-800">
+                                                        {{ \Carbon\Carbon::parse($tc->latestPrediction->predicted_date)->toFormattedDateString() }}
+                                                    </span>
+                                                    — approx. <span class="font-medium">{{ number_format($tc->latestPrediction->predicted_quantity, 2) }}</span> kg
+                                                </p>
+                                            @else
+                                                <p class="text-sm text-gray-500 mt-1">No prediction yet.</p>
                                             @endif
-                                        </h3>
-                                        @if($tc->latestPrediction)
-                                            <p class="text-sm text-gray-600">
-                                                Predicted next harvest:
-                                                <span class="font-medium">
-                                                    {{ \Carbon\Carbon::parse($tc->latestPrediction->predicted_date)->toFormattedDateString() }}
-                                                </span>
-                                                — ~ <span class="font-medium">{{ number_format($tc->latestPrediction->predicted_quantity, 2) }}</span> kg
-                                            </p>
-                                        @else
-                                            <p class="text-sm text-gray-500">No prediction yet.</p>
-                                        @endif
+                                        </div>
+                                    </div>
+
+                                    <div class="overflow-x-auto border rounded-lg">
+                                        <table class="w-full text-sm text-left text-gray-700">
+                                            <thead class="bg-gray-50">
+                                                <tr class="text-gray-700 font-semibold">
+                                                    <th class="px-4 py-2">Date</th>
+                                                    <th class="px-4 py-2">Weight (kg)</th>
+                                                    <th class="px-4 py-2">Quality</th>
+                                                    <th class="px-4 py-2">Notes</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y">
+                                                @php
+                                                    $hs = \App\Harvest::where('code', $tc->code)
+                                                        ->orderBy('harvest_date', 'desc')
+                                                        ->take(10)
+                                                        ->get();
+                                                @endphp
+                                                @forelse ($hs as $h)
+                                                    <tr class="hover:bg-gray-50 transition">
+                                                        <td class="px-4 py-2">{{ \Carbon\Carbon::parse($h->harvest_date)->toFormattedDateString() }}</td>
+                                                        <td class="px-4 py-2">{{ number_format($h->harvest_weight_kg, 2) }}</td>
+                                                        <td class="px-4 py-2">{{ $h->quality ?? '—' }}</td>
+                                                        <td class="px-4 py-2">{{ $h->notes ?? '—' }}</td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="4" class="px-4 py-3 text-center text-gray-500 italic">
+                                                            No harvest records yet.
+                                                        </td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
+                            @endforeach
+                        </div>
 
-                                <div class="overflow-x-auto">
-                                    <table class="w-full text-sm text-left text-gray-700 border rounded-lg">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-4 py-2">Date</th>
-                                                <th class="px-4 py-2">Weight (kg)</th>
-                                                <th class="px-4 py-2">Quality</th>
-                                                <th class="px-4 py-2">Notes</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y">
-                                            @php $hs = \App\Harvest::where('code',$tc->code)->orderBy('harvest_date','desc')->take(10)->get(); @endphp
-                                            @forelse ($hs as $h)
-                                                <tr class="hover:bg-gray-50">
-                                                    <td class="px-4 py-2">{{ \Carbon\Carbon::parse($h->harvest_date)->toFormattedDateString() }}</td>
-                                                    <td class="px-4 py-2">{{ number_format($h->harvest_weight_kg, 2) }}</td>
-                                                    <td class="px-4 py-2">{{ $h->quality ?? '—' }}</td>
-                                                    <td class="px-4 py-2">{{ $h->notes ?? '—' }}</td>
-                                                </tr>
-                                            @empty
-                                                <tr><td colspan="4" class="px-4 py-3 text-center text-gray-500">No harvest records.</td></tr>
-                                            @endforelse
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
 
                     {{-- Calendar placeholder (per-tree and all-trees will render via JS later) --}}
                     <div id="calendar" class="mt-8 border rounded p-4 bg-white">

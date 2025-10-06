@@ -66,7 +66,7 @@ Route::group(['middleware' => ['auth', 'role:user']], function () {
     // Route::get('/tree_measurements/create', 'TreeMeasurementController@create')->name('tree_measurements.create');
     // Route::post('/tree_measurements', 'TreeMeasurementController@store')->name('tree_measurements.store');
     // Carbon Records
-    Route::resource('tree_data', 'TreeDataController')->only(['index','create','store','show']);
+    Route::resource('tree_data', 'TreeDataController')->only(['create','store','show']);
     Route::get('tree_data/carbon', 'TreeDataController@carbon')->name('tree_data.carbon');
     // compute and save for a single tree_data row
     Route::post('tree_data/{treeData}/compute-carbon', 'TreeDataController@computeCarbon')->name('tree_data.compute-carbon');
