@@ -5,6 +5,8 @@ namespace App\Services;
 use App\TreeCode;
 use App\Harvest;
 use App\HarvestPrediction;
+use App\User;
+use App\Notifications\HarvestReminder;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
@@ -66,6 +68,7 @@ class HarvestPredictionService
                 $estimate = $this->estimateYieldFromMorphologyByCode($code);
                 if ($estimate) {
                     $saved = $this->savePrediction($code, $estimate);
+                    $this->notifyPrediction($saved);
                     return $this->successResult($code, $saved);
                 }
                 return $this->errorResult($code, 'Need ≥6 records (points/months/years) to forecast.');
@@ -79,6 +82,7 @@ class HarvestPredictionService
             }
 
             $savedPrediction = $this->savePrediction($code, $prediction);
+            $this->notifyPrediction($savedPrediction);
 
             return $this->successResult($code, $savedPrediction);
 
@@ -316,6 +320,21 @@ class HarvestPredictionService
             'ok' => false,
             'message' => $message
         ];
+    }
+
+    private function notifyPrediction(HarvestPrediction $prediction): void
+    {
+        try {
+            $recipients = class_exists(\Spatie\Permission\Models\Role::class)
+                ? User::role(['admin','superadmin'])->get()
+                : User::all();
+
+            foreach ($recipients as $user) {
+                $user->notifyNow(new HarvestReminder($prediction));
+            }
+        } catch (\Throwable $e) {
+            // ignore notification errors
+        }
     }
 
     /**
