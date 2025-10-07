@@ -1,5 +1,5 @@
 @extends('layouts.app')
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    {{-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> --}}
 
 @section('content')
     <section class="bg-[#e9eee9] rounded-lg p-4 relative">

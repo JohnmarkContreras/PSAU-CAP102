@@ -1,7 +1,7 @@
 @extends('layouts.app') <!-- Inherit the layout -->
 
 @section('title', 'Tamarind tree location')
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    {{-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> --}}
 @section('content')
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script>

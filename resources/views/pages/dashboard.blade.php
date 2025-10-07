@@ -5,7 +5,7 @@
 @section('content')
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    {{-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> --}}
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         const canvas = document.getElementById('treePieChart');
@@ -265,47 +265,50 @@ document.addEventListener('DOMContentLoaded', function () {
     <section class="bg-[#e9eee9] rounded-lg p-4 relative">
         <x-card title="Dashboard">
             <div class="text-sm text-black/90 space-y-0.5">
-                <div class="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-6 w-full relative">
-                    <!-- Image + Label card -->
-                    <div class="bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center min-h-40 relative">
-                        <div class="flex flex-row items-center gap-4 text-black/90">
-                            <img src="{{ asset('Carbon_sequestration.png') }}" class="w-20 h-20 p-2 float-left"/>
-                                <h2>Total Carbon Sequestration:</h2><br>
-                                <a href="{{ route('analytics.carbon') }}" class="text-blue-600 hover:underline">
-                                    <strong>{{ $totalAnnualSequestrationKg }}</strong>kg
-                                </a>
-                        </div>
-                    </div>
-                    
-                    <!-- Image + Label card -->
-                    <div class="bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center min-h-30">
-                        <div class="flex flex-row items-center gap-4 text-black/90">
-                            <img src="{{ asset('tree.png') }}" class="w-20 h-20 p-2"/>
-                            <p>Total Tags <strong>{{ $totaltrees }}</strong></p>
-                        </div>
-                    </div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-6 w-full relative">
+    
+    <!-- Total Carbon Sequestration Card -->
+    <div class="bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center h-40 relative">
+        <div class="flex flex-col md:flex-row items-center gap-4 text-black/90 text-center md:text-left">
+            <img src="{{ asset('Carbon_sequestration.png') }}" class="w-20 h-20 p-2" />
+            <div>
+                <h2 class="font-semibold">Total Carbon Sequestration:</h2>
+                <a href="{{ route('analytics.carbon') }}" class="text-blue-600 hover:underline">
+                    <strong>{{ $totalAnnualSequestrationKg }}</strong> kg
+                </a>
+            </div>
+        </div>
+    </div>
 
-                    <!-- Image + Label card -->
-                    <div class="bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center min-h-40">
-                        <div class="flex flex-row items-center gap-4 text-black/90">
-                            <img src="{{ asset('tree.png') }}" class="w-20 h-20 p-2"/>
-                            <p>Total Tags <strong>{{ $totaltrees }}</strong></p>
-                        </div>
-                    </div>
+    <!-- Total Tags Card -->
+    <div class="bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center h-40">
+        <div class="flex flex-col md:flex-row items-center gap-4 text-black/90 text-center md:text-left">
+            <img src="{{ asset('tree.png') }}" class="w-20 h-20 p-2" />
+            <p>Total Tags <strong>{{ $totaltrees }}</strong></p>
+        </div>
+    </div>
 
-                    <!-- Image + Label card -->
-                    <div class="bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center min-h-40">
-                        <div class="flex flex-row items-center gap-4 text-black/90">
-                            <img src="{{ asset('pending.png') }}" class="w-20 h-25 p-2"/>
-                            <p>
-                                Pending Approval: 
-                                <a href="{{ route('pending-geotags.index') }}" class="text-blue-600 hover:underline">
-                                    <strong>{{ $pendingtree }}</strong>
-                                </a>
-                            </p>
-                        </div>
-                    </div>
-                </div>
+    <!-- (Duplicate Total Tags card kept as in your original) -->
+    <div class="bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center h-40">
+        <div class="flex flex-col md:flex-row items-center gap-4 text-black/90 text-center md:text-left">
+            <img src="{{ asset('tree.png') }}" class="w-20 h-20 p-2" />
+            <p>Total Tags <strong>{{ $totaltrees }}</strong></p>
+        </div>
+    </div>
+
+    <!-- Pending Approval Card -->
+    <div class="bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center h-40">
+        <div class="flex flex-col md:flex-row items-center gap-4 text-black/90 text-center md:text-left">
+            <img src="{{ asset('pending.png') }}" class="w-20 h-25 p-2" />
+            <div>
+                <p>Pending Approval:</p>
+                <a href="{{ route('pending-geotags.index') }}" class="text-blue-600 hover:underline">
+                    <strong>{{ $pendingtree }}</strong>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
             </div>
 
             <div class="grid sm:grid-cols-1 lg:grid-cols-2 md:grid-cols-1 gap-6 px-6 pt-6 w-full">
