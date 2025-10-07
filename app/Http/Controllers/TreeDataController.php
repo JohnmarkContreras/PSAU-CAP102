@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\TreeData;
 use App\TreeCode;
+use App\Harvest;
+use App\TreeType;
 class TreeDataController extends Controller
 {
     
@@ -169,66 +171,146 @@ public function update(Request $request, TreeData $treeData)
         return view('tree_data.sequestered', compact('rows', 'treeCodes'));
     }
 
-    public function analyticsCarbon()
-    {
-        // only rows with computed sequestration
-        $rows = \App\TreeData::with('treeCode')
-            ->whereNotNull('annual_sequestration_kgco2')
-            ->orderBy('tree_code_id')
-            ->orderBy('id')
-            ->get();
+public function analyticsCarbon(Request $request)
+{
+    // === CARBON SEQUESTRATION ===
+    $rows = \App\TreeData::with('treeCode')
+        ->whereNotNull('annual_sequestration_kgco2')
+        ->orderBy('tree_code_id')
+        ->orderBy('id')
+        ->get();
 
-        // build chart data server-side for Blade
-        $chartData = $rows->map(function ($r) {
-            return [
-                'id' => $r->id,
-                'label' => optional($r->treeCode)->code ?? 'ID '.$r->id,
-                'sequestration' => (float) ($r->annual_sequestration_kgco2 ?? 0),
-            ];
+    $chartData = $rows->map(function ($r) {
+        return [
+            'id' => $r->id,
+            'label' => optional($r->treeCode)->code ?? 'ID '.$r->id,
+            'sequestration' => (float) ($r->annual_sequestration_kgco2 ?? 0),
+        ];
+    });
+
+    // === HARVEST ANALYTICS ===
+    $typeFilterRaw = $request->query('type');
+    $minDbh = $request->query('min_dbh');
+    $maxDbh = $request->query('max_dbh');
+    $minHeight = $request->query('min_height');
+    $maxHeight = $request->query('max_height');
+
+    $typeId = null;
+    if ($typeFilterRaw !== null && $typeFilterRaw !== '') {
+        if (is_numeric($typeFilterRaw)) {
+            $typeId = (int) $typeFilterRaw;
+        } else {
+            $tt = \App\TreeType::whereRaw('UPPER(name) = ?', [strtoupper($typeFilterRaw)])->first();
+            if ($tt) $typeId = $tt->id;
+        }
+    }
+
+    $harvests = \App\Harvest::selectRaw('code, SUM(harvest_weight_kg) as total_kg')
+        ->groupBy('code')
+        ->get();
+
+    $harvestCodes = $harvests->pluck('code')
+    ->map(function ($c) {
+        return (string) $c;
+    })
+    ->unique()
+    ->values()
+    ->all();
+
+
+    $treeCodes = \App\TreeCode::whereIn('code', $harvestCodes)
+        ->with(['treeType', 'latestData'])
+        ->get()
+        ->keyBy(function ($item) {
+            return strtoupper($item->code);
         });
 
-        return view('analytics.carbon', ['chartData' => $chartData]);
-    }
+    $harvestData = $harvests->map(function ($h) use ($treeCodes) {
+        $key = strtoupper($h->code);
+        $tree = isset($treeCodes[$key]) ? $treeCodes[$key] : null;
 
-public function getProjectionAnalytics(Request $request)
-{
-    $years = (int) $request->query('years', 10);
-    $growthRate = 0.02; // 2% annual increase assumption
+        $typeName = optional(optional($tree)->treeType)->name;
+        $typeName = $typeName ? strtoupper($typeName) : 'UNKNOWN';
 
-    // Fetch all trees that already have annual sequestration saved
-    $trees = \App\TreeData::whereNotNull('annual_sequestration_kgco2')->get();
+        $latest = optional($tree)->latestData;
+        $dbh = $latest ? ($latest->dbh_cm ?? $latest->dbh ?? null) : null;
+        $height = $latest ? ($latest->height_m ?? $latest->height ?? null) : null;
 
-    $projectionData = [];
-    $total = 0;
-
-    foreach ($trees as $tree) {
-        $baseSequestration = (float) $tree->annual_sequestration_kgco2;
-        $projection = [];
-        $current = $baseSequestration;
-
-        for ($i = 1; $i <= $years; $i++) {
-            // apply growth (e.g., 2% per year)
-            $current = $current * (1 + $growthRate);
-            $projection[] = [
-                'year' => now()->year + $i,
-                'sequestration' => round($current, 2),
-            ];
-        }
-
-        $projectionData[] = [
-            'tree_id' => $tree->id,
-            'base' => $baseSequestration,
-            'projection' => $projection,
+        return [
+            'code' => $tree ? $tree->code : $h->code,
+            'type_id' => $tree ? $tree->tree_type_id : null,
+            'type' => $typeName,
+            'dbh' => $dbh ? (float) $dbh : null,
+            'height' => $height ? (float) $height : null,
+            'total_kg' => round($h->total_kg, 2),
         ];
+    });
 
-        $total += $baseSequestration;
-    }
+    $filtered = $harvestData->filter(function ($item) use ($typeId, $minDbh, $maxDbh, $minHeight, $maxHeight) {
+        if ($typeId && ($item['type_id'] == null || $item['type_id'] != $typeId)) return false;
+        if ($minDbh && $item['dbh'] && $item['dbh'] < $minDbh) return false;
+        if ($maxDbh && $item['dbh'] && $item['dbh'] > $maxDbh) return false;
+        if ($minHeight && $item['height'] && $item['height'] < $minHeight) return false;
+        if ($maxHeight && $item['height'] && $item['height'] > $maxHeight) return false;
+        return true;
+    })->values();
 
-    return response()->json([
-        'years' => range(now()->year + 1, now()->year + $years),
-        'total' => round($total, 2),
-        'data' => $projectionData,
+    $order = [1 => 0, 2 => 1, 3 => 2];
+    $sortedHarvest = $filtered->sortBy(function ($item) use ($order) {
+        return $order[$item['type_id']] ?? 99;
+    })->values();
+
+    // === RETURN TO VIEW ===
+    return view('analytics.carbon', [
+        'chartData' => $chartData,          // ✅ for sequestration chart
+        'harvestData' => $sortedHarvest,    // ✅ for harvest table or analytics
+        'typeFilter' => $typeFilterRaw,
+        'minDbh' => $minDbh,
+        'maxDbh' => $maxDbh,
+        'minHeight' => $minHeight,
+        'maxHeight' => $maxHeight,
     ]);
 }
 
+
+    public function getProjectionAnalytics(Request $request)
+    {
+        $years = (int) $request->query('years', 10);
+        $growthRate = 0.02; // 2% annual increase assumption
+
+        // Fetch all trees that already have annual sequestration saved
+        $trees = \App\TreeData::whereNotNull('annual_sequestration_kgco2')->get();
+
+        $projectionData = [];
+        $total = 0;
+
+        foreach ($trees as $tree) {
+            $baseSequestration = (float) $tree->annual_sequestration_kgco2;
+            $projection = [];
+            $current = $baseSequestration;
+
+            for ($i = 1; $i <= $years; $i++) {
+                // apply growth (e.g., 2% per year)
+                $current = $current * (1 + $growthRate);
+                $projection[] = [
+                    'year' => now()->year + $i,
+                    'sequestration' => round($current, 2),
+                ];
+            }
+
+            $projectionData[] = [
+                'tree_id' => $tree->id,
+                'base' => $baseSequestration,
+                'projection' => $projection,
+            ];
+
+            $total += $baseSequestration;
+        }
+
+        return response()->json([
+            'years' => range(now()->year + 1, now()->year + $years),
+            'total' => round($total, 2),
+            'data' => $projectionData,
+        ]);
+    }
 }

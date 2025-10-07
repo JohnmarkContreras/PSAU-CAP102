@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     {{-- Analytics Chart --}}
-    <section class="bg-[#e9eee9] rounded-lg p-4 relative">
+    <section class="bg-[rgb(233,238,233)] rounded-lg p-4 relative">
         <x-card title="Analytics">
             <div class="text-sm text-black/90 space-y-0.5">
                 <canvas id="myChart"></canvas>

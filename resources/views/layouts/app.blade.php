@@ -13,7 +13,7 @@
 
 <body class="bg-gray-100 text-gray-900 min-h-screen flex">
     <!-- Sidebar (Desktop) -->
-    <aside class="hidden md:flex fixed top-0 left-0 bg-green-800 w-60 h-screen flex-col items-center py-6 text-white z-50">
+    <aside class="hidden md:flex fixed top-0 left-0 bg-emerald-900 w-60 h-screen flex-col items-center py-6 text-white z-50">
         @include('components.navbar')
     </aside>
 

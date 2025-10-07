@@ -20,7 +20,7 @@
                 <div class="flex flex-col w-full max-w-md">
                     <div class="relative">
                         <input type="text" id="treeCode" 
-                            placeholder="Enter Tree Code (e.g., Sl00-00)" 
+                            placeholder="Enter Tree Code (e.g., SOUR101)" 
                             class="border px-3 py-2 rounded text-sm w-full focus:ring focus:ring-green-300"
                             onkeyup="showSuggestions(this.value)">
                         <ul id="suggestions" 
@@ -73,6 +73,12 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/
 attribution: 'Tiles &copy; Esri',
 maxZoom: 19
 }).addTo(map);
+
+//GQIS
+// // Example: same source QGIS might use:
+// L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+//     attribution: '© OpenStreetMap contributors'
+// }).addTo(map);
 
 const clusterGroup = L.markerClusterGroup({
 showCoverageOnHover: false,

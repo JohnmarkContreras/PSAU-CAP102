@@ -18,58 +18,102 @@ class importTreeImages extends Command
         parent::__construct();
     }
 
-public function handle()
-{
-    $files = Storage::files('public/tree_images');
+    public function handle()
+    {
+        $files = Storage::files('public/tree_images');
 
-    foreach ($files as $file) {
-        $path = storage_path('app/' . $file);
-        $exif = @exif_read_data($path);
+        // Define type-to-ID mapping based on your tree_types table
+        $typeMap = [
+            'SOUR' => 1,
+            'SWEET' => 2,
+            'SEMI_SWEET' => 3,
+        ];
 
-        if (!$exif || !isset($exif['GPSLatitude'], $exif['GPSLongitude'])) {
-            $this->warn("Skipping: " . basename($file));
-            continue;
-        }
+        foreach ($files as $file) {
+            $path = storage_path('app/' . $file);
+            $basename = basename($file);
 
-        $latitude = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
-        $longitude = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
-        $accuracy = $exif['GPSDOP'] ?? null;
-        $takenAt  = $exif['DateTimeOriginal'] ?? null;
+            //  Skip if image already imported
+            if (TreeImage::where('filename', $basename)->exists()) {
+                $this->warn("Skipping duplicate image: {$basename}");
+                continue;
+            }
+            $filename = pathinfo($basename, PATHINFO_FILENAME); // e.g., "Semi_sweet (100)"
 
-        // ✅ Create TreeImage first
-        $treeImage = TreeImage::create([
-            'filename'    => basename($file),
-            'latitude'    => $latitude,
-            'longitude'   => $longitude,
-            'accuracy'    => $accuracy,
-            'taken_at'    => $takenAt ? Carbon::createFromFormat('Y:m:d H:i:s', $takenAt) : null,
-            'source_type' => 'imported',
-        ]);
+            //  Match only valid patterns (Sour, Sweet, Semi, or Semi_sweet)
+            if (!preg_match('/^(Sour|Sweet|Semi|Semi_sweet)\s*\(\s*\d+\s*\)$/i', $filename)) {
+                $this->warn("Skipping invalid filename format: {$basename}");
+                continue;
+            }
 
-        // ✅ Extract note/code from ImageDescription
-        $rawDescription = $exif['ImageDescription'] ?? null;
-        $note = null;
+            $exif = @exif_read_data($path);
 
-        if ($rawDescription) {
-            preg_match('/Note:\s*(.+)/', $rawDescription, $matches);
-            $note = $matches[1] ?? null;
-        }
+            if (!$exif || !isset($exif['GPSLatitude'], $exif['GPSLongitude'])) {
+                $this->warn("Skipping (no GPS): {$basename}");
+                continue;
+            }
 
-        if ($note === 'PS') {
-        $note = "N/A"; //null; if you want to skip saving it
-    }
-        // ✅ Save TreeCode if note exists
-        if ($note) {
+            $latitude = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
+            $longitude = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
+            $accuracy = $exif['GPSDOP'] ?? null;
+            $takenAt  = $exif['DateTimeOriginal'] ?? null;
+
+            // Create TreeImage record
+            $treeImage = TreeImage::create([
+                'filename'    => $basename,
+                'latitude'    => $latitude,
+                'longitude'   => $longitude,
+                'accuracy'    => $accuracy,
+                'taken_at'    => $takenAt ? Carbon::createFromFormat('Y:m:d H:i:s', $takenAt) : null,
+                'source_type' => 'imported',
+            ]);
+
+            //Extract type name from filename
+            preg_match('/^(Sour|Sweet|Semi|Semi_sweet)/i', $filename, $typeMatch);
+            $treeType = strtoupper(str_replace(' ', '_', $typeMatch[1] ?? 'UNKNOWN'));
+
+            // Normalize “SEMI” to “SEMI_SWEET”
+            if ($treeType === 'SEMI') {
+                $treeType = 'SEMI_SWEET';
+            }
+
+            // Map to tree_type_id
+            $treeTypeId = $typeMap[$treeType] ?? null;
+            if (!$treeTypeId) {
+                $this->warn("Skipping: Unknown tree type in {$basename}");
+                continue;
+            }
+
+            // Extract numeric part (e.g., 100)
+            preg_match('/\(\s*(\d+)\s*\)/', $filename, $numMatch);
+            $treeNumber = $numMatch[1] ?? null;
+
+            if (!$treeNumber) {
+                $this->warn("Skipping: No number found in {$basename}");
+                continue;
+            }
+
+            // Create full code (e.g., SEMI_SWEET100)
+            $formattedCode = $treeType . $treeNumber;
+
+            // Skip if code already exists
+            if (TreeCode::where('code', $formattedCode)->exists()) {
+                $this->warn("Skipping duplicate code: {$formattedCode}");
+                continue;
+            }
+
+            // Save TreeCode
             TreeCode::create([
                 'tree_image_id' => $treeImage->id,
-                'code'          => $note,
-                'created_by'    => auth()->id(),
+                'tree_type_id'  => $treeTypeId, // <-- use ID instead of string
+                'code'          => $formattedCode,
+                'created_by'    => auth()->id() ?? 1,
             ]);
-        }
 
-        $this->info("Imported: " . basename($file));
+            $this->info("Imported: {$basename} → Type ID: {$treeTypeId}, Code: {$formattedCode}");
+        }
     }
-}
+
     protected function getGps($coord, $hemisphere)
     {
         $degrees = $this->gps2Num($coord[0]);
@@ -88,5 +132,4 @@ public function handle()
         if (count($parts) == 1) return $parts[0];
         return floatval($parts[0]) / floatval($parts[1]);
     }
-
 }

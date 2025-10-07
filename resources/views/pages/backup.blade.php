@@ -1,5 +1,4 @@
 @extends('layouts.app') <!-- Inherit the layout -->
-
 @section('title', 'Farm Data')
 
 @section('content')

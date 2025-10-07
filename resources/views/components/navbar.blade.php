@@ -2,7 +2,7 @@
     use Illuminate\Support\Facades\Auth;
 @endphp
 
-<aside class="bg-green-800 w-48 h-screen flex flex-col items-center py-6 text-white select-none">
+<aside class="bg-emerald-900 w-48 h-screen flex flex-col items-center py-6 text-white select-none">
     <img src="{{ asset('PSAU_Logo.png') }}" 
         alt="Pamanga State Agricultural University official seal logo in green and yellow colors" 
         class="mb-3" width="100" height="100" />

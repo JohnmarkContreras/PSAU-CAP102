@@ -19,9 +19,6 @@
 <main class="flex-1 p-6 space-y-6">
     <section class="bg-[#e9eee9] rounded-lg p-4 relative">
         <x-card title="Capture Tamarind Tree Locations">
-                <div class="flex justify-end">
-                    <button type="button" class="bg-gray-200 text-gray-800 px-4 py-1 mb-4 rounded cursor-pointer" onclick="history.back()">Back</button>
-                </div>
             <div class="flex items-center justify-between mb-4">
                 <div class="w-full bg-white p-6 rounded shadow">
 

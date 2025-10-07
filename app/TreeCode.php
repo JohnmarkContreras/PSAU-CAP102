@@ -61,4 +61,11 @@ class TreeCode extends Model
     {
         return $this->hasOne(HarvestPrediction::class, 'code', 'code')->orderBy('predicted_date', 'desc');
     }
+    // Latest tree data entry
+    public function latestData()
+    {
+        return $this->hasOne(\App\TreeData::class, 'tree_code_id', 'id')
+            ->latest('created_at');
+    }
+
 }

@@ -79,9 +79,11 @@
                             <button class="rounded-lg bg-emerald-600 text-white py-2 px-4">Apply</button>
                         </div>
                     </form>
-
+                </x-card>
+        </section>
+                <section class="bg-[#e9eee9] rounded-lg p-4 relative">
+                    <x-card title="Add Tree Harvests">
                     {{-- Trees + Predictions + Past Harvests --}}
-
                     <div class="space-y-6">
                         <div class="mb-6 flex items-center justify-between">
                             <div class="flex items-center gap-2">
@@ -189,9 +191,9 @@
 
                                 // Per tree lines
                                 perTreeEl.innerHTML = entries
-                                   .filter(([,r])=>r.ok)
-                                   .map(([code,r])=>`<div>${code}: ${r.predicted_date} (~${r.predicted_quantity} kg)</div>`)
-                                   .join('');
+                                    .filter(([,r])=>r.ok)
+                                    .map(([code,r])=>`<div>${code}: ${r.predicted_date} (~${r.predicted_quantity} kg)</div>`)
+                                    .join('');
                             } catch (e) { console.error(e); }
                         }
 
