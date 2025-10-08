@@ -109,10 +109,10 @@ class HarvestPredictionService
         $predictedQty = round($k * $dbh * $dbh * $height, 2);
 
         // Choose upcoming season start month from config
-        $monthsCsv = config('services.harvest.harvest_months', '12,1,2,3');
+        $monthsCsv = config('services.harvest.harvest_months', '1,2,3');
         $harvestMonths = array_values(array_filter(array_map('intval', explode(',', $monthsCsv))));
         if (empty($harvestMonths)) {
-            $harvestMonths = [12,1,2,3];
+            $harvestMonths = [1,2,3];
         }
         sort($harvestMonths);
 
@@ -139,7 +139,7 @@ class HarvestPredictionService
 
     private function getCombinedHarvests(string $code): array
     {
-        // DB harvests (match common Sl/SI code prefix variants case-insensitively)
+        // DB harvests (match common SOUR/SWEET/SEMI_SWEET code prefix variants case-insensitively)
         $variants = $this->codeVariants($code);
         $rows = Harvest::where(function ($q) use ($variants) {
                 foreach ($variants as $v) {
@@ -174,16 +174,35 @@ class HarvestPredictionService
     {
         $code = trim($code);
         $low = mb_strtolower($code);
+        $variants = [$code];
+        
+        // Handle new prefixes: SOUR, SWEET, SEMI_SWEET
+        if (strpos($low, 'sour') === 0) {
+            $rest = mb_substr($code, 4);
+            $variants[] = 'SOUR' . $rest;
+            $variants[] = 'sour' . $rest;
+        } elseif (strpos($low, 'sweet') === 0) {
+            $rest = mb_substr($code, 5);
+            $variants[] = 'SWEET' . $rest;
+            $variants[] = 'sweet' . $rest;
+        } elseif (strpos($low, 'semi_sweet') === 0 || strpos($low, 'semi-sweet') === 0) {
+            $rest = mb_substr($code, 10);
+            $variants[] = 'SEMI_SWEET' . $rest;
+            $variants[] = 'semi_sweet' . $rest;
+            $variants[] = 'SEMI-SWEET' . $rest;
+            $variants[] = 'semi-sweet' . $rest;
+        }
+        
+        // Legacy support for old SL/SI prefixes
         $pfx = mb_substr($low, 0, 2);
         $rest = mb_substr($code, 2);
-        $variants = [$code];
-        // canonicalize to 'Sl' prefix
         if ($pfx === 'si' || $pfx === 'sl') {
             $variants[] = 'Sl' . $rest;
             $variants[] = 'SI' . $rest;
             $variants[] = 'si' . $rest;
             $variants[] = 'sl' . $rest;
         }
+        
         return array_values(array_unique($variants));
     }
 
@@ -253,7 +272,7 @@ class HarvestPredictionService
         $python = env('PYTHON_BIN', 'python');
         $order = config('services.harvest.sarima_order', '4,1,4');
         $seasonal = config('services.harvest.sarima_seasonal', '0,1,0,12');
-        $months = config('services.harvest.harvest_months', '12,1,2,3');
+        $months = config('services.harvest.harvest_months', '1,2,3');
 
         $process = new Process([
             $python, $script, $csvPath, 

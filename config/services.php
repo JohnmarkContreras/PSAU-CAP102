@@ -43,7 +43,7 @@ return [
         'min_height_m' => env('HARVEST_MIN_HEIGHT_M', 2),
         'sarima_order' => env('HARVEST_SARIMA_ORDER', '4,1,4'),
         'sarima_seasonal' => env('HARVEST_SARIMA_SEASONAL', '0,1,0,12'),
-        'harvest_months' => env('HARVEST_MONTHS', '10,11,12'),
+        'harvest_months' => env('HARVEST_MONTHS', '1,2,3'),
     ],
 
 ];

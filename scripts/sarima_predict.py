@@ -12,7 +12,7 @@ parser.add_argument('csv_path')
 parser.add_argument('--order', default='4,1,4')           # p,d,q
 parser.add_argument('--seasonal', default='1,0,0,12')     # P,D,Q,s (yearly seasonality)
 parser.add_argument('--steps', type=int, default=24)      # forecast horizon (months)
-parser.add_argument('--harvest_months', default='12,1,2,3')  # Default Dec–Mar (configurable)
+parser.add_argument('--harvest_months', default='1,2,3')  # Default Jan–Mar (configurable)
 args = parser.parse_args()
 
 order = tuple(map(int, args.order.split(',')))
@@ -47,10 +47,20 @@ series = (df.set_index('harvest_date')['harvest_weight_kg']
             .groupby(pd.Grouper(freq='MS')).sum()
             .reindex(all_months, fill_value=0.0))
 
-# Helper: next season year based on last observed month
+# Helper: determine the appropriate season year for prediction
 last_idx = series.index[-1]
 last_year = last_idx.year
-season_year = last_year if last_idx.month < min(HARVEST_MONTHS) else last_year + 1
+current_month = last_idx.month
+
+# If we're in or past the harvest season, predict for next year's season
+# If we're before the harvest season, predict for this year's season
+if current_month >= min(HARVEST_MONTHS):
+    # We're in or past the harvest season, predict for next year
+    season_year = last_year + 1
+else:
+    # We're before the harvest season, predict for this year
+    season_year = last_year
+
 season_start_ts = pd.Timestamp(season_year, min(HARVEST_MONTHS), 1)
 season_end_ts   = pd.Timestamp(season_year, max(HARVEST_MONTHS), 1) + relativedelta(months=+1, days=-1)
 
@@ -70,7 +80,7 @@ def safe_output(pred_series):
     season_slice = pred_series[(pred_series.index >= season_start_ts) & (pred_series.index <= season_end_ts)]
     season_total = round(float(season_slice.sum()), 2) if not season_slice.empty else 0.0
 
-    # Pick the first non-zero harvest month as the flat keys (fallback to first upcoming Oct if all zero)
+    # Pick the first non-zero harvest month as the flat keys (fallback to first upcoming harvest month if all zero)
     nonzero = season_slice[season_slice > 0]
     if len(nonzero) > 0:
         first_date = nonzero.index[0].date().isoformat()

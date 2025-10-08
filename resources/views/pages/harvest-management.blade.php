@@ -96,7 +96,7 @@
                                 Predict Yielding Only
                             </button>
                             </div>
-                            <span class="text-xs text-gray-600">Season months: {{ config('services.harvest.harvest_months','12,1,2,3') }}</span>
+                            <span class="text-xs text-gray-600">Season months: {{ config('services.harvest.harvest_months','1,2,3') }}</span>
                         </div>
 
                         @foreach ($codes as $tc)
