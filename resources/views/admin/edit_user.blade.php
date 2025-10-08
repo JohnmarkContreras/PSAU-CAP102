@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Accounts')
-<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+{{-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> --}}
 
 @section('content')
 <main class="flex-1 p-6 space-y-6">

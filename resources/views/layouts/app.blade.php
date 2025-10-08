@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@yield('title', 'PSAU Tamarind RDE')</title>
-<link rel="icon" href="https://652bd8247678.ngrok-free.app/PSAU_Logo.png">
+    <link rel="icon" href="/PSAU_Logo.png">
     <link href="{{ mix('css/app.css') }}" rel="stylesheet">
     <script src="{{ mix('js/app.js') }}" defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet" />

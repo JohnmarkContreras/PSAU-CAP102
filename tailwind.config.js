@@ -1,6 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-content: false, // disables purging
+content: [
+    './resources/**/*.blade.php',
+    './resources/**/*.js',
+],
 theme: { extend: {} },
 plugins: [],
 };

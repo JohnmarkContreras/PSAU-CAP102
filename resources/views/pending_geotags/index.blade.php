@@ -1,5 +1,5 @@
 @extends('layouts.app')
-<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+{{-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> --}}
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 @section('content')
 <div x-data="{ showModal: false, modalImg: '' }">
