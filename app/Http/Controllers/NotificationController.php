@@ -13,32 +13,43 @@ public function index(Request $request)
     $filter = $request->get('filter', 'all');
     $user = auth()->user();
 
+    // Start building the query for notifications
+    $query = $user->notifications()->latest();
+
+    // Apply filter conditions
     if ($filter === 'unread') {
-        $notifications = $user->unreadNotifications()->latest()->get();
+        $query = $user->unreadNotifications()->latest();
     } elseif ($filter === 'new') {
-        $notifications = $user->notifications()
+        $query = $user->notifications()
             ->whereDate('created_at', now()->toDateString())
-            ->latest()->get();
-    } else {
-        $notifications = $user->notifications()->latest()->get();
+            ->latest();
     }
+
+    // ✅ Only now, after all filters, paginate
+    $notifications = $query->paginate(10);
 
     // 🔒 Role-based filtering for 'user' role
     if ($user->hasRole('user')) {
-        $notifications = $notifications->filter(function ($notification) {
-            return in_array($notification->type, [
+        $notifications->getCollection()->transform(function ($notification) {
+            if (in_array($notification->type, [
                 'App\Notifications\GeotagStatusChanged',
                 'App\Notifications\FeedbackStatusUpdated',
-            ]);
-        });
+            ])) {
+                return $notification;
+            }
+            return null;
+        })->filter();
     }
 
+    // AJAX partials (for live filtering)
     if ($request->ajax()) {
         return view('partials.notifications', compact('notifications'));
     }
 
+    // Normal full page
     return view('pages.notifications', compact('notifications', 'filter'));
 }
+
 
     
 

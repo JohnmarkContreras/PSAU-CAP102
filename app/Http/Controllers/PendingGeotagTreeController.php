@@ -57,7 +57,7 @@ class PendingGeotagTreeController extends Controller
 
     public function index(Request $request)
     {
-        $pending = PendingGeotagTree::where('status', 'pending')->paginate(7);
+        $pending = PendingGeotagTree::where('status', 'pending')->get();
 
         if ($request->ajax()) {
             return view('partials.table', compact('pending'))->render();

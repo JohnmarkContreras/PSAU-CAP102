@@ -40,7 +40,7 @@ class AdminController extends Controller
 
     public function usertable()
     {
-        $archives = DB::table('user_archives')->orderBy('archived_at', 'desc')->paginate(25);
+        $archives = DB::table('user_archives')->orderBy('archived_at', 'desc')->paginate(10);
         $users = User::where('account_id', '3')->get();
         $role = 'admin';
         return view('admin.user_table', compact('users', 'archives', 'role'));

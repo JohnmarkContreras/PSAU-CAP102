@@ -1,5 +1,5 @@
 <div class="flex flex-col min-h-[600px]">
-    <table class="w-full h-full text-sm text-left border border-gray-200 rounded-lg mt-2">
+    <table id="pendingTable" class="w-full text-xl text-left border border-gray-200 rounded-lg mt-2">
         <thead class="bg-gray-100">
             <tr class="text-center">
                 <th>Image</th>
@@ -53,9 +53,29 @@
         @endforeach
         </tbody>
     </table>
-    @if ($pending->hasPages())
-        <div class="pagination mt-4">
-            {{ $pending->withQueryString()->links('pagination::tailwind') }}
-        </div>
-    @endif
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    $('#pendingTable').DataTable({
+        responsive: true,
+        pageLength: 7,
+        order: [[1, 'asc']], // Sort by Code column initially
+        columnDefs: [
+            { orderable: false, targets: [0, 5, 6] } // Disable sorting for Image & Action buttons
+        ],
+        language: {
+            search: "_INPUT_",
+            searchPlaceholder: "Search trees...",
+            lengthMenu: "Show _MENU_ entries",
+            paginate: {
+                previous: "&laquo;",
+                next: "&raquo;"
+            }
+        },
+        drawCallback: function () {
+            // Style pagination with Tailwind
+            $('.dataTables_paginate a').addClass('px-2 py-1 mx-1 rounded bg-sky-500 text-white hover:bg-sky-600');
+        }
+    });
+});
+</script>

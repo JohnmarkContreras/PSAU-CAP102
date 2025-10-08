@@ -2,7 +2,7 @@
     use Illuminate\Support\Facades\Auth;
 @endphp
 
-<aside class="bg-emerald-900 w-48 h-screen flex flex-col items-center py-6 text-white select-none">
+<aside class="bg-[#003300] w-48 h-screen flex flex-col items-center py-6 text-white select-none">
     <img src="{{ asset('PSAU_Logo.png') }}" 
         alt="Pamanga State Agricultural University official seal logo in green and yellow colors" 
         class="mb-3" width="100" height="100" />
@@ -16,13 +16,13 @@
         @auth
             @if(auth()->user()->hasRole('admin'))
                 <a href="{{ route('admin.dashboard') }}" 
-                    class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('admin.dashboard') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                    class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('admin.dashboard') ? 'bg-[#1F7D53] text-white' : 'hover:underline' }}">
                     <i class="fas fa-grip-horizontal text-lg text-gray-400"></i>
                     Dashboard
                 </a>
             @elseif(auth()->user()->hasRole('superadmin'))
                 <a href="{{ route('superadmin.dashboard') }}" 
-                    class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('superadmin.dashboard') ? 'bg-white text-green-800' : 'hover:underline' }}">
+                    class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('superadmin.dashboard') ? 'bg-[#1F7D53] text-white' : 'hover:underline' }}">
                     <i class="fas fa-grip-horizontal text-lg text-gray-400"></i>
                     Dashboard
                 </a>
@@ -38,8 +38,8 @@
         {{-- Visible to all roles --}}
         @hasanyrole('user|admin|superadmin')
             <a href="{{ route('tree-images.index') }}" 
-                class="px-3 py-2 rounded flex items-center gap-3  {{ request()->routeIs('trees.map') ? 'bg-white text-green-800' : 'hover:underline' }}">
-                <i class="fas fa-map-pin text-2xl text-gray-400"></i>
+                class="px-3 py-2 rounded flex items-center gap-3  {{ request()->routeIs('tree-images.index') ? 'bg-[#1F7D53] text-white' : 'hover:underline' }}">
+                <i class="fas fa-map-pin text-xl text-gray-400"></i>
                 Map
             </a>
             <a href="{{ route('analytics.carbon') }}" 
@@ -88,7 +88,7 @@
             </a>
             <a href="{{ route('pages.activity-log') }}" 
                 class="px-3 py-2 rounded flex items-center gap-3 {{ request()->routeIs('pages.activity-log') ? 'bg-white text-green-800' : 'hover:underline' }}">
-                <i class="fa-solid fa-list-check text-lg text-gray-400"></i>
+                <i class="fa-solid fa-list-check text-md text-gray-400"></i>
                 Activity Log
             </a>
             <a href="{{ route('pending-geotags.index') }}" 

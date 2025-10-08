@@ -188,6 +188,8 @@
     "data-view-buffer": "^1.0.2",
     "data-view-byte-length": "^1.0.2",
     "data-view-byte-offset": "^1.0.1",
+    "datatables.net-dt": "^2.3.4",
+    "datatables.net-responsive": "^3.0.7",
     "debug": "^3.1.0",
     "decamelize": "^1.2.0",
     "decode-uri-component": "^0.2.2",

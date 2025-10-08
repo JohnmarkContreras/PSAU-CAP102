@@ -93,6 +93,30 @@ class HarvestManagementController extends Controller
         // Recent harvests list for sidebar/table
         $harvests = Harvest::latest('harvest_date')->take(50)->get();
 
+            $predictions = \App\HarvestPrediction::select('code', 'predicted_quantity', 'predicted_date')
+            ->orderBy('predicted_date')
+            ->get();
+
+        $grouped = $predictions->groupBy('code')->map(function ($rows) {
+            $latest = $rows->last();
+            return [
+                'ok' => true,
+                'predicted_date' => $latest->predicted_date,
+                'predicted_quantity' => $latest->predicted_quantity,
+            ];
+        });
+
+        // Transform to FullCalendar format
+        $calendarData = $predictions->mapWithKeys(function ($prediction) {
+            return [
+                $prediction->tree_code => [
+                    'predicted_date' => \Carbon\Carbon::parse($prediction->predicted_date)->toDateString(), // ✅ ensures "YYYY-MM-DD"
+                    'predicted_quantity' => $prediction->predicted_quantity,
+                ]
+            ];
+        });
+
+
         return view('pages.harvest-management', [
             'codes' => $codes,
             'harvests' => $harvests,
@@ -101,6 +125,9 @@ class HarvestManagementController extends Controller
             'dir' => $dir,
             'minDbh' => $minDbh,
             'minHeight' => $minHeight,
+            'calendarData' => $grouped, //Pass predictions to Blade
+            'calendarRaw' => $calendarData, //Pass predictions to Blade
+            'yieldingOnly' => $yieldingOnly,
         ]);
     }
 

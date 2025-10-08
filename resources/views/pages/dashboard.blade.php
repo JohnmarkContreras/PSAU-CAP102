@@ -13,7 +13,7 @@
 
         const labels = @json(['Sour', 'Sweet', 'Semi-Sweet']);
         const data = @json([ $totalsour ?? 0, $totalsweet ?? 0, $totalsemi_sweet ?? 0 ]);
-        const colors = ['#f87171', '#34d399', '#fbbf24'];
+        const colors = ['#7BD666', '#EE918C', '#4F302E']; // Green, pink, Brown
 
         const total = data.reduce((a, b) => a + b, 0);
         if (total === 0) {
@@ -98,8 +98,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const d = new Date(iso);
         if (!isNaN(d)) return d;
         // Last resort: try Date.parse
-        const t = Date.parse(String(s));
-        return isNaN(t) ? null : new Date(t);
+        const solid = Date.parse(String(s));
+        return isNaN(solid) ? null : new Date(solid);
     }
 
     // Try multiple possible tree code locations
@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Sort and group then return groups object { treeCode: [records...] }
     function groupAndSort(records) {
-        // clone array so we don't mutate original
+        // clone array so we don'solid mutate original
         const arr = records.slice();
         arr.sort((a, b) => {
             const da = parseDate(a.harvest_date);
@@ -259,80 +259,115 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-
-
 <main id="dashboard-container" class="flex-1 p-6 space-y-6">
     <section class="bg-[#e9eee9] rounded-lg p-4 relative">
         <x-card title="Dashboard">
             <div class="text-sm text-black/90 space-y-0.5">
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-6 w-full relative">
-    
-    <!-- Total Carbon Sequestration Card -->
-    <div class="bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center h-40 relative">
-        <div class="flex flex-col md:flex-row items-center gap-4 text-black/90 text-center md:text-left">
-            <img src="{{ asset('Carbon_sequestration.png') }}" class="w-20 h-20 p-2" />
-            <div>
-                <h2 class="font-semibold">Total Carbon Sequestration:</h2>
-                <a href="{{ route('analytics.carbon') }}" class="text-blue-600 hover:underline">
-                    <strong>{{ $totalAnnualSequestrationKg }}</strong> kg
-                </a>
-            </div>
-        </div>
-    </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-6 w-full relative">
+                    <!-- Total Trees Card -->
+                    <div class="bg-[#1F7D53] text-white rounded-md shadow-md overflow-hidden w-full h-30">
+                        <!-- Main content -->
+                        <div class="p-4 flex flex-col items-center justify-center text-center">
+                            <div class="flex items-center justify-center mb-2">
+                                <div class="text-center">
+                                        <div class="text-2xl font-bold">{{ $totaltrees }}</div>
+                                        <div class="text-sm">Total tags</div>
+                                </div>
+                            </div>
+                        </div>
 
-    <!-- Total Tags Card -->
-    <div class="bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center h-40">
-        <div class="flex flex-col md:flex-row items-center gap-4 text-black/90 text-center md:text-left">
-            <img src="{{ asset('tree.png') }}" class="w-20 h-20 p-2" />
-            <p>Total Tags <strong>{{ $totaltrees }}</strong></p>
-        </div>
-    </div>
-
-    <!-- (Duplicate Total Tags card kept as in your original) -->
-    <div class="bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center h-40">
-        <div class="flex flex-col md:flex-row items-center gap-4 text-black/90 text-center md:text-left">
-            <img src="{{ asset('tree.png') }}" class="w-20 h-20 p-2" />
-            <p>Total Tags <strong>{{ $totaltrees }}</strong></p>
-        </div>
-    </div>
-
-    <!-- Pending Approval Card -->
-    <div class="bg-[#e9eee9] p-6 rounded-xl flex items-center justify-center h-40">
-        <div class="flex flex-col md:flex-row items-center gap-4 text-black/90 text-center md:text-left">
-            <img src="{{ asset('pending.png') }}" class="w-20 h-25 p-2" />
-            <div>
-                <p>Pending Approval:</p>
-                <a href="{{ route('pending-geotags.index') }}" class="text-blue-600 hover:underline">
-                    <strong>{{ $pendingtree }}</strong>
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-            </div>
-
-            <div class="grid sm:grid-cols-1 lg:grid-cols-2 md:grid-cols-1 gap-6 px-6 pt-6 w-full">
-                <div class="flex-1 flex flex-col items-center justify-center gap-8 bg-[#e9eee9] rounded-lg">
-                    <!-- Pie Chart -->
-                    <div class="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 p-2">
-                        <canvas id="treePieChart" class="w-full h-full"></canvas>
+                    <!-- Footer link -->
+                        <a href="{{ route('analytics.carbon') }}" 
+                            class="block bg-white text-black/90 border-solid border-2 border-[#1F7D53] hover:bg-[#003300] hover:text-white text-center py-3 w-full transition duration-200 shadow-inner rounded-b-lg">
+                            <p class="font-semibold tracking-wide">View Details →</p>
+                        </a>
                     </div>
-                    
-                    <!-- Legend -->
-                    <div id="chartLegend" 
-                        class="mt-6 flex flex-wrap justify-center gap-4 text-sm p-4">
+
+                    <!-- Total Pending Card -->
+                        <div class="bg-[#255F38] text-white rounded-md shadow-md overflow-hidden w-full">
+                            <!-- Main content -->
+                            <div class="p-4 flex flex-col items-center justify-center text-center">
+                                <div class="flex items-center justify-center mb-2">
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold">{{ $pendingtree }}</div>
+                                        <div class="text-sm">Pending Approval</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        <!-- Footer link -->
+                            <a href="{{ route('pending-geotags.index') }}" 
+                                class="block bg-white text-black/90 border-solid border-2 border-[#255F38] hover:bg-[#003300] hover:text-white text-center py-3 w-full transition duration-200 shadow-inner rounded-b-lg">
+                                <p class="font-semibold tracking-wide">View Details →</p>
+                            </a>
+                        </div>
+
+                    <!-- Total Predicted Card -->
+                    <div class="bg-[#04471C] text-white rounded-md shadow-md overflow-hidden w-full">
+                        <!-- Main content -->
+                        <div class="p-4 flex flex-col items-center justify-center text-center">
+                            <div class="flex items-center justify-center mb-2">
+                                <div class="text-center">
+                                        <div class="text-2xl font-bold">{{ number_format($totalPredicted, 2) }} kg</div>
+                                        <div class="text-sm">Total Predicted Harvest</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer link -->
+                            <a href="{{ route('analytics.carbon') }}" 
+                                class="block bg-white text-black/90 border-solid border-2 border-[#04471C] hover:bg-[#003300] hover:text-white text-center py-3 w-full transition duration-200 shadow-inner rounded-b-lg">
+                                <p class="font-semibold tracking-wide">View Details →</p>
+                            </a>
+                        </div>
+
+                    <!-- Total Carbon Sequestration Card -->
+                        <div class="bg-[#0c2d1c] text-white rounded-md shadow-md overflow-hidden w-full">
+                            <!-- Main content -->
+                            <div class="p-4 flex flex-col items-center justify-center text-center">
+                                <div class="flex items-center justify-center mb-2">
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold">{{ $totalAnnualSequestrationKg }}kg co2</div>
+                                        <div class="text-sm">Total Carbon Sequestration</div>
+                                    </div>
+                                </div>
+                            </div>
+                    <!-- Footer link -->
+                        <a href="{{ route('analytics.carbon') }}" 
+                            class="block bg-white text-black/90 border-solid border-2 border-[#0c2d1c] hover:bg-[#003300] hover:text-white text-center py-3 w-full transition duration-200 rounded-b-lg shadow-inner">
+                            <p class="font-semibold tracking-wide">View Details →</p>
+                        </a>
+                </div>
+
+                </div>
+            </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 px-6 pt-6 w-full">
+                    <!-- Pie Chart Section -->
+                    <div class="flex flex-col md:flex-row items-center justify-center gap-6 p-4 text-black/90 text-center bg-[#e9eee9] rounded-lg w-full">
+                        
+                        <!-- Pie Chart -->
+                        <div class="flex justify-center items-center sm:w-36 sm:h-36 md:w-56 md:h-56 lg:w-66 lg:h-66 relative">
+                            <canvas 
+                                id="treePieChart" class="w-40 h-40 sm:w-28 sm:h-28 md:w-38 md:h-38 lg:w-48 lg:h-48"></canvas>
+                        </div>
+
+                        <!-- Legend -->
+                        <div 
+                            id="chartLegend" class="mt-4 md:mt-0 grid grid-cols-1 gap-4 text-sm p-4 w-full md:w-auto"></div>
+                    </div>
+
+                    <!-- Harvest Chart Section -->
+                    <div class="flex flex-col items-center justify-center bg-[#e9eee9] p-4 rounded-lg w-full h-full">
+                        <div class="relative w-full">
+                            <canvas id="harvestChart"></canvas>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- Placeholder for another widget -->
-                <div class="flex-1 flex flex-col items-center justify-center gap-8 bg-[#e9eee9] p-4 rounded-lg">
-                    {{-- Future widget --}}
-                </div>
-            </div>                    
-
             <br>
         </x-card>
     </section>
+
 </main>
 
         <!-- Reminders -->
@@ -362,6 +397,52 @@ document.getElementById('harvestFilterForm').addEventListener('submit', function
         document.getElementById('harvest-records-container').innerHTML = data.html;
     })
     .catch(error => console.error('Error:', error));
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('harvestChart').getContext('2d');
+    const months = @json($months);
+    const totals = @json($totals);
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: months,
+            datasets: [{
+                label: 'Predicted Harvest (kg)',
+                data: totals,
+                backgroundColor: '#0A400C', // Tailwind sky-400
+                borderColor: '#0A400C', // Tailwind sky-500
+                borderWidth: 1,
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                title: {
+                    display: true,
+                    text: 'Predicted Harvests',
+                    font: { size: 14, weight: 'bold' },
+                    color: '#000000'
+                }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Month' },
+                    grid: { display: false }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Quantity (kg)' },
+                    ticks: { stepSize: 10 }
+                }
+            }
+        }
+    });
 });
 </script>
 

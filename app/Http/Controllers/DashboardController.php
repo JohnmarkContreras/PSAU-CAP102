@@ -8,6 +8,7 @@ use App\Tree;
 use App\Harvest;
 use App\User;
 use App\PendingGeotagTree;
+use App\HarvestPrediction;
 use App\TreeCode;
 use App\TreeData;
 use Illuminate\Support\Facades\DB;
@@ -39,6 +40,11 @@ class DashboardController extends Controller
             $query->whereMonth('harvest_date', $month);
         }
 
+        $predictions = \App\HarvestPrediction::selectRaw('MONTH(predicted_date) as month, SUM(predicted_quantity) as total_quantity')
+        ->groupBy('month')
+        ->orderBy('month')
+        ->get();
+
         // Get filtered harvests
         // $harvests = $query->orderBy('harvest_date', 'desc')->get();
         $harvests = $query->with('tree')->orderBy('harvest_date', 'desc')->get();
@@ -58,6 +64,15 @@ class DashboardController extends Controller
         $notifications = auth()->user()->notifications()->latest()->take(5)->get();
         $selectedYear = $year;
         $selectedMonth = $month;
+
+    // Format for Chart.js
+    $months = $predictions->pluck('month')->map(function ($m) {
+        return \Carbon\Carbon::create()->month($m)->format('M'); // e.g., Jan, Feb, Mar
+    });
+    $totals = $predictions->pluck('total_quantity');
+
+    // Optional: total predicted harvest overall
+    $totalPredicted = $predictions->sum('total_quantity');
         
         return view('pages.dashboard', compact(
             'role',
@@ -72,6 +87,9 @@ class DashboardController extends Controller
             'selectedMonth',
             'pendingtree',
             'totalAnnualSequestrationKg',
+            'months',
+            'totals',
+            'totalPredicted',
         ));
     }
 

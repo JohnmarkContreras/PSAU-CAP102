@@ -81,86 +81,117 @@
                     </form>
                 </x-card>
         </section>
-                <section class="bg-[#e9eee9] rounded-lg p-4 relative">
-                    <x-card title="Add Tree Harvests">
-                    {{-- Trees + Predictions + Past Harvests --}}
-                    <div class="space-y-6">
-                        <div class="mb-6 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                            <button id="predict-all-btn"
-                                class="rounded-xl bg-emerald-600 text-white py-2 px-4 hover:bg-emerald-700">
-                                Predict All (SARIMA 4,1,4 or fallback)
-                            </button>
-                            <button id="predict-yielding-btn"
-                                class="rounded-xl bg-amber-600 text-white py-2 px-4 hover:bg-amber-700">
-                                Predict Yielding Only
-                            </button>
-                            </div>
-                            <span class="text-xs text-gray-600">Season months: {{ config('services.harvest.harvest_months','1,2,3') }}</span>
+<section class="bg-[#e9eee9] rounded-lg p-4 relative">
+    <x-card title="Add Tree Harvests">
+        {{-- Trees + Predictions + Past Harvests --}}
+        <div class="space-y-6">
+            {{-- Predict buttons --}}
+            <div class="mb-6 flex items-center justify-between flex-wrap gap-2">
+                <div class="flex flex-wrap items-center gap-2">
+                    <button id="predict-all-btn"
+                        class="rounded-xl bg-emerald-600 text-white py-2 px-4 hover:bg-emerald-700">
+                        Predict All (SARIMA 4,1,4 or fallback)
+                    </button>
+                    <button id="predict-yielding-btn"
+                        class="rounded-xl bg-amber-600 text-white py-2 px-4 hover:bg-amber-700">
+                        Predict Yielding Only
+                    </button>
+                </div>
+                <span class="text-xs text-gray-600">
+                    Season months: {{ config('services.harvest.harvest_months','1,2,3') }}
+                </span>
+            </div>
+
+            {{-- Tree Harvest Tables --}}
+            @foreach ($codes as $tc)
+                <div class="rounded-2xl border p-4 bg-white shadow-sm">
+                    {{-- Header --}}
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">
+                                Code <span class="font-mono">{{ $tc->code }}</span>
+                                @if($tc->is_yielding)
+                                    <span class="ml-2 text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">
+                                        Yielding
+                                    </span>
+                                @endif
+                            </h3>
+
+                            @if($tc->latestPrediction)
+                                <p class="text-sm text-gray-600">
+                                    Predicted next harvest:
+                                    <span class="font-medium">
+                                        {{ \Carbon\Carbon::parse($tc->latestPrediction->predicted_date)->toFormattedDateString() }}
+                                    </span>
+                                    — ~ <span class="font-medium">
+                                        {{ number_format($tc->latestPrediction->predicted_quantity, 2) }}
+                                    </span> kg
+                                </p>
+                            @else
+                                <p class="text-sm text-gray-500">No prediction yet.</p>
+                            @endif
                         </div>
+                    </div>
 
-                        @foreach ($codes as $tc)
-                            <div class="rounded-2xl border p-4">
-                                
-                                <div class="flex items-center justify-between mb-3">
-                                    
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-gray-800">
-                                            Code <span class="font-mono">{{ $tc->code }}</span>
-                                            @if($tc->is_yielding)
-                                                <span class="ml-2 text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">Yielding</span>
-                                            @endif
-                                        </h3>
-                                        @if($tc->latestPrediction)
-                                            <p class="text-sm text-gray-600">
-                                                Predicted next harvest:
-                                                <span class="font-medium">
-                                                    {{ \Carbon\Carbon::parse($tc->latestPrediction->predicted_date)->toFormattedDateString() }}
-                                                </span>
-                                                — ~ <span class="font-medium">{{ number_format($tc->latestPrediction->predicted_quantity, 2) }}</span> kg
-                                            </p>
-                                        @else
-                                            <p class="text-sm text-gray-500">No prediction yet.</p>
-                                        @endif
-                                    </div>
-                                </div>
+                    {{-- Harvest Table --}}
+                    <div class="overflow-x-auto">
+                        <table id="harvestTable_{{ $tc->id }}" 
+                                class="harvest-table w-full text-sm text-left text-gray-700 border rounded-lg">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2">Date</th>
+                                    <th class="px-4 py-2">Weight (kg)</th>
+                                    <th class="px-4 py-2">Quality</th>
+                                    <th class="px-4 py-2">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                @php
+                                    $hs = \App\Harvest::where('code',$tc->code)
+                                            ->orderBy('harvest_date','desc')
+                                            ->get();
+                                @endphp
 
-                                <div class="overflow-x-auto">
-                                    <table class="w-full text-sm text-left text-gray-700 border rounded-lg">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-4 py-2">Date</th>
-                                                <th class="px-4 py-2">Weight (kg)</th>
-                                                <th class="px-4 py-2">Quality</th>
-                                                <th class="px-4 py-2">Notes</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y">
-                                            @php $hs = \App\Harvest::where('code',$tc->code)->orderBy('harvest_date','desc')->take(10)->get(); @endphp
-                                            @forelse ($hs as $h)
-                                                <tr class="hover:bg-gray-50">
-                                                    <td class="px-4 py-2">{{ \Carbon\Carbon::parse($h->harvest_date)->toFormattedDateString() }}</td>
-                                                    <td class="px-4 py-2">{{ number_format($h->harvest_weight_kg, 2) }}</td>
-                                                    <td class="px-4 py-2">{{ $h->quality ?? '—' }}</td>
-                                                    <td class="px-4 py-2">{{ $h->notes ?? '—' }}</td>
-                                                </tr>
-                                            @empty
-                                                <tr><td colspan="4" class="px-4 py-3 text-center text-gray-500">No harvest records.</td></tr>
-                                            @endforelse
-                                        </tbody>
-                                    </table>
+                                @forelse ($hs as $h)
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-2">
+                                            {{ \Carbon\Carbon::parse($h->harvest_date)->toFormattedDateString() }}
+                                        </td>
+                                        <td class="px-4 py-2">{{ number_format($h->harvest_weight_kg, 2) }}</td>
+                                        <td class="px-4 py-2">{{ $h->quality ?? '—' }}</td>
+                                        <td class="px-4 py-2">{{ $h->notes ?? '—' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="px-4 py-3 text-center text-gray-500">
+                                            No harvest records.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </x-card>
+</section>
+                {{-- Calendar --}}
+
+                <section class="bg-[#e9eee9] rounded-lg p-4 relative">
+                    <x-card title="Harvest Predictions Calendar">
+                        <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+                        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+                            <div class="mt-8 mb-4">
+                                <h2 class="text-xl font-semibold text-gray-800 mb-2">Harvest Predictions Calendar</h2>
+                                <p class="text-sm text-gray-600">Predicted harvest dates for all trees. Click on a date to see details.</p>
+                                <div id="calendar-summary" class="mt-2 text-sm text-gray-700">
+                                    <!-- FullCalendar CSS + JS -->
+                                    <div id="harvest-calendar" class="bg-white p-4 rounded-xl shadow-md"></div>
                                 </div>
                             </div>
-                        @endforeach
-                    </div>
-
-                    {{-- Calendar placeholder (per-tree and all-trees will render via JS later) --}}
-                    <div id="calendar" class="mt-8 border rounded p-4 bg-white">
-                        <div class="text-sm text-gray-700 font-semibold mb-2">Best Harvest Calendar</div>
-                        <div id="calendar-all" class="text-xs text-gray-600 mb-4">All trees</div>
-                        <div id="calendar-per-tree" class="text-xs text-gray-600">Per tree</div>
-                    </div>
-                
+                    </x-card>
+                </section>
 
                     <script>
                         async function runPredict(yieldingOnly = false) {
@@ -172,9 +203,13 @@
                             return res.json();
                         }
 
+                        document.addEventListener("DOMContentLoaded", function () {
+                            const calendarData = @json(['results' => $calendarData]);
+                            renderCalendar(calendarData);
+                        });
+
                         function renderCalendar(data) {
                             try {
-                                const allEl = document.getElementById('calendar-all');
                                 const perTreeEl = document.getElementById('calendar-per-tree');
                                 const entries = Object.entries(data.results || {});
                                 const allDates = {};
@@ -187,7 +222,6 @@
                                     .sort((a,b)=>a[0].localeCompare(b[0]))
                                     .map(([d,n])=>`${d}: ${n} tree(s)`) 
                                     .join(' | ');
-                                allEl.textContent = allSummary || 'No predictions';
 
                                 // Per tree lines
                                 perTreeEl.innerHTML = entries
@@ -239,7 +273,73 @@
                             finally { btn.disabled = false; btn.textContent = old; }
                         });
                     </script>
-                </x-card>
-        </section>
+                    {{-- Calendar rendering scritp --}}
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function () {
+                            // Use your already-passed data
+                            const calendarData = @json($calendarData);
+
+                            // Convert predictions into FullCalendar events
+                            const events = Object.entries(calendarData).map(([code, entry]) => ({
+                                title: `${code} (${entry.predicted_quantity} kg)`,
+                                start: `${entry.predicted_date}T00:00:00`,
+                                allDay: true,
+                                backgroundColor: '#38bdf8', // Tailwind sky-400
+                                borderColor: '#0ea5e9',
+                                textColor: '#fff',
+                            }));
+
+                            // Create the FullCalendar instance
+                            const calendarEl = document.getElementById('harvest-calendar');
+                            const calendar = new FullCalendar.Calendar(calendarEl, {
+                                initialView: 'dayGridMonth',
+                                height: 'auto',
+                                headerToolbar: {
+                                    left: 'prev,next today',
+                                    center: 'title',
+                                    right: 'dayGridMonth,listMonth'
+                                },
+                                events: events,
+                                eventClick: function(info) {
+                                    const event = info.event;
+                                    alert(`${event.title}\nDate: ${event.start.toISOString().split('T')[0]}`);
+                                }
+                            });
+
+                            // Render the calendar
+                            calendar.render();
+                        });
+                </script>
+
+                {{-- DataTables for harvest tables --}}
+                @push('scripts')
+<script>
+    $(document).ready(function () {
+        // Apply DataTable to all harvest tables
+        $('.harvest-table').each(function () {
+            $(this).DataTable({
+                responsive: true,
+                pageLength: 5,
+                ordering: true,
+                order: [[0, 'desc']],
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search harvests...",
+                    lengthMenu: "Show _MENU_ records",
+                    info: "Showing _START_ to _END_ of _TOTAL_ harvests",
+                    infoEmpty: "No data available",
+                    paginate: {
+                        previous: "← Prev",
+                        next: "Next →"
+                    }
+                },
+                columnDefs: [
+                    { orderable: true, targets: [0,1,2,3] }
+                ]
+            });
+        });
+    });
+</script>
+@endpush
     </main>
 @endsection

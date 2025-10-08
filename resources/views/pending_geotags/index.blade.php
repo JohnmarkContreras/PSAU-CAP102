@@ -1,20 +1,71 @@
 @extends('layouts.app')
-{{-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> --}}
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
 @section('content')
-<div x-data="{ showModal: false, modalImg: '' }">
+<div 
+    x-data="{ showModal: false, modalImg: '' }" 
+    x-on:open-modal.window="modalImg = $event.detail; showModal = true"
+>
 <section class="bg-[#e9eee9] rounded-lg p-4 relative">
     <x-card title="Pending Geotag Trees">
         <div class="text-sm text-black/90 space-y-0.5">
             @if($pending->isEmpty())
                 <p>No pending geotags.</p>
             @else
-                <div 
-                    x-data="paginationComponent()" 
-                    x-init="init()" 
-                    class="overflow-x-auto min-h-[600px]"
-                >
-                    <div x-html="tableContent"></div>
+                <div class="overflow-x-auto">
+                    <table id="pendingTable" class="min-w-full text-sm text-left border border-gray-200 rounded-lg mt-2">
+                        <thead class="bg-gray-100 text-center">
+                            <tr>
+                                <th>Image</th>
+                                <th>Code</th>
+                                <th>Latitude</th>
+                                <th>Longitude</th>
+                                <th>Status</th>
+                                <th colspan="2">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-center">
+                            @foreach($pending as $tree)
+                            <tr>
+                                <td>
+                                    <img 
+                                        src="{{ asset('storage/'.$tree->image_path) }}" 
+                                        class="preview-image w-20 h-20 object-cover cursor-pointer transition hover:scale-105 mx-auto"
+                                        data-img="{{ asset('storage/'.$tree->image_path) }}"
+                                        alt="Tree Image"
+                                    />
+                                </td>
+                                <td>{{ $tree->code }}</td>
+                                <td>{{ $tree->latitude }}</td>
+                                <td>{{ $tree->longitude }}</td>
+                                <td>
+                                    <span class="px-2 py-1 rounded text-xs font-bold
+                                        @if($tree->status === 'pending') bg-yellow-200 text-yellow-800
+                                        @elseif($tree->status === 'approved') bg-green-200 text-green-800
+                                        @else bg-red-200 text-red-800 @endif">
+                                        {{ ucfirst($tree->status) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    @if($tree->status === 'pending')
+                                    <form action="{{ route('pending-geotags.approve', $tree->id) }}" method="POST" style="display:inline">
+                                        @csrf
+                                        <button type="submit" class="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">Approve</button>
+                                    </form>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($tree->status === 'pending')
+                                    <form action="{{ route('pending-geotags.reject', $tree->id) }}" method="POST" style="display:inline">
+                                        @csrf
+                                        <input type="text" name="rejection_reason" placeholder="Reason" class="border rounded px-2 py-1 text-xs mr-2" required>
+                                        <button type="submit" class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700">Reject</button>
+                                    </form>
+                                    @endif
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             @endif
         </div>
@@ -42,31 +93,46 @@
 </div>
 @endsection
 
+@push('scripts')
 <script>
-    function paginationComponent() {
-    return {
-        tableContent: '',
-        init() {
-            this.loadPage("{{ route('pending-geotags.index') }}");
-        },
-        loadPage(url) {
-            fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(res => res.text())
-                .then(html => {
-                    this.tableContent = html;
-
-                    // Rebind pagination links inside the newly injected HTML
-                    this.$nextTick(() => {
-                        this.$root.querySelectorAll('.pagination a').forEach(link => {
-                            link.addEventListener('click', (e) => {
-                                e.preventDefault();
-                                this.loadPage(link.href); 
-                            });
-                        });
-                    });
-                });
-        }
+document.addEventListener('DOMContentLoaded', function () {
+    // Safety: destroy existing table if re-initializing
+    if ( $.fn.DataTable.isDataTable('#pendingTable') ) {
+        $('#pendingTable').DataTable().clear().destroy();
     }
-}
 
+    // Init DataTable
+    const table = $('#pendingTable').DataTable({
+        responsive: true,
+        pageLength: 10,
+        ordering: true,
+        columnDefs: [
+            { orderable: false, targets: [0, 5, 6] } // image and action columns non-sortable
+        ],
+        language: {
+            search: "_INPUT_",
+            searchPlaceholder: "Search trees..."
+        }
+    });
+
+    // Delegated handler for image preview (works after pagination/redraw)
+    $(document).on('click', '.preview-image', function (e) {
+        e.preventDefault();
+        const imgUrl = $(this).data('img');
+        window.dispatchEvent(new CustomEvent('open-modal', { detail: imgUrl }));
+    });
+
+    // Optional: re-bind any JS plugins after table draw (if you need)
+    table.on('draw', function () {
+        // e.g. re-enable tooltips, etc.
+    });
+});
 </script>
+@endpush
+
+{{-- If your layout does NOT render @stack('scripts'), uncomment the following block and place it below --}}
+{{-- 
+<script>
+  // same script as above (copy it here) — only needed if @stack('scripts') is not present in your layout
+</script>
+--}}

@@ -11,14 +11,15 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet" />
 </head>
 
+@stack('scripts')
 <body class="bg-gray-100 text-gray-900 min-h-screen flex">
     <!-- Sidebar (Desktop) -->
-    <aside class="hidden md:flex fixed top-0 left-0 bg-emerald-900 w-60 h-screen flex-col items-center py-6 text-white z-50">
+    <aside class="hidden md:flex fixed top-0 left-0 bg-[#003300] w-60 h-screen flex-col items-center py-6 text-white z-50">
         @include('components.navbar')
     </aside>
 
     <!-- Mobile Top Bar -->
-    <header class="md:hidden fixed top-0 left-0 right-0 bg-green-800 text-white flex justify-between items-center px-4 py-3 z-40 shadow">
+    <header class="md:hidden fixed top-0 left-0 right-0 bg-[#003300] text-white flex justify-between items-center px-4 py-3 z-40 shadow">
         <span class="font-bold text-lg">PSAU Tamarind R&DE</span>
         <button id="mobileMenuBtn" class="text-2xl p-2 rounded focus:outline-none focus:ring-2 focus:ring-white" aria-controls="mobileSidebar" aria-expanded="false">
             <i class="fa-solid fa-bars"></i>
@@ -35,7 +36,7 @@
 
         <!-- Panel -->
     <aside id="sidebarPanel"
-        class="relative bg-green-800 w-3/4 max-w-xs h-full p-6 text-white transform -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto rounded-r-2xl shadow-lg">
+        class="relative bg-[#003300] w-3/4 max-w-xs h-full p-6 text-white transform -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto rounded-r-2xl shadow-lg">
         
         <!-- Close button -->
         <button id="closeSidebar" 

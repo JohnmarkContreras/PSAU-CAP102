@@ -76,6 +76,7 @@ Route::group(['middleware' => ['auth', 'role:user']], function () {
     Route::get('tree_data/sequestered', [TreeDataController::class, 'indexSequestered'])->name('tree_data.sequestered');
     Route::get('analytics/carbon', [TreeDataController::class, 'analyticsCarbon'])->name('analytics.carbon');
     Route::get('analytics/projection', 'TreeDataController@getProjectionAnalytics')->name('analytics.projection');
+    Route::get('/harvest-predictions', [App\Http\Controllers\HarvestManagementController::class, 'index']);
 });
 
 
