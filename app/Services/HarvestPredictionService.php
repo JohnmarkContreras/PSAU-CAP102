@@ -39,6 +39,27 @@ class HarvestPredictionService
             $results[$code] = $this->predictForCode($code);
         }
 
+        $result = $this->predictForCode($code);
+        $results[$code] = $result;
+
+        if ($result['ok'] && isset($result['data'])) {
+        $prediction = $result['data'];
+
+            if (isset($prediction->id, $prediction->predicted_date)) {
+                $user = User::find($prediction->id);
+                if ($user) {
+                    Mail::to($user->email)->send(
+                        \Log::info('Attempting to send mail to ' . $user->email),
+                        \Log::info('Mail send function executed'),
+                        new HarvestPredictionNotification(
+                            Carbon::parse($prediction->predicted_date),
+                            $user->name
+                        )
+                    );
+                }
+            }
+        }
+
         return $results;
     }
 
@@ -312,7 +333,8 @@ class HarvestPredictionService
             'code' => $code,
             'ok' => true,
             'predicted_date' => $prediction->predicted_date,
-            'predicted_quantity' => (float) $prediction->predicted_quantity
+            'predicted_quantity' => (float) $prediction->predicted_quantity,
+            'data' => $prediction
         ];
     }
 

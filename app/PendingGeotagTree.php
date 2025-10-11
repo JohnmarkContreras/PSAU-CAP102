@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class PendingGeotagTree extends Model
 {
-    protected $fillable = ['image_path', 'latitude', 'longitude', 'code', 'taken_at', 'user_id', 'status', 'processed_at', 'processed_by', 'rejection_reason', 'tree_type_id'];
+    protected $fillable = ['image_path', 'thumb_path', 'latitude', 'longitude', 'code', 'taken_at', 'user_id', 'status', 'processed_at', 'processed_by', 'rejection_reason', 'tree_type_id'];
 
     // Relationship to user who submitted the geotag
     public function user()

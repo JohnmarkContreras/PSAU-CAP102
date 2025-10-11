@@ -12,6 +12,7 @@ use App\Http\Controllers\TreeController;
 use App\Http\Controllers\DeadTreeRequestController;
 use App\Http\Controllers\TreeDataController;
 use App\Http\Controllers\UserArchiveController;
+use Illuminate\Support\Facades\Mail;
 
 use App\Tree;
 
@@ -35,10 +36,9 @@ Route::group(['middleware' => ['auth', 'role:user']], function () {
     Route::post('/feedbacks', 'FeedbackController@store')->name('feedback.store');
 });
 
-//notifications
-// Route::post('/notifications/{id}/read', 'NotificationController@markAsRead')->name('notifications.markAsRead');
-// Route::get('/geotags/{id}', [PendingGeotagController::class, 'show'])->name('geotags.pending');
-
+    //notifications
+    // Route::post('/notifications/{id}/read', 'NotificationController@markAsRead')->name('notifications.markAsRead');
+    // Route::get('/geotags/{id}', [PendingGeotagController::class, 'show'])->name('geotags.pending');
 
     Route::middleware(['auth'])->group(function () {
     Route::get('/pending-geotags', 'PendingGeotagTreeController@index')->name('pending-geotags.index');
@@ -163,3 +163,12 @@ Route::group(['middleware' => ['auth', 'role:user|admin|superadmin']], function 
 
 //logout
 Route::post('/logout', 'LoginController@logout')->name('logout');
+
+Route::get('/send-test-email', function () {
+    Mail::raw('This is a test email from Laravel using Gmail SMTP.', function ($message) {
+        $message->to('johnmarkpcontreras@gmail.com')
+                ->subject('Tiningi ning ngining ngning');
+    });
+
+    return 'Email sent!';
+});

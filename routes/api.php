@@ -7,21 +7,18 @@ use App\Http\Controllers\MobileGeotagController;
 
 
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
-*/
-Route::post('/login', 'AuthController@login');
-Route::post('/logout', 'AuthController@logout')->middleware('auth:sanctum');
-
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+// Public routes
+Route::post('login', 'Api\AuthController@login');
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('logout', 'Api\AuthController@logout');
+        Route::get('trees', 'Api\TreeController@index');
+        Route::get('pending-trees', 'Api\PendingTreeController@index');
+        Route::get('pending-trees/{id}', 'Api\PendingTreeController@show');
+        Route::post('pending-trees', 'Api\PendingTreeController@store');
+        Route::put('pending-trees/{id}', 'Api\PendingTreeController@update');
+        Route::post('pending-trees/upload-image', 'Api\PendingTreeController@uploadImage');
+        Route::post('pending-trees/sync-batch', 'Api\PendingTreeController@syncBatch');
+        Route::post('check-code', 'Api\PendingTreeController@checkCode');
+        Route::post('pending-trees/{id}/approve', 'Api\PendingTreeController@approve');
+        Route::post('pending-trees/{id}/reject', 'Api\PendingTreeController@reject');
 });
-
-Route::post('/mobile-geotags', 'MobileGeotagMetadataController@store');

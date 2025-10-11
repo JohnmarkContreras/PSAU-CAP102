@@ -13,11 +13,13 @@ class PredictHarvests extends Command
 
     public function handle()
     {
-        /** @var HarvestPredictionService $service */
-        $service = app(HarvestPredictionService::class);
-        $results = $service->predictAllTrees();
-        $ok = collect($results)->where('ok', true)->count();
-        $this->info("Harvest predictions updated for {$ok} tree codes.");
+        foreach (TreeCode::all() as $tree) {
+        $prediction = $service->predictForTree($tree);
+        if ($prediction) {
+            $this->info("Predicted for {$tree->code}");
+            $this->notifyUser($prediction);
+        }
+    }
     }
 }
 

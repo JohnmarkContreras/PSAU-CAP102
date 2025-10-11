@@ -1,0 +1,9 @@
+{
+  "name": "tamarind-app",
+  "integrations": {},
+  "type": "react-vite",
+  "server": {
+  "allowNavigation": ["http://localhost", "http://10.0.2.2:8000/api"]
+  }
+
+}
