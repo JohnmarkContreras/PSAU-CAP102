@@ -48,10 +48,4 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
-
-    // Route Twilio SMS to this phone number (E.164 preferred)
-    public function routeNotificationForTwilio($notification)
-    {
-        return $this->phone ?? null;
-    }
 }

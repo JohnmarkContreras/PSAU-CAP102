@@ -262,8 +262,8 @@ public function analyticsCarbon(Request $request)
 
     // === RETURN TO VIEW ===
     return view('analytics.carbon', [
-        'chartData' => $chartData,          // ✅ for sequestration chart
-        'harvestData' => $sortedHarvest,    // ✅ for harvest table or analytics
+        'chartData' => $chartData,          //  for sequestration chart
+        'harvestData' => $sortedHarvest,    //  for harvest table or analytics
         'typeFilter' => $typeFilterRaw,
         'minDbh' => $minDbh,
         'maxDbh' => $maxDbh,

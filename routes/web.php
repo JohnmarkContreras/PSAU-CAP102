@@ -13,8 +13,12 @@ use App\Http\Controllers\DeadTreeRequestController;
 use App\Http\Controllers\TreeDataController;
 use App\Http\Controllers\UserArchiveController;
 use Illuminate\Support\Facades\Mail;
-
+use App\Http\Controllers\HarvestReminderController;
+use App\Notifications\SmsNotification;
+use App\User;
 use App\Tree;
+
+Route::get('/send-sms', 'HarvestReminderController@sendSMSToAllUsers');
 
 Route::middleware('prevent-back-history')->group(function () {
     Route::get('/login', 'LoginController@index')->name('login');
@@ -22,13 +26,6 @@ Route::middleware('prevent-back-history')->group(function () {
 });
 
 Route::get('/', 'LoginController@logout'); 
-
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', 'ProfileController@index')->name('profile.index');
-    Route::post('/profile/update', 'ProfileController@update')->name('profile.update');
-    Route::put('/profile', 'ProfileController@update')->name('profile.update');
-
-});
 
 //feedback
 Route::group(['middleware' => ['auth', 'role:user']], function () {
@@ -77,6 +74,14 @@ Route::group(['middleware' => ['auth', 'role:user']], function () {
     Route::get('analytics/carbon', [TreeDataController::class, 'analyticsCarbon'])->name('analytics.carbon');
     Route::get('analytics/projection', 'TreeDataController@getProjectionAnalytics')->name('analytics.projection');
     Route::get('/harvest-predictions', [App\Http\Controllers\HarvestManagementController::class, 'index']);
+    Route::post('/send-reminders', [HarvestReminderController::class, 'sendReminders']) 
+    ->name('send.reminders');
+    Route::get('/harvests/evaluate', [HarvestManagementController::class, 'evaluate'])
+    ->name('harvests.evaluate');
+    //profile edit
+    Route::get('/profile', 'ProfileController@index')->name('profile.index');
+    // Route::post('/profile/update', 'ProfileController@update')->name('profile.update');
+    Route::put('/profile', 'ProfileController@update')->name('profile.update');
 });
 
 
@@ -133,6 +138,7 @@ Route::group(['middleware' => ['auth', 'role:admin|superadmin']], function () {
     Route::get('/admin/edit_user/{id}', 'AdminController@editUser')->name('admin.edit_user');
     // Handle form submission
     Route::post('/admin/update_user/{id}', 'AdminController@updateUser')->name('admin.update_user');
+    //email service
 });
 
 // User routes
@@ -141,11 +147,14 @@ Route::group(['middleware' => ['auth', 'role:user|admin|superadmin']], function 
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
     Route::get('/feedback', 'BackupController@index')->name('pages.feedback');
     Route::post('/notifications/{id}/read', 'NotificationController@markAsRead')->name('notifications.markAsRead');
-    Route::get('/notifications/filter', 'NotificationController@index')->name('pages.notifications');
+    Route::get('/notifications/filter', 'NotificationController@index')->name('pages.notifications.filter');
     // Mark all as read
     Route::post('/notifications/mark-all-read', 'NotificationController@markAllRead')->name('notifications.markAllRead');
     // Delete a notification
     Route::delete('/notifications/{id}', 'NotificationController@destroy')->name('notifications.destroy');
+    Route::get('/harvests/upcoming', 'HarvestManagementController@upcoming')->name('harvests.upcoming');
+    //mark as done for harvest
+    Route::post('/harvests/mark-done', 'HarvestManagementController@markDone')->name('harvests.markDone');
 });
 
 //tree
@@ -163,12 +172,3 @@ Route::group(['middleware' => ['auth', 'role:user|admin|superadmin']], function 
 
 //logout
 Route::post('/logout', 'LoginController@logout')->name('logout');
-
-Route::get('/send-test-email', function () {
-    Mail::raw('This is a test email from Laravel using Gmail SMTP.', function ($message) {
-        $message->to('johnmarkpcontreras@gmail.com')
-                ->subject('Tiningi ning ngining ngning');
-    });
-
-    return 'Email sent!';
-});

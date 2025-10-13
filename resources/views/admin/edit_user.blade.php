@@ -52,11 +52,11 @@
                                                     <select name="role"
                                                         class="appearance-none border border-gray-300 rounded-lg px-3 py-2 w-full text-sm text-gray-700
                                                             focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white">
-                                                        @foreach($roles as $role)
-                                                            <option value="{{ $role->name }}" {{ $user->hasRole($role->name) ? 'selected' : '' }}>
-                                                                {{ ucfirst($role->name) }}
-                                                            </option>
-                                                        @endforeach
+                                                            @foreach($roles->whereIn('id', [2, 3]) as $role)
+                                                                <option value="{{ $role->name }}" {{ $user->hasRole($role->name) ? 'selected' : '' }}>
+                                                                    {{ ucfirst($role->name) }}
+                                                                </option>
+                                                            @endforeach
                                                     </select>
                                                     <i class="fa-solid fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
                                                 </div>

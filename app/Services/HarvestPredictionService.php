@@ -8,6 +8,8 @@ use App\HarvestPrediction;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
+use App\Mail\HarvestPredictionNotification;
+use Illuminate\Support\Facades\Mail;
 
 class HarvestPredictionService
 {
@@ -38,32 +40,10 @@ class HarvestPredictionService
 
             $results[$code] = $this->predictForCode($code);
         }
-
-        $result = $this->predictForCode($code);
-        $results[$code] = $result;
-
-        if ($result['ok'] && isset($result['data'])) {
-        $prediction = $result['data'];
-
-            if (isset($prediction->id, $prediction->predicted_date)) {
-                $user = User::find($prediction->id);
-                if ($user) {
-                    Mail::to($user->email)->send(
-                        \Log::info('Attempting to send mail to ' . $user->email),
-                        \Log::info('Mail send function executed'),
-                        new HarvestPredictionNotification(
-                            Carbon::parse($prediction->predicted_date),
-                            $user->name
-                        )
-                    );
-                }
-            }
-        }
-
         return $results;
     }
 
-    private function predictForCode(string $code)
+    public function predictForCode(string $code)
     {
         try {
             $harvests = $this->getCombinedHarvests($code);
@@ -92,14 +72,13 @@ class HarvestPredictionService
             }
 
             $csvPath = $this->generateCsvFileForCode($code, $harvests);
-            $prediction = $this->runPredictionScript($csvPath);
+            $prediction = $this->runPredictionScript($csvPath, $code);
 
             if (!$this->isValidPrediction($prediction)) {
                 return $this->errorResult($code, 'Invalid prediction output from Python.');
             }
 
             $savedPrediction = $this->savePrediction($code, $prediction);
-
             return $this->successResult($code, $savedPrediction);
 
         } catch (\Throwable $e) {
@@ -287,30 +266,97 @@ class HarvestPredictionService
         return storage_path("app/$path");
     }
 
-    private function runPredictionScript($csvPath)
-    {
-        $script = base_path('scripts/sarima_predict.py');
-        $python = env('PYTHON_BIN', 'python');
-        $order = config('services.harvest.sarima_order', '4,1,4');
-        $seasonal = config('services.harvest.sarima_seasonal', '0,1,0,12');
-        $months = config('services.harvest.harvest_months', '1,2,3');
+private function runPredictionScript(string $csvPath, string $treeCode)
+{
+    $script = base_path('scripts/sarima_predict.py');
+    $python = env('PYTHON_BIN', 'python');
+    $order = config('services.harvest.sarima_order', '4,1,4');
+    $seasonal = config('services.harvest.sarima_seasonal', '0,1,0,12');
+    $months = config('services.harvest.harvest_months', '1,2,3');
 
+    // $harvests = \DB::table('harvests')
+    // ->where('code', $treeCode)
+    // ->get(['harvest_date', 'harvest_weight_kg'])
+    // ->map(fn($row) => (array) $row);
+
+    // $lastDate = collect($harvests)->max('harvest_date');
+    // $process = new Process([
+    //     $python, $script, $csvPath,
+    //     '--order', $order,
+    //     '--seasonal', $seasonal,
+    //     '--harvest_months', $months,
+    //     '--start_from', $lastDate, // new
+    // ]);
         $process = new Process([
-            $python, $script, $csvPath, 
-            '--order', $order, 
-            '--seasonal', $seasonal,
-            '--harvest_months', $months,
+        $python, $script, $csvPath,
+        '--order', $order,
+        '--seasonal', $seasonal,
+        '--harvest_months', $months,
+    ]);
+
+
+    $process->setTimeout(self::TIMEOUT_SECONDS);
+    $process->run();
+
+    $output = trim($process->getOutput());
+    $errorOutput = trim($process->getErrorOutput());
+
+    if (!$process->isSuccessful()) {
+        \Log::error("[SARIMA] Python failed for $csvPath", [
+            'stderr' => $errorOutput,
+            'stdout' => $output
         ]);
-
-        $process->setTimeout(self::TIMEOUT_SECONDS);
-        $process->run();
-
-        if (!$process->isSuccessful()) {
-            throw new ProcessFailedException($process);
-        }
-
-        return json_decode(trim($process->getOutput()), true);
+        throw new ProcessFailedException($process);
     }
+
+    // Try to decode output first
+    $decoded = json_decode($output, true);
+
+    // If no JSON returned, attempt to read from file instead
+    // if (json_last_error() !== JSON_ERROR_NONE || !$decoded) {
+    //     $baseName = pathinfo($csvPath, PATHINFO_FILENAME);
+    //     $predictionPath = storage_path("app/predictions/{$baseName}_prediction.json");
+
+    //     if (file_exists($predictionPath)) {
+    //         $fileContent = file_get_contents($predictionPath);
+    //         $decoded = json_decode($fileContent, true);
+    //     }
+    // }
+
+    if (json_last_error() !== JSON_ERROR_NONE || !$decoded) {
+        $baseName = pathinfo($csvPath, PATHINFO_FILENAME);
+        $predictionPath = storage_path("app/predictions/{$baseName}_prediction.json");
+        @file_put_contents($predictionPath, json_encode(['forecast' => null, 'evaluation' => null], JSON_PRETTY_PRINT));
+        \Log::error("[SARIMA] Invalid JSON output for $csvPath", [
+            'raw_output' => $output,
+            'stderr' => $errorOutput,
+            'json_error' => json_last_error_msg(),
+        ]);
+        return null;
+    }
+
+    // Log and return null if still invalid
+    if (json_last_error() !== JSON_ERROR_NONE || !$decoded) {
+        \Log::error("[SARIMA] Invalid JSON output for $csvPath", [
+            'raw_output' => $output,
+            'stderr' => $errorOutput,
+            'json_error' => json_last_error_msg(),
+        ]);
+        return null;
+    }
+
+    // Handle two possible JSON structures
+    if (isset($decoded['forecast'])) {
+        return [
+            'predicted_quantity' => $decoded['forecast']['predicted_quantity'] ?? null,
+            'predicted_date' => $decoded['forecast']['predicted_date'] ?? null,
+        ];
+    }
+
+    return $decoded;
+}
+
+
 
     private function isValidPrediction($prediction)
     {
@@ -334,7 +380,6 @@ class HarvestPredictionService
             'ok' => true,
             'predicted_date' => $prediction->predicted_date,
             'predicted_quantity' => (float) $prediction->predicted_quantity,
-            'data' => $prediction
         ];
     }
 

@@ -369,16 +369,6 @@ document.addEventListener('DOMContentLoaded', function () {
     </section>
 
 </main>
-
-        <!-- Reminders -->
-        <section class="bg-[#e9eee9] rounded-lg p-4 relative">
-            <x-card title="Reminders">
-                <div class="text-l text-black/90 space-y-0.5">
-                    <p class="text-gray-500">No reminders yet.</p>
-                </div>
-            </x-card>
-        </section>
-    </main>
     <script>
 document.getElementById('harvestFilterForm').addEventListener('submit', function(e) {
     e.preventDefault();

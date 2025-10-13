@@ -8,14 +8,13 @@ class TreeCode extends Model
 {
 
     protected $table = 'tree_code';
-
+    
     protected $fillable = [
         'tree_image_id',
         'tree_type_id',
         'code',
         'created_by',
     ];
-
     /**
      * Relationship: belongs to a tree image
      */
@@ -23,13 +22,6 @@ class TreeCode extends Model
     {
         return $this->belongsTo(TreeImage::class);
     }
-
-    // Relationship: belongs to a tree type
-    public function treeType()
-    {
-        return $this->belongsTo(TreeType::class);
-    }
-
     /**
      * Relationship: created by a user (optional)
      */
@@ -44,10 +36,9 @@ class TreeCode extends Model
         return $this->hasMany(TreeMeasurement::class);
     }
 
-    // Relationship: has many tree data entries
-    public function treeData()
+    public function harvests()
     {
-        return $this->hasMany(TreeData::class);
+        return $this->hasMany(Harvest::class, 'code', 'code');
     }
 
     // Latest measurement for convenience
@@ -68,4 +59,21 @@ class TreeCode extends Model
             ->latest('created_at');
     }
 
+    //for treecode
+    public function treeType()
+    {
+        return $this->belongsTo(\App\TreeType::class, 'tree_type_id', 'id');
+    }
+    
+    // Relationship: has many tree data entries
+    public function treeData()
+    {
+        return $this->hasMany(\App\TreeData::class, 'tree_code_id', 'id');
+    }
+
+    // optionally inverse to HarvestPrediction(s) that reference code
+    public function harvestPredictions()
+    {
+        return $this->hasMany(HarvestPrediction::class, 'code', 'code');
+    }
 }

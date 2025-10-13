@@ -132,7 +132,7 @@
     map.setView(activeMarker.getLatLng(), 18);
     activeMarker.openPopup();
 
-    // ✅ Correct call
+    //  Correct call
     showTreeDetails(tree);
 }
 
@@ -162,7 +162,7 @@
     document.getElementById("detail-stem").innerText = tree.stem_diameter;
     document.getElementById("detail-canopy").innerText = tree.canopy_diameter;
     document.getElementById("detail-status").innerText = tree.status;
-    // ✅ Set the edit link dynamically here
+    //  Set the edit link dynamically here
     document.getElementById('edit-tree-link').href = `/dead-tree-requests/create?tree_code=${tree.code}`;
 
 

@@ -39,25 +39,59 @@
             <!-- Map -->
             <div id="map" class="h-[500px] w-full rounded z-0"></div>
 
-            <!-- Tree Details Modal -->
-            <div id="tree-details"
-                class="fixed inset-0 z-40 flex items-center justify-center backdrop-blur-sm bg-white/30 hidden">
-                <div class="relative bg-white rounded-lg shadow-lg p-6 w-full max-w-md border border-gray-300">
+        <!-- Tree Details Modal -->
+        <div id="tree-details"
+            class="absolute inset-0 z-50 flex justify-center items-start overflow-y-auto sm:min-w-full sm:m-h-full backdrop-blur-sm bg-white/30 hidden">
+            <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md border border-gray-300 mx-2 my-8 flex flex-col max-h-[90vh] pt-[env(safe-area-inset-top)]">
+                
+                <!-- Header with close button -->
+                <div class="flex justify-between items-center sticky top-0 bg-white border-b p-2 z-10">
+                    <h1 class="text-xl font-bold">Tree Details</h1>
                     <button onclick="closeTreeDetails()"
-                            class="absolute top-2 right-2 text-green-600 hover:text-red-600 text-xl font-bold">
+                            class="text-green-600 hover:text-red-600 text-xl font-bold px-3 py-2">
                         close
                     </button>
-                        <a href="{{ route('tree_data.create') }}" 
-                        class="text-green-700 hover:underline" 
-                        id="edit-tree-link">
+                </div>
+
+                    <!-- Scrollable body -->
+                    <div class="p-4 sm:p-6 overflow-y-auto">
+                        <a href="{{ route('tree_data.create') }}"
+                            class="text-green-700 hover:underline block mb-2"
+                            id="edit-tree-link">
                             Add Tamarind Tree Data
                         </a>
-                    <h1 class="text-xl font-bold mb-4">Tree Details</h1>
-                    <p><strong>Code:</strong> <span id="detail-code"></span></p>
-                    <p class="hidden"><strong>Filename:</strong> <span id="detail-filename"></span></p>
-                    <p><strong>Taken At:</strong> <span id="detail-taken"></span></p>
-                    <div class="mt-4">
-                        <img id="detail-image" src="" alt="Tree Image" class="rounded shadow max-h-64">
+
+                        <p><strong>Code:</strong> <span id="detail-code"></span></p>
+                        <p class="hidden"><strong>Filename:</strong> <span id="detail-filename"></span></p>
+                        <p><strong>Taken At:</strong> <span id="detail-taken"></span></p>
+
+                        <div class="mt-4">
+                            <img id="detail-image" src="" alt="Tree Image" class="rounded shadow max-h-64 hidden mx-auto">
+                        </div>
+
+                        <!-- Harvest Records Table -->
+                        <div class="mt-6">
+                            <h2 class="text-lg font-semibold mb-2">Harvest Records</h2>
+                            <div class="overflow-x-auto">
+                                <table class="w-full border border-gray-300 text-sm">
+                                    <thead>
+                                        <tr class="bg-gray-100">
+                                            <th class="border border-gray-300 px-2 py-1 text-left">Date</th>
+                                            <th class="border border-gray-300 px-2 py-1 text-left">Weight (kg)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="detail-harvests">
+                                        <!-- JS will inject rows here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- Pagination controls -->
+                            <div class="mt-2 flex justify-between items-center text-sm">
+                                <button id="harvest-prev" class="px-2 py-1 bg-gray-200 rounded">Prev</button>
+                                <span id="harvest-page-info"></span>
+                                <button id="harvest-next" class="px-2 py-1 bg-gray-200 rounded">Next</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -143,25 +177,67 @@ map.on('load', debouncedFetch);
 map.on('moveend', debouncedFetch);
 debouncedFetch();
 
+/* ========= Live location tracking ========= */
+var userMarker = null;
+var userCircle = null;
+
+if (navigator.geolocation) {
+navigator.geolocation.watchPosition(
+    (pos) => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const accuracy = pos.coords.accuracy;
+
+    // If marker doesn't exist yet, create it
+    if (!userMarker) {
+        userMarker = L.marker([lat, lng], {
+        icon: new L.Icon({
+            iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34]
+        })
+        }).addTo(map).bindPopup("You are here");
+
+
+        map.setView([lat, lng], 17); // center map on first fix
+    } else {
+        // Update marker and circle
+        userMarker.setLatLng([lat, lng]);
+    }
+    },
+    (err) => {
+    console.error("Geolocation error:", err);
+    },
+    {
+    enableHighAccuracy: true,
+    maximumAge: 10000,
+    timeout: 10000
+    }
+);
+} else {
+console.warn("Geolocation is not supported by this browser.");
+}
+
 /* ========= Add markers and keep data for lookup ========= */
 function addMarkers(data) {
-data.forEach(tree => {
-    const originalCode = tree.code || '';
-    const codeKey = String(originalCode).toUpperCase();
+    data.forEach(tree => {
+        const originalCode = tree.code || '';
+        const codeKey = String(originalCode).toUpperCase();
 
-    treeData[codeKey] = tree;
+        treeData[codeKey] = tree;
 
-    const popupHtml = `<strong>${escapeHtmlAttr(originalCode)}</strong><br>
-    <a href="#" class="popup-details" data-code="${escapeHtmlAttr(originalCode)}" data-treeid="${escapeHtmlAttr(tree.id)}">Details</a>`;
+        const popupHtml = `<strong>${escapeHtmlAttr(originalCode)}</strong><br>
+        <a href="#" class="popup-details" data-code="${escapeHtmlAttr(originalCode)}" data-treeid="${escapeHtmlAttr(tree.id)}">Details</a>`;
 
-    const marker = L.marker([tree.latitude, tree.longitude], { icon: defaultIcon })
-    .bindPopup(popupHtml);
+        const marker = L.marker([tree.latitude, tree.longitude], { icon: defaultIcon })
+        .bindPopup(popupHtml);
 
-    clusterGroup.addLayer(marker);
-    markers[codeKey] = marker;
+        clusterGroup.addLayer(marker);
+        markers[codeKey] = marker;
 
-    marker.on('click', () => setActiveMarker(marker, tree));
-});
+        marker.on('click', () => setActiveMarker(marker, tree));
+    });
 }
 
 function setActiveMarker(marker, tree) {
@@ -182,37 +258,93 @@ return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&
 function qs(id) { return document.getElementById(id); }
 
 /* ========= Modal / detail UI ========= */
-function showTreeDetails(tree) {
-if (!tree) return console.error('showTreeDetails: tree is null/undefined');
+    let currentPage = 1;
+    const pageSize = 5;
+    let currentHarvests = [];
 
-const modal = qs('tree-details');
-if (!modal) return console.error('Modal element not found: #tree-details');
+    function renderHarvests() {
+    const harvestsBody = qs('detail-harvests');
+    const pageInfo = qs('harvest-page-info');
+    if (!harvestsBody) return;
 
-// populate visible info
-qs('detail-code').innerText = tree.code || '';
-qs('detail-filename').innerText = tree.filename || '';
-qs('detail-taken').innerText = tree.taken_at ?? '—';
+    harvestsBody.innerHTML = '';
 
-const img = qs('detail-image');
-if (img) {
-    if (tree.image_path) {
-    img.src = tree.image_path;
-    img.classList.remove('hidden');
-    } else if (tree.filename) {
-    img.src = `/storage/tree_images/${tree.filename}`;
-    img.classList.remove('hidden');
-    } else {
-    img.src = '';
-    img.classList.add('hidden');
+    const totalPages = Math.ceil(currentHarvests.length / pageSize) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageItems = currentHarvests.slice(start, end);
+
+    pageItems.forEach(h => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+        <td class="border border-gray-300 px-2 py-1">${h.date}</td>
+        <td class="border border-gray-300 px-2 py-1">${h.weight}</td>
+        `;
+        harvestsBody.appendChild(row);
+    });
+
+    if (pageInfo) {
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
     }
-}
 
-// prepare edit link
-prepareEditLink(tree);
+    qs('harvest-prev').disabled = currentPage <= 1;
+    qs('harvest-next').disabled = currentPage >= totalPages;
+    }
 
-modal.classList.remove('hidden');
-modal.style.pointerEvents = 'auto'; // re-enable typing/clicking
-}
+    function showTreeDetails(tree) {
+    if (!tree) return console.error('showTreeDetails: tree is null/undefined');
+
+    qs('detail-code').innerText = tree.code || '';
+    qs('detail-filename').innerText = tree.filename || '';
+    qs('detail-taken').innerText = tree.taken_at ?? '—';
+
+    const img = qs('detail-image');
+    if (img) {
+        if (tree.image_path) {
+        img.src = tree.image_path;
+        img.classList.remove('hidden');
+        } else if (tree.filename) {
+        img.src = `/storage/tree_images/${tree.filename}`;
+        img.classList.remove('hidden');
+        } else {
+        img.src = '';
+        img.classList.add('hidden');
+        }
+    }
+
+    // reset pagination state
+    currentPage = 1;
+    currentHarvests = tree.harvests || [];
+    renderHarvests();
+
+    // prepare edit link
+    prepareEditLink(tree);
+
+    // show modal
+    const modal = qs('tree-details');
+    modal.classList.remove('hidden');
+    modal.style.pointerEvents = 'auto';
+    }
+
+    // Hook up pagination buttons once
+    document.addEventListener('DOMContentLoaded', () => {
+    qs('harvest-prev').addEventListener('click', () => {
+        if (currentPage > 1) {
+        currentPage--;
+        renderHarvests();
+        }
+    });
+    qs('harvest-next').addEventListener('click', () => {
+        const totalPages = Math.ceil(currentHarvests.length / pageSize);
+        if (currentPage < totalPages) {
+        currentPage++;
+        renderHarvests();
+        }
+    });
+    });
+
 
 function prepareEditLink(tree) {
     const baseUrl = "{{ route('tree_data.create') }}"; 
@@ -227,13 +359,13 @@ function prepareEditLink(tree) {
     link.onclick = function (e) {
         e.preventDefault();
 
-        // ✅ Completely remove modal + backdrop
+        //  Completely remove modal + backdrop
         const modal = document.getElementById('tree-details');
         if (modal) modal.remove();
 
         document.querySelectorAll('.modal-backdrop, .backdrop').forEach(el => el.remove());
 
-        // ✅ Redirect cleanly to form
+        //  Redirect cleanly to form
         setTimeout(() => { window.location.href = href; }, 50);
     };
 }

@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Schema;
 class TreeData extends Model
 {
     protected $table = 'tree_data';
+    protected $primaryKey = 'code';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'tree_code_id',
@@ -20,10 +23,10 @@ class TreeData extends Model
     /**
      * Relationship: Each tree data belongs to a tree code
      */
-    public function treeCode()
-    {
-        return $this->belongsTo(TreeCode::class);
-    }
+    // public function treeCode()
+    // {
+    //     return $this->belongsTo(TreeCode::class);
+    // }
 
     /**
      * Carbon sequestration calculation (in pounds of CO₂)
@@ -116,4 +119,12 @@ class TreeData extends Model
             'projection' => $projection,
         ];
     }
+
+    public function treeCode()
+    {
+        // tree_data.tree_code_id → tree_code.id
+        return $this->belongsTo(TreeCode::class, 'tree_code_id', 'id');
+    }
+
+
 }

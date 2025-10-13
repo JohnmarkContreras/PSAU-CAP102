@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Farm Data')
+@section('title', 'Analytics')
 
 @section('content')
 <main class="flex-1 p-6 space-y-6">

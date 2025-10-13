@@ -30,13 +30,6 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    // SMS via Twilio
-    'twilio' => [
-        'sid' => env('TWILIO_SID'),
-        'token' => env('TWILIO_TOKEN'),
-        'from' => env('TWILIO_FROM'),
-    ],
-
     // Harvest prediction thresholds and model defaults
     'harvest' => [
         'min_dbh_cm' => env('HARVEST_MIN_DBH_CM', 10),
@@ -45,5 +38,10 @@ return [
         'sarima_seasonal' => env('HARVEST_SARIMA_SEASONAL', '0,1,0,12'),
         'harvest_months' => env('HARVEST_MONTHS', '1,2,3'),
     ],
+
+    'semaphore' => [
+        'semaphore.api_key' => env('SEMAPHORE_API_KEY'),
+        'semaphore.sender_name' => env('SEMAPHORE_SENDER_NAME'),
+    ]
 
 ];

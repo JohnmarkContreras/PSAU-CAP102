@@ -25,7 +25,7 @@ public function index(Request $request)
             ->latest();
     }
 
-    // ✅ Only now, after all filters, paginate
+    //  Only now, after all filters, paginate
     $notifications = $query->paginate(10);
 
     // 🔒 Role-based filtering for 'user' role
@@ -43,11 +43,11 @@ public function index(Request $request)
 
     // AJAX partials (for live filtering)
     if ($request->ajax()) {
-        return view('partials.notifications', compact('notifications'));
+        return view('partials.notifications.filter', compact('notifications'));
     }
 
     // Normal full page
-    return view('pages.notifications', compact('notifications', 'filter'));
+    return view('pages.notifications.filter', compact('notifications', 'filter'));
 }
 
 

@@ -9,31 +9,18 @@ use Illuminate\Queue\SerializesModels;
 
 class HarvestReminderMail extends Mailable
 {
-    use Queueable, SerializesModels;
-
-    /**
-     * Create a new message instance.
-     *
-     * @return void
-     */
-    public $daysBefore;
+    public $predictions;
     public $userName;
 
-    public function __construct($daysBefore, $userName)
-        {
-            $this->daysBefore = $daysBefore;
-            $this->userName = $userName;
-        }
-
-
-        /**
-         * Build the message.
-         *
-         * @return $this
-         */
-    public function build()
-        {
-            return $this->subject("Reminder: Harvest in {$this->daysBefore} day(s)")
-                        ->view('emails.harvest_reminder');
-        }
+    public function __construct($predictions, $userName)
+    {
+        $this->predictions = $predictions;
+        $this->userName = $userName;
     }
+
+    public function build()
+    {
+        return $this->subject("Reminder: Upcoming Harvest Predictions")
+                    ->view('emails.harvest_reminder');
+    }
+}

@@ -12,7 +12,7 @@ class TreeImage extends Model
 
     public function code()
     {
-        return $this->hasOne(TreeCode::class);
+        return $this->hasOne(TreeCode::class, 'tree_image_id');
     }
 
 }

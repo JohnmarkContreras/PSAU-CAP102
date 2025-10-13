@@ -28,9 +28,6 @@ class="w-40 h-40 mb-4"
 <h1 class="text-2xl font-extrabold text-green-800 mb-1 pl-2" style="font-family: Arial, sans-serif;">
     PSAU Tamarind RDE Center
 </h1>
-<p class="text-sm text-gray-900 mb-6 pl-2" style="font-family: Arial, sans-serif;">
-    Access the system as Super Admin, Admin, or User.
-</p>
 
 {{-- Login Form --}}
 <form method="POST" action="{{ route('login.check') }}" class="flex flex-col space-y-4">

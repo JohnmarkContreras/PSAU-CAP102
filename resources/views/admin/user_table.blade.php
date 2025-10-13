@@ -22,6 +22,7 @@
                         <thead>
                             <tr class="bg-gray-100 text-left text-sm font-semibold text-gray-700">
                                 <th class="px-4 py-2 border border-gray-200">ID</th>
+                                <th class="px-4 py-2 border border-gray-200">Photo</th>
                                 <th class="px-4 py-2 border border-gray-200">Name</th>
                                 <th class="px-4 py-2 border border-gray-200">Email</th>
                                 <th class="px-4 py-2 border border-gray-200">Role</th>
@@ -32,11 +33,28 @@
                             @foreach ($users as $user)
                                 <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
                                     <td class="px-4 py-2 border border-gray-200">{{ $user->id }}</td>
+
+                                    {{-- Profile Picture --}}
+                                    <td class="px-4 py-2 border border-gray-200">
+                                        <div class="flex items-center justify-center">
+                                            @if($user->profile_picture)
+                                                <img src="{{ asset('storage/' . $user->profile_picture) }}"
+                                                    alt="Profile Picture"
+                                                    class="w-10 h-10 rounded-full object-cover border border-gray-300">
+                                            @else
+                                                <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=0D8ABC&color=fff"
+                                                    alt="Default Avatar"
+                                                    class="w-10 h-10 rounded-full object-cover border border-gray-300">
+                                            @endif
+                                        </div>
+                                    </td>
+
                                     <td class="px-4 py-2 border border-gray-200">{{ $user->name }}</td>
                                     <td class="px-4 py-2 border border-gray-200">{{ $user->email }}</td>
                                     <td class="px-4 py-2 border border-gray-200 capitalize">
                                         {{ $user->getRoleNames()->implode(', ') }}
                                     </td>
+
                                     <td class="px-4 py-2 border border-gray-200">
                                         <div class="flex justify-center items-center gap-4">
                                             {{-- Delete --}}
@@ -75,38 +93,53 @@
                         </tbody>
                     </table>
 
-                    {{-- Mobile view --}}
+                    {{-- Mobile View --}}
                     <div class="sm:hidden space-y-4">
                         @foreach ($users as $user)
                             <div class="border rounded p-3 bg-white">
-                                <div class="mt-2 flex items-center gap-2 float-right">
-                                    {{-- Delete --}}
-                                    <form action="{{ route('superadmin.delete.account', $user->id) }}" method="POST" class="inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="text-red-600 hover:underline">
-                                            <i class="fas fa-trash text-2xl text-red-700 cursor-pointer"></i>
-                                        </button>
-                                    </form>
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        @if($user->profile_picture)
+                                            <img src="{{ asset('storage/' . $user->profile_picture) }}"
+                                                alt="Profile Picture"
+                                                class="w-12 h-12 rounded-full object-cover border border-gray-300">
+                                        @else
+                                            <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=0D8ABC&color=fff"
+                                                alt="Default Avatar"
+                                                class="w-12 h-12 rounded-full object-cover border border-gray-300">
+                                        @endif
+                                        <div>
+                                            <p class="font-semibold">{{ $user->name }}</p>
+                                            <p class="text-xs text-gray-500">{{ $user->email }}</p>
+                                        </div>
+                                    </div>
 
-                                    {{-- Archive --}}
-                                    <form action="{{ route('users.archive', $user->id) }}" method="POST" onsubmit="return confirm('Archive this user?');">
-                                        @csrf
-                                        <input name="reason" value="archived by admin" hidden>
-                                        <button type="submit">
-                                            <i class="fas fa-archive text-2xl text-yellow-600 cursor-pointer"></i>
-                                        </button>
-                                    </form>
+                                    <div class="flex items-center gap-3">
+                                        {{-- Delete --}}
+                                        <form action="{{ route('superadmin.delete.account', $user->id) }}" method="POST" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="text-red-600 hover:underline">
+                                                <i class="fas fa-trash text-xl text-red-700 cursor-pointer"></i>
+                                            </button>
+                                        </form>
 
-                                    {{-- Edit --}}
-                                    <a href="{{ route('admin.edit_user', $user->id) }}">
-                                        <i class="fa-solid fa-pen-to-square text-2xl text-green-700 cursor-pointer"></i>
-                                    </a>
+                                        {{-- Archive --}}
+                                        <form action="{{ route('users.archive', $user->id) }}" method="POST" onsubmit="return confirm('Archive this user?');">
+                                            @csrf
+                                            <input name="reason" value="archived by admin" hidden>
+                                            <button type="submit">
+                                                <i class="fas fa-archive text-xl text-yellow-600 cursor-pointer"></i>
+                                            </button>
+                                        </form>
+
+                                        {{-- Edit --}}
+                                        <a href="{{ route('admin.edit_user', $user->id) }}">
+                                            <i class="fa-solid fa-pen-to-square text-xl text-green-700 cursor-pointer"></i>
+                                        </a>
+                                    </div>
                                 </div>
 
-                                <p><span class="font-semibold">ID:</span> {{ $user->id }}</p>
-                                <p><span class="font-semibold">Name:</span> {{ $user->name }}</p>
-                                <p><span class="font-semibold">Email:</span> {{ $user->email }}</p>
                                 <p><span class="font-semibold">Role:</span> {{ $user->getRoleNames()->implode(', ') }}</p>
                             </div>
                         @endforeach
@@ -124,7 +157,7 @@
         $('#accountsTable').DataTable({
             responsive: true,
             pageLength: 10,
-            order: [[0, 'asc']], // sort by ID ascending
+            order: [[0, 'asc']],
             language: {
                 search: "_INPUT_",
                 searchPlaceholder: "Search accounts...",
@@ -137,7 +170,7 @@
                 infoEmpty: "No accounts available",
             },
             columnDefs: [
-                { orderable: false, targets: [4] } // Disable sorting on Actions column
+                { orderable: false, targets: [1, 5] } // Disable sorting for photo & actions
             ]
         });
     });

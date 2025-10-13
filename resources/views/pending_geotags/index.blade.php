@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Pending tags')
+
 @section('content')
 <div 
     x-data="{ showModal: false, modalImg: '' }" 

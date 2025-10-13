@@ -18,7 +18,7 @@
                             <div class="md:col-span-2">
                                 <input type="file" name="file" class="w-full border rounded-lg p-2" required>
                             </div>
-                            <button class="rounded-xl bg-indigo-600 text-white py-2 px-4 hover:bg-indigo-700">
+                            <button class="rounded-xl bg-blue-600 text-white py-2 px-4 hover:bg-blue-700">
                                 Import Excel
                             </button>
                         </div>
@@ -180,18 +180,114 @@
 
                 <section class="bg-[#e9eee9] rounded-lg p-4 relative">
                     <x-card title="Harvest Predictions Calendar">
+                                @if (session('status'))
+                                    <div class="alert alert-success">{{ session('status') }}</div>
+                                @endif
+
+                                <form action="{{ route('send.reminders') }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="btn btn-primary float-right h-10 pl-10 pr-10 text-white rounded-md bg-blue-600 hover:bg-blue-700">
+                                        Send Harvest Reminders
+                                    </button>
+                                </form>
                         <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
                         <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
                             <div class="mt-8 mb-4">
                                 <h2 class="text-xl font-semibold text-gray-800 mb-2">Harvest Predictions Calendar</h2>
                                 <p class="text-sm text-gray-600">Predicted harvest dates for all trees. Click on a date to see details.</p>
-                                <div id="calendar-summary" class="mt-2 text-sm text-gray-700">
-                                    <!-- FullCalendar CSS + JS -->
-                                    <div id="harvest-calendar" class="bg-white p-4 rounded-xl shadow-md"></div>
-                                </div>
+                                    <div id="calendar-wrapper" class="w-full overflow-x-auto">
+                                        <div id="harvest-calendar" class="bg-white p-2 sm:p-4 rounded-xl shadow-md min-w-[320px]"></div>
+                                    </div>
                             </div>
                     </x-card>
+                    <canvas id="harvestChart"></canvas>
+                        @if(!empty($evaluation))
+                            <div class="mt-4 p-4 bg-gray-100 rounded">
+                                <p><strong>Overall Accuracy:</strong> {{ $evaluation['overall_accuracy'] }}%</p>
+                                <p><strong>MAPE:</strong> {{ $evaluation['mape'] }}%</p>
+                                <p><strong>RMSE:</strong> {{ $evaluation['rmse'] }}</p>
+                                <p><strong>Correlation:</strong> {{ $evaluation['correlation'] }}</p>
+                            </div>
+                        @else
+                            <div class="mt-4 p-4 bg-yellow-100 rounded">
+                                <p>No evaluation data available yet. Predictions exist, but actual harvest data may not be sufficient for accuracy metrics.</p>
+                            </div>
+                        @endif
                 </section>
+
+                <script>
+
+                    document.addEventListener("DOMContentLoaded", function () {
+                        const calendarData = @json($calendarData);
+
+                        const events = Object.entries(calendarData).map(([code, entry]) => ({
+                            title: `${code} (${entry.predicted_quantity} kg)`,
+                            start: `${entry.predicted_date}T00:00:00`,
+                            allDay: true,
+                            backgroundColor: '#38bdf8',
+                            borderColor: '#0ea5e9',
+                            textColor: '#fff',
+                        }));
+
+                        const calendarEl = document.getElementById('harvest-calendar');
+                        const calendar = new FullCalendar.Calendar(calendarEl, {
+                            initialView: window.innerWidth < 640 ? 'listMonth' : 'dayGridMonth',
+                            height: 'auto',
+                            headerToolbar: {
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: window.innerWidth < 640 ? 'listMonth' : 'dayGridMonth,listMonth'
+                            },
+                            events: events,
+                            eventClick: function(info) {
+                            const event = info.event;
+                            alert(`${event.title}\nDate: ${event.start.toISOString().split('T')[0]}`);
+                            },
+                            windowResize: function(view) {
+                            calendar.changeView(window.innerWidth < 640 ? 'listMonth' : 'dayGridMonth');
+                            }
+                        });
+
+                        calendar.render();
+                        });
+                    
+                    const ctx = document.getElementById('harvestChart').getContext('2d');
+                    const monthly = @json($evaluation['monthly'] ?? []);
+
+                    const labels = monthly.map(m => m.predicted_date);
+                    const predicted = monthly.map(m => m.predicted_quantity);
+                    const actual = monthly.map(m => m.harvest_weight_kg);
+
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Predicted',
+                                    data: predicted,
+                                    borderColor: 'rgba(59, 130, 246, 1)', // Tailwind blue-500
+                                    fill: false,
+                                },
+                                {
+                                    label: 'Actual',
+                                    data: actual,
+                                    borderColor: 'rgba(16, 185, 129, 1)', // Tailwind emerald-500
+                                    fill: false,
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Predicted vs Actual Tamarind Harvest'
+                                }
+                            }
+                        }
+                    });
+                    </script>
 
                     <script>
                         async function runPredict(yieldingOnly = false) {
@@ -245,7 +341,7 @@
                                     let summary = '';
                                     for (const [code, result] of Object.entries(data.results)) {
                                         if (result.ok) {
-                                            summary += `Tree ${code}: ✅ Predicted ${result.predicted_quantity}kg on ${result.predicted_date}\n`;
+                                            summary += `Tree ${code}:  Predicted ${result.predicted_quantity}kg on ${result.predicted_date}\n`;
                                         } else {
                                             summary += `Tree ${code}: ⚠️ ${result.message}\n`;
                                         }

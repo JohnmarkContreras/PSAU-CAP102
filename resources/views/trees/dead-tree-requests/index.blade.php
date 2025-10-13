@@ -42,7 +42,7 @@
                 @endforeach
             </div>
             <div class="mt-6">
-                {{ $requests->links() }} {{-- ✅ Laravel pagination --}}
+                {{ $requests->links() }} {{--  Laravel pagination --}}
             </div>
         @endif
     </x-card>
