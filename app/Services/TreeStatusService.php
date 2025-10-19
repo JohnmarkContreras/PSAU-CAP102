@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Tree;
 use App\Models\DeadTree;
+use App\User;
 
 class TreeStatusService
 {

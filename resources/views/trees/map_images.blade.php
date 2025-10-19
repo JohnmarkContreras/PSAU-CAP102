@@ -14,7 +14,7 @@
 
 <main class="flex-1 p-6 space-y-6">
     <section class="bg-[#e9eee9] rounded-lg p-4 relative">
-        <x-card title="Imported Tamarind Tree Locations">
+        <x-card title="Tamarind Tree Locations">
             <div class="flex items-center justify-between mb-4">
                 <!-- Search Box -->
                 <div class="flex flex-col w-full max-w-md">
@@ -55,10 +55,10 @@
 
                     <!-- Scrollable body -->
                     <div class="p-4 sm:p-6 overflow-y-auto">
-                        <a href="{{ route('tree_data.create') }}"
-                            class="text-green-700 hover:underline block mb-2"
-                            id="edit-tree-link">
-                            Add Tamarind Tree Data
+                        <a href="#"
+                        class="text-green-700 hover:underline block mb-2"
+                        id="edit-tree-link">
+                        Edit Tamarind Tree Data
                         </a>
 
                         <p><strong>Code:</strong> <span id="detail-code"></span></p>
@@ -108,20 +108,14 @@ attribution: 'Tiles &copy; Esri',
 maxZoom: 19
 }).addTo(map);
 
-//GQIS
-// // Example: same source QGIS might use:
-// L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-//     attribution: '© OpenStreetMap contributors'
-// }).addTo(map);
-
 const clusterGroup = L.markerClusterGroup({
 showCoverageOnHover: false,
 disableClusteringAtZoom: 19
 });
 map.addLayer(clusterGroup);
 
-var treeData = {};   // keyed by UPPERCASE code for fast lookup
-var markers = {};    // keyed by UPPERCASE code
+var treeData = {};
+var markers = {};
 var activeMarker = null;
 
 var defaultIcon = new L.Icon({
@@ -137,45 +131,29 @@ iconAnchor: [12, 41],
 popupAnchor: [1, -34]
 });
 
-/* ========= Fetch markers for visible bounds (debounced) ========= */
-let fetchTimeout = null;
-let lastBoundsKey = null;
+/* ========= Fetch all markers on load ========= */
+let markersLoaded = false;
 
-function boundsKey(b) {
-return [b.getSouthWest().lat, b.getSouthWest().lng, b.getNorthEast().lat, b.getNorthEast().lng].join(',');
-}
+function fetchAllMarkers() {
+if (markersLoaded) return;
 
-function fetchMarkersForBounds() {
-const b = map.getBounds();
-const key = boundsKey(b);
-if (key === lastBoundsKey) return;
-lastBoundsKey = key;
-
-const params = new URLSearchParams({
-    south: b.getSouthWest().lat,
-    west: b.getSouthWest().lng,
-    north: b.getNorthEast().lat,
-    east: b.getNorthEast().lng,
-    limit: 1000
-});
-
-fetch(`/tree-images/data?${params.toString()}`)
+fetch(`/tree-images/data?limit=10000`, {
+    credentials: 'include',
+    headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+    }
+})
     .then(r => r.json())
     .then(data => {
-    clusterGroup.clearLayers();
     addMarkers(data);
+    markersLoaded = true;
     })
     .catch(err => console.error('Error loading tree data:', err));
 }
 
-function debouncedFetch() {
-if (fetchTimeout) clearTimeout(fetchTimeout);
-fetchTimeout = setTimeout(fetchMarkersForBounds, 250);
-}
-
-map.on('load', debouncedFetch);
-map.on('moveend', debouncedFetch);
-debouncedFetch();
+map.on('load', fetchAllMarkers);
+document.addEventListener('DOMContentLoaded', fetchAllMarkers);
 
 /* ========= Live location tracking ========= */
 var userMarker = null;
@@ -188,7 +166,6 @@ navigator.geolocation.watchPosition(
     const lng = pos.coords.longitude;
     const accuracy = pos.coords.accuracy;
 
-    // If marker doesn't exist yet, create it
     if (!userMarker) {
         userMarker = L.marker([lat, lng], {
         icon: new L.Icon({
@@ -199,10 +176,8 @@ navigator.geolocation.watchPosition(
         })
         }).addTo(map).bindPopup("You are here");
 
-
-        map.setView([lat, lng], 17); // center map on first fix
+        map.setView([lat, lng], 17);
     } else {
-        // Update marker and circle
         userMarker.setLatLng([lat, lng]);
     }
     },
@@ -225,6 +200,9 @@ function addMarkers(data) {
         const originalCode = tree.code || '';
         const codeKey = String(originalCode).toUpperCase();
 
+        // Skip if already added
+        if (markers[codeKey]) return;
+
         treeData[codeKey] = tree;
 
         const popupHtml = `<strong>${escapeHtmlAttr(originalCode)}</strong><br>
@@ -236,7 +214,11 @@ function addMarkers(data) {
         clusterGroup.addLayer(marker);
         markers[codeKey] = marker;
 
-        marker.on('click', () => setActiveMarker(marker, tree));
+        // On marker click, set active marker and open popup
+        marker.on('click', () => {
+            setActiveMarker(marker, tree);
+            marker.openPopup();
+        });
     });
 }
 
@@ -244,9 +226,6 @@ function setActiveMarker(marker, tree) {
 if (activeMarker) activeMarker.setIcon(defaultIcon);
 activeMarker = marker;
 activeMarker.setIcon(activeIcon);
-map.setView(activeMarker.getLatLng(), 18);
-activeMarker.openPopup();
-showTreeDetails(tree);
 }
 
 /* ========= Utility ========= */
@@ -258,124 +237,115 @@ return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&
 function qs(id) { return document.getElementById(id); }
 
 /* ========= Modal / detail UI ========= */
-    let currentPage = 1;
-    const pageSize = 5;
-    let currentHarvests = [];
+let currentPage = 1;
+const pageSize = 5;
+let currentHarvests = [];
 
-    function renderHarvests() {
-    const harvestsBody = qs('detail-harvests');
-    const pageInfo = qs('harvest-page-info');
-    if (!harvestsBody) return;
+function renderHarvests() {
+const harvestsBody = qs('detail-harvests');
+const pageInfo = qs('harvest-page-info');
+if (!harvestsBody) return;
 
-    harvestsBody.innerHTML = '';
+harvestsBody.innerHTML = '';
 
-    const totalPages = Math.ceil(currentHarvests.length / pageSize) || 1;
-    if (currentPage > totalPages) currentPage = totalPages;
+const totalPages = Math.ceil(currentHarvests.length / pageSize) || 1;
+if (currentPage > totalPages) currentPage = totalPages;
 
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    const pageItems = currentHarvests.slice(start, end);
+const start = (currentPage - 1) * pageSize;
+const end = start + pageSize;
+const pageItems = currentHarvests.slice(start, end);
 
-    pageItems.forEach(h => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-        <td class="border border-gray-300 px-2 py-1">${h.date}</td>
-        <td class="border border-gray-300 px-2 py-1">${h.weight}</td>
-        `;
-        harvestsBody.appendChild(row);
-    });
+pageItems.forEach(h => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+    <td class="border border-gray-300 px-2 py-1">${h.date}</td>
+    <td class="border border-gray-300 px-2 py-1">${h.weight}</td>
+    `;
+    harvestsBody.appendChild(row);
+});
 
-    if (pageInfo) {
-        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-    }
-
-    qs('harvest-prev').disabled = currentPage <= 1;
-    qs('harvest-next').disabled = currentPage >= totalPages;
-    }
-
-    function showTreeDetails(tree) {
-    if (!tree) return console.error('showTreeDetails: tree is null/undefined');
-
-    qs('detail-code').innerText = tree.code || '';
-    qs('detail-filename').innerText = tree.filename || '';
-    qs('detail-taken').innerText = tree.taken_at ?? '—';
-
-    const img = qs('detail-image');
-    if (img) {
-        if (tree.image_path) {
-        img.src = tree.image_path;
-        img.classList.remove('hidden');
-        } else if (tree.filename) {
-        img.src = `/storage/tree_images/${tree.filename}`;
-        img.classList.remove('hidden');
-        } else {
-        img.src = '';
-        img.classList.add('hidden');
-        }
-    }
-
-    // reset pagination state
-    currentPage = 1;
-    currentHarvests = tree.harvests || [];
-    renderHarvests();
-
-    // prepare edit link
-    prepareEditLink(tree);
-
-    // show modal
-    const modal = qs('tree-details');
-    modal.classList.remove('hidden');
-    modal.style.pointerEvents = 'auto';
-    }
-
-    // Hook up pagination buttons once
-    document.addEventListener('DOMContentLoaded', () => {
-    qs('harvest-prev').addEventListener('click', () => {
-        if (currentPage > 1) {
-        currentPage--;
-        renderHarvests();
-        }
-    });
-    qs('harvest-next').addEventListener('click', () => {
-        const totalPages = Math.ceil(currentHarvests.length / pageSize);
-        if (currentPage < totalPages) {
-        currentPage++;
-        renderHarvests();
-        }
-    });
-    });
-
-
-function prepareEditLink(tree) {
-    const baseUrl = "{{ route('tree_data.create') }}"; 
-    const code = tree.code ? encodeURIComponent(tree.code) : '';
-    const id = tree.tree_code_id || tree.id || '';
-    const href = `${baseUrl}?tree_code=${code}&tree_code_id=${id}`;
-
-    const link = document.getElementById('edit-tree-link');
-    if (!link) return;
-
-    link.href = href;
-    link.onclick = function (e) {
-        e.preventDefault();
-
-        //  Completely remove modal + backdrop
-        const modal = document.getElementById('tree-details');
-        if (modal) modal.remove();
-
-        document.querySelectorAll('.modal-backdrop, .backdrop').forEach(el => el.remove());
-
-        //  Redirect cleanly to form
-        setTimeout(() => { window.location.href = href; }, 50);
-    };
+if (pageInfo) {
+    pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
 }
 
+qs('harvest-prev').disabled = currentPage <= 1;
+qs('harvest-next').disabled = currentPage >= totalPages;
+}
+
+function showTreeDetails(tree) {
+if (!tree) return console.error('showTreeDetails: tree is null/undefined');
+
+qs('detail-code').innerText = tree.code || '';
+qs('detail-filename').innerText = tree.filename || '';
+qs('detail-taken').innerText = tree.taken_at ?? '—';
+
+const img = qs('detail-image');
+if (img) {
+    if (tree.image_path) {
+    img.src = tree.image_path;
+    img.classList.remove('hidden');
+    } else if (tree.filename) {
+    img.src = `/storage/tree_images/${tree.filename}`;
+    img.classList.remove('hidden');
+    } else {
+    img.src = '';
+    img.classList.add('hidden');
+    }
+}
+
+// reset pagination state
+currentPage = 1;
+currentHarvests = tree.harvests || [];
+renderHarvests();
+
+// prepare edit link
+prepareEditLink(tree);
+
+// show modal
+const modal = qs('tree-details');
+modal.classList.remove('hidden');
+modal.style.pointerEvents = 'auto';
+}
+
+// Hook up pagination buttons once
+document.addEventListener('DOMContentLoaded', () => {
+qs('harvest-prev').addEventListener('click', () => {
+    if (currentPage > 1) {
+    currentPage--;
+    renderHarvests();
+    }
+});
+qs('harvest-next').addEventListener('click', () => {
+    const totalPages = Math.ceil(currentHarvests.length / pageSize);
+    if (currentPage < totalPages) {
+    currentPage++;
+    renderHarvests();
+    }
+});
+});
+
+function prepareEditLink(tree) {
+const href = `/tree_data/${tree.tree_code_id}/edit`;
+const link = document.getElementById('edit-tree-link');
+if (!link) return;
+
+link.href = href;
+link.onclick = function (e) {
+    e.preventDefault();
+
+    const modal = document.getElementById('tree-details');
+    if (modal) modal.remove();
+    document.querySelectorAll('.modal-backdrop, .backdrop').forEach(el => el.remove());
+
+    setTimeout(() => { window.location.href = href; }, 50);
+};
+}
 
 function closeTreeDetails() {
 const modal = qs('tree-details');
 if (modal) {
     modal.classList.add('hidden');
-    modal.style.pointerEvents = ''; // reset
+    modal.style.pointerEvents = '';
 }
 document.querySelectorAll('.modal-backdrop, .backdrop').forEach(el => el.remove());
 }
@@ -408,13 +378,27 @@ if (!tree) {
     };
 }
 
-console.log('Delegated trigger clicked, resolved tree:', tree);
+// Set active marker if we have a tree
+if (tree && tree.code) {
+    const codeKey = String(tree.code).toUpperCase();
+    if (markers[codeKey]) {
+        setActiveMarker(markers[codeKey], tree);
+    }
+}
+
+// Show the modal
 showTreeDetails(tree);
 }, false);
 
 /* ========= Search suggestions ========= */
 let allCodes = [];
-fetch('/tree-images/codes')
+fetch('/tree-images/codes', {
+    credentials: 'include',
+    headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+    }
+})
 .then(r => r.json())
 .then(codes => { allCodes = codes.map(c => String(c).toUpperCase()); })
 .catch(err => console.error('Error loading codes:', err));
@@ -425,11 +409,15 @@ if (!suggestionsBox) return;
 suggestionsBox.innerHTML = '';
 
 if (!query || query.length < 1) {
-    suggestionsBox.classList.add('hidden'); return;
+    suggestionsBox.classList.add('hidden');
+    return;
 }
 
 const matches = allCodes.filter(c => c.includes(query.toUpperCase())).slice(0, 10);
-if (matches.length === 0) { suggestionsBox.classList.add('hidden'); return; }
+if (matches.length === 0) {
+    suggestionsBox.classList.add('hidden');
+    return;
+}
 
 matches.forEach(code => {
     const li = document.createElement('li');
@@ -438,20 +426,39 @@ matches.forEach(code => {
     li.onclick = function () {
     qs('treeCode').value = code;
     suggestionsBox.classList.add('hidden');
-    try {
-        if (markers[code]) setActiveMarker(markers[code], treeData[code]);
-        else {
-        fetch(`/tree-images/data?code=${code}`)
+    
+    const codeKey = code.toUpperCase();
+    
+    // Check if marker already loaded
+    if (markers[codeKey]) {
+        const marker = markers[codeKey];
+        const tree = treeData[codeKey];
+        setActiveMarker(marker, tree);
+        showTreeDetails(tree);
+    } else {
+        // Fetch the tree data
+        fetch(`/tree-images/data?code=${code}`, {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
             .then(r => r.json())
             .then(data => {
             if (data.length > 0) {
                 addMarkers(data);
                 const k = (data[0].code || '').toUpperCase();
-                if (markers[k]) setActiveMarker(markers[k], treeData[k]);
+                if (markers[k]) {
+                    const marker = markers[k];
+                    const tree = treeData[k];
+                    setActiveMarker(marker, tree);
+                    showTreeDetails(tree);
+                }
             }
-            });
-        }
-    } catch (err) { console.warn('Suggestion click: missing map helpers', err); }
+            })
+            .catch(err => console.error('Error fetching tree:', err));
+    }
     };
     suggestionsBox.appendChild(li);
 });
@@ -467,5 +474,4 @@ if (editLink && !editLink.getAttribute('href')) {
 }
 });
 </script>
-
 @endsection

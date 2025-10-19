@@ -1,5 +1,5 @@
 @extends('layouts.app') <!-- Inherit the layout -->
-    {{-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> --}}
+
 @section('title', 'Notifications')
 
 @section('content')
@@ -28,15 +28,15 @@
                                     Unread
                                 </button>
                             </div>
-    <!-- Mark all button under filters -->
-    <form method="POST" action="{{ route('notifications.markAllRead') }}">
-        @csrf
-        <button type="submit"
-            class="text-sm bg-[#e9eee9] rounded-sm w-32 h-10 text-green-800 hover:underline font-medium cursor-pointer">
-            Mark all as read
-        </button>
-    </form>
-</div>
+                        <!-- Mark all button under filters -->
+                            <form method="POST" action="{{ route('notifications.markAllRead') }}">
+                                @csrf
+                                <button type="submit"
+                                    class="text-sm bg-[#e9eee9] rounded-sm w-32 h-10 text-green-800 hover:underline font-medium cursor-pointer">
+                                    Mark all as read
+                                </button>
+                            </form>
+                        </div>
 
                         </div>
                             {{-- Tabs --}}
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
             spinner.classList.remove('hidden');
             container.innerHTML = '';
 
-            fetch(`{{ route('pages.notifications') }}?filter=${filter}`, {
+            fetch(`{{ route('pages.Notifications') }}?filter=${filter}`, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 }

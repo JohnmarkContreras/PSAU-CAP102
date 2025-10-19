@@ -2,63 +2,56 @@
 
 namespace App\Services;
 
-use App\Tree;
-use App\CarbonRecord;
+use App\TreeData;
 use Carbon\Carbon;
-
+use App\User;
 class CarbonTrackingService
 {
     public function generateChartData($startDate = null, $endDate = null)
     {
-        $this->ensureDailyCarbonRecords();
-        
         $startDate = $startDate ?? now()->subDays(30);
-        $endDate = $endDate ?? now();
+        $endDate   = $endDate ?? now();
 
         return $this->getChartDataForPeriod($startDate, $endDate);
     }
 
-    private function ensureDailyCarbonRecords()
+    /**
+     * Update sequestration values directly on TreeData
+     */
+    public function updateCarbonForTreeData(TreeData $treeData, array $params = [])
     {
-        $trees = Tree::all();
-        $today = now()->toDateString();
+        // Example: compute biomass/carbon/sequestration
+        // You can replace this with your actual formula
+        $dbh   = $treeData->dbh ?? 0;
+        $height = $treeData->height ?? 0;
 
-        foreach ($trees as $tree) {
-            if (!$this->hasRecordForDate($tree->id, $today)) {
-                $this->createCarbonRecord($tree);
-            }
-        }
-    }
+        $estimatedBiomass = ($dbh * $height) * ($params['alpha'] ?? 0.5);
+        $carbonStock      = $estimatedBiomass * 0.5;
+        $annualSeq        = $carbonStock * 0.1;
 
-    private function hasRecordForDate($treeId, $date)
-    {
-        return CarbonRecord::whereDate('recorded_at', $date)
-            ->where('tree_id', $treeId)
-            ->exists();
-    }
-
-    private function createCarbonRecord(Tree $tree)
-    {
-        CarbonRecord::create([
-            'tree_id' => $tree->id,
-            'estimated_biomass_kg' => $tree->estimated_biomass_kg,
-            'carbon_stock_kg' => $tree->carbon_stock_kg,
-            'annual_sequestration_kg' => $tree->annual_sequestration_kg,
-            'recorded_at' => now(),
+        $treeData->update([
+            'estimated_biomass_kg'       => $estimatedBiomass,
+            'carbon_stock_kg'            => $carbonStock,
+            'annual_sequestration_kgco2' => $annualSeq,
         ]);
+
+        return $treeData->fresh();
     }
 
+    /**
+     * Build chart data from tree_data table
+     */
     private function getChartDataForPeriod($startDate, $endDate)
     {
-        return CarbonRecord::whereBetween('recorded_at', [$startDate, $endDate])
-            ->with('tree')
-            ->get()
-            ->groupBy('tree_id')
-            ->map(function ($records, $treeId) {
+        return TreeData::whereBetween('created_at', [$startDate, $endDate])
+            ->with('treeCode') // assuming TreeData belongsTo TreeCode
+            ->paginate(50)
+            ->groupBy('tree_code_id')
+            ->map(function ($records, $treeCodeId) {
                 return [
-                    'tree_code' => $records->first()->tree->code,
-                    'sequestration_series' => $records->pluck('annual_sequestration_kg'),
-                    'dates' => $records->pluck('recorded_at'),
+                    'tree_code'            => optional($records->first()->treeCode)->code,
+                    'sequestration_series' => $records->pluck('annual_sequestration_kgco2'),
+                    'dates'                => $records->pluck('created_at'),
                 ];
             });
     }

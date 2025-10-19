@@ -22,76 +22,78 @@ class DashboardController extends Controller
     }
 
 
-    public function index(Request $request)
-    {
-        $year = $request->input('year', now()->year); // default current year
-        $month = $request->input('month'); // optional
-        $pendingtree = PendingGeotagTree::where('status', 'pending')->count();
-        //Total Carbon Sequestration
-        $totalAnnualSequestrationKg = TreeData::query()->sum('annual_sequestration_kgco2');
+public function index(Request $request)
+{
+    $year = $request->input('year', now()->year); // default current year
+    $month = $request->input('month'); // optional
 
-        // Start harvest query
-        $query = Harvest::query();
+    $pendingtree = PendingGeotagTree::where('status', 'pending')->count();
+    $totalAnnualSequestrationKg = TreeData::query()->sum('annual_sequestration_kgco2');
 
-        if ($year) {
-            $query->whereYear('harvest_date', $year);
-        }
-        if ($month) {
-            $query->whereMonth('harvest_date', $month);
-        }
+    // Start harvest query
+    $query = Harvest::query();
 
-        $predictions = \App\HarvestPrediction::selectRaw('MONTH(predicted_date) as month, SUM(predicted_quantity) as total_quantity')
+    if ($year) {
+        $query->whereYear('harvest_date', $year);
+    }
+    if ($month) {
+        $query->whereMonth('harvest_date', $month);
+    }
+
+    // Group actual harvests by month
+    $harvestsByMonth = Harvest::selectRaw('MONTH(harvest_date) as month, SUM(harvest_weight_kg) as total_quantity')
+        ->when($year, fn($q) => $q->whereYear('harvest_date', $year))
         ->groupBy('month')
         ->orderBy('month')
-        ->get();
-
-        // Get filtered harvests
-        // $harvests = $query->orderBy('harvest_date', 'desc')->get();
-        $harvests = $query->with('tree')->orderBy('harvest_date', 'desc')->get();
-
-        // Distinct years for filter dropdown
-        $years = Harvest::selectRaw('YEAR(harvest_date) as year')
-            ->distinct()
-            ->orderBy('year', 'desc')
-            ->pluck('year');
-
-        // Other dashboard data
-        $role = Auth::user()->getRoleNames()->first();
-        $totaltrees = TreeCode::count();
-        $totalsour = TreeCode::where('tree_type_id', '1')->count();
-        $totalsweet = TreeCode::where('tree_type_id', '2')->count();
-        $totalsemi_sweet = TreeCode::where('tree_type_id', '3')->count();
-        $notifications = auth()->user()->notifications()->latest()->take(5)->get();
-        $selectedYear = $year;
-        $selectedMonth = $month;
+        ->paginate(50);
 
     // Format for Chart.js
-    $months = $predictions->pluck('month')->map(function ($m) {
-        return \Carbon\Carbon::create()->month($m)->format('M'); // e.g., Jan, Feb, Mar
-    });
-    $totals = $predictions->pluck('total_quantity');
+    $months = $harvestsByMonth->pluck('month')->map(fn($m) =>
+        \Carbon\Carbon::create()->month($m)->format('M')
+    );
+    $totals = $harvestsByMonth->pluck('total_quantity');
 
-    // Optional: total predicted harvest overall
-    $totalPredicted = $predictions->sum('total_quantity');
-        
-        return view('pages.dashboard', compact(
-            'role',
-            'totaltrees',
-            'totalsour',
-            'totalsweet',
-            'totalsemi_sweet',
-            'notifications',
-            'harvests',
-            'years',
-            'selectedYear',
-            'selectedMonth',
-            'pendingtree',
-            'totalAnnualSequestrationKg',
-            'months',
-            'totals',
-            'totalPredicted',
-        ));
-    }
+    // Total actual harvest overall
+    $totalActual = $harvestsByMonth->sum('total_quantity');
+
+    // Get filtered harvests
+    $harvests = $query->with('tree')->orderBy('harvest_date', 'desc')->get();
+
+    // Distinct years for filter dropdown
+    $years = Harvest::selectRaw('YEAR(harvest_date) as year')
+        ->distinct()
+        ->orderBy('year', 'desc')
+        ->pluck('year');
+
+    // Other dashboard data
+    $role = Auth::user()->getRoleNames()->first();
+    $totaltrees = TreeCode::count();
+    $totalsour = TreeCode::where('tree_type_id', '1')->count();
+    $totalsweet = TreeCode::where('tree_type_id', '2')->count();
+    $totalsemi_sweet = TreeCode::where('tree_type_id', '3')->count();
+    $notifications = auth()->user()->notifications()->latest()->take(5)->get();
+
+    $selectedYear = $year;
+    $selectedMonth = $month;
+
+    return view('pages.dashboard', compact(
+        'role',
+        'totaltrees',
+        'totalsour',
+        'totalsweet',
+        'totalsemi_sweet',
+        'notifications',
+        'harvests',
+        'years',
+        'selectedYear',
+        'selectedMonth',
+        'pendingtree',
+        'totalAnnualSequestrationKg',
+        'months',
+        'totals',
+        'totalActual'
+    ));
+}   
 
         public function filterHarvests(Request $request)
     {

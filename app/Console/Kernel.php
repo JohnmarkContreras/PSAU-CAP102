@@ -27,8 +27,9 @@ class Kernel extends ConsoleKernel
      */
         protected function schedule(Schedule $schedule)
         {
-            $schedule->command('harvest:predict')->daily();
-            $schedule->command('harvest:reminders')->daily();
+        // $schedule->command('harvest:reminders')->daily()->at('01:00');
+        // $schedule->command('harvest:predict')->daily()->at('01:00');
+        // $schedule->command('backup:hdd')->daily()->at('01:00');
         }
     /**
      * Register the commands for the application.
@@ -37,9 +38,6 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
-        $this->load(__DIR__.'/Commands');
-
-        require base_path('routes/console.php');
+        $this->load(app_path('Console/Commands'));
     }
-    
 }

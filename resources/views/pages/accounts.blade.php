@@ -29,8 +29,6 @@
                             @foreach ($users as $user)
                                 <tr data-id="{{ $user->id }}">
                                     <td class="px-4 py-2">{{ $user->id }}</td>
-
-                                    {{-- Avatar column --}}
                                     <td class="px-4 py-2">
                                         @if($user->profile_picture)
                                             <img src="{{ asset('storage/' . $user->profile_picture) }}"
@@ -42,30 +40,49 @@
                                                 class="w-12 h-12 rounded-full object-cover border border-gray-300">
                                         @endif
                                     </td>
-
                                     <td class="px-4 py-2">{{ $user->name }}</td>
                                     <td class="px-4 py-2">{{ $user->email }}</td>
                                     <td class="px-4 py-2 capitalize">{{ $user->getRoleNames()->implode(', ') }}</td>
                                     <td class="px-4 py-2">
-                                        <button class="delete-account text-red-600 hover:underline" data-id="{{ $user->id }}">Delete</button>
+                                        <button 
+                                            class="delete-account text-red-600 hover:underline" 
+                                            data-id="{{ $user->id }}" 
+                                            data-name="{{ $user->name }}">
+                                            Delete
+                                        </button>
                                     </td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
-
             </div>
         </x-card>
     </section>
+
+    {{-- Delete Confirmation Modal --}}
+    <div id="deleteModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-lg p-6 w-96 text-center">
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">Confirm Deletion</h2>
+            <p class="text-gray-600 mb-4">Are you sure you want to delete <span id="deleteUserName" class="font-semibold text-red-700"></span>?</p>
+            <div class="flex justify-center gap-3">
+                <button id="confirmDelete" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">Yes, Delete</button>
+                <button id="cancelDelete" class="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded">Cancel</button>
+            </div>
+        </div>
+    </div>
 </main>
 @endsection
 
 @push('scripts')
-
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    $('#accountsTable').DataTable({
+    const modal = document.getElementById('deleteModal');
+    const deleteUserName = document.getElementById('deleteUserName');
+    let deleteId = null;
+
+    // Initialize DataTable
+    const table = $('#accountsTable').DataTable({
         responsive: true,
         pageLength: 10,
         order: [[0, 'asc']],
@@ -77,27 +94,40 @@ document.addEventListener('DOMContentLoaded', function () {
             info: "Showing _START_ to _END_ of _TOTAL_ accounts",
             infoEmpty: "No accounts available",
         },
-        columnDefs: [
-            { orderable: false, targets: [1, 5] } // disable sorting for photo & actions
-        ]
+        columnDefs: [{ orderable: false, targets: [1, 5] }]
     });
 
-    // CSRF for AJAX
     $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } });
 
-    // Delete handler (AJAX)
+    // Open modal
     $('#accountsTable').on('click', '.delete-account', function (e) {
         e.preventDefault();
-        const id = $(this).data('id');
-        if (!confirm('Are you sure?')) return;
+        deleteId = $(this).data('id');
+        const name = $(this).data('name');
+        deleteUserName.textContent = name;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    });
 
+    // Cancel delete
+    document.getElementById('cancelDelete').addEventListener('click', () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        deleteId = null;
+    });
+
+    // Confirm delete
+    document.getElementById('confirmDelete').addEventListener('click', function () {
+        if (!deleteId) return;
         $.ajax({
-            url: '{{ url('') }}/superadmin/delete/account/' + id,
+            url: '{{ url('') }}/accounts/' + deleteId,
             method: 'POST',
             data: { _method: 'DELETE' },
             success: function () {
-                const row = $('#accountsTable').find('tr[data-id="' + id + '"]');
-                $('#accountsTable').DataTable().row(row).remove().draw(false);
+                const row = $('#accountsTable').find('tr[data-id="' + deleteId + '"]');
+                table.row(row).remove().draw(false);
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
             },
             error: function (xhr) {
                 alert(xhr.responseJSON?.message || 'Failed to delete account.');

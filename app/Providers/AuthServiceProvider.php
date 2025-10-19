@@ -4,7 +4,6 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
-use Spatie\Permission\Traits\HasRoles;
 use App\User;
 
 class AuthServiceProvider extends ServiceProvider
@@ -30,6 +29,7 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('archive-users', function ($user) {
             return $user && $user->hasAnyRole(['admin', 'superadmin']);
         });
-    }
 
+        // Voyager-specific gate removed
+    }
 }

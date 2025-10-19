@@ -8,6 +8,7 @@ class CarbonRecord extends Model
 {
         protected $fillable = [
         'tree_id',
+        // 'tree_data_id',
         'estimated_biomass_kg',
         'carbon_stock_kg',
         'annual_sequestration_kg',
@@ -17,5 +18,15 @@ class CarbonRecord extends Model
     public function tree()
     {
         return $this->belongsTo(Tree::class);
+    }
+
+    public function treeData()
+    {
+        return $this->belongsTo(TreeData::class, 'tree_code_id');
+    }
+
+        public function treeCode()
+    {
+        return $this->belongsTo(TreeCode::class);
     }
 }

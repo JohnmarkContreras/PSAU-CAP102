@@ -6,7 +6,7 @@ use App\PendingGeotag;
 use App\Services\GeotagApprovalService;
 use Illuminate\Http\Request;
 use App\Notifications\GeotagStatusChanged;
-
+use App\User;
 class PendingGeotagController extends Controller
 {
     private $approvalService;

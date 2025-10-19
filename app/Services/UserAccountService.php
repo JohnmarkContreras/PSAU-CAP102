@@ -5,7 +5,6 @@ namespace App\Services;
 use App\User;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
-
 class UserAccountService
 {
     private const ACCOUNT_ROLES = [

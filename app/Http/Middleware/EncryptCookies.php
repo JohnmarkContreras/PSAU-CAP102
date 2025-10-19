@@ -9,9 +9,10 @@ class EncryptCookies extends Middleware
     /**
      * The names of the cookies that should not be encrypted.
      *
-     * @var array
+     * These must remain readable by the browser / JS runtime.
      */
     protected $except = [
-        //
+        'XSRF-TOKEN',   // <-- critical for Sanctum CSRF
+        // do NOT add your session cookie here
     ];
 }

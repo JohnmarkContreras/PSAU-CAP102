@@ -41,14 +41,14 @@ class AdminController extends Controller
     public function usertable()
     {
         $archives = DB::table('user_archives')->orderBy('archived_at', 'desc')->paginate(10);
-        $users = User::where('account_id', '3')->get();
+        $users = User::where('account_id', '3')->paginate(50);
         $role = 'admin';
         return view('admin.user_table', compact('users', 'archives', 'role'));
     }
     // Show edit form
     public function editUser($id)
     {
-        $users = User::where('account_id', '3')->get();
+        $users = User::where('account_id', '3')->paginate(50);
         $roles = Role::all();
         return view('admin.edit_user', compact('users', 'roles'))->with('id', $id);
     }

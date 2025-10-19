@@ -7,9 +7,9 @@ use Illuminate\Support\Facades\Schema;
 class TreeData extends Model
 {
     protected $table = 'tree_data';
-    protected $primaryKey = 'code';
-    public $incrementing = false;
-    protected $keyType = 'string';
+    protected $primaryKey = 'id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
     protected $fillable = [
         'tree_code_id',
@@ -18,8 +18,15 @@ class TreeData extends Model
         'age',
         'stem_diameter',
         'canopy_diameter',
+        'estimated_biomass_kg',
+        'carbon_stock_kg',
+        'annual_sequestration_kgco2'
     ];
 
+    public function tree()
+    {
+        return $this->belongsTo(Tree::class);
+    }
     /**
      * Relationship: Each tree data belongs to a tree code
      */

@@ -18,4 +18,5 @@ class Harvest extends Model
     {
         return $this->belongsTo(TreeCode::class, 'code', 'code');
     }
+    
 }

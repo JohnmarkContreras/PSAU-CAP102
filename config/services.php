@@ -41,7 +41,7 @@ return [
 
     'semaphore' => [
         'semaphore.api_key' => env('SEMAPHORE_API_KEY'),
-        'semaphore.sender_name' => env('SEMAPHORE_SENDER_NAME'),
+        'semaphore.sender_name' => env('SEMAPHORE_SENDER_NAME', 'LanWired'),
     ]
 
 ];

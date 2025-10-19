@@ -9,7 +9,7 @@ use App\Models\TreeImage;
 use App\Models\TreeCode;
 use App\Models\TreesData;
 use Illuminate\Support\Facades\Auth;
-
+use App\User;
 class MobileGeotagController extends Controller
 {
     public function store(Request $request)

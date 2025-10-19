@@ -21,6 +21,10 @@
                                 <th>Code</th>
                                 <th>Latitude</th>
                                 <th>Longitude</th>
+                                <th>DBH (cm)</th>
+                                <th>Height (m)</th>
+                                <th>Age (yrs)</th>
+                                <th>Canopy (m)</th>
                                 <th>Status</th>
                                 <th colspan="2">Actions</th>
                             </tr>
@@ -39,6 +43,10 @@
                                 <td>{{ $tree->code }}</td>
                                 <td>{{ $tree->latitude }}</td>
                                 <td>{{ $tree->longitude }}</td>
+                                <td>{{ $tree->dbh ?? '—' }}</td>
+                                <td>{{ $tree->height ?? '—' }}</td>
+                                <td>{{ $tree->age ?? '—' }}</td>
+                                <td>{{ $tree->canopy_diameter ?? '—' }}</td>
                                 <td>
                                     <span class="px-2 py-1 rounded text-xs font-bold
                                         @if($tree->status === 'pending') bg-yellow-200 text-yellow-800

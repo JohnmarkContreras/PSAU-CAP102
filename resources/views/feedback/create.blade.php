@@ -41,11 +41,31 @@
             </div>
 
             <!-- Message -->
-            <div>
-                <label class="block font-semibold text-gray-700 mb-1">Message</label>
-                <textarea name="message" rows="4" class="w-full border-gray-300 rounded-lg p-2 focus:ring-green-400 focus:border-green-400" required></textarea>
-            </div>
+                <div>
+                <label for="message" class="block font-semibold text-gray-800 mb-1">Message</label>
+                <textarea
+                    id="message"
+                    name="message"
+                    rows="4"
+                    required
+                    class="w-full rounded-lg border border-gray-300 bg-white text-gray-900 p-3 shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 resize-y transition-shadow"
+                    placeholder="Write your message..."
+                    aria-describedby="message-help"
+                ></textarea>
+                <p id="message-help" class="mt-1 text-sm text-gray-500">Max 1000 characters.</p>
+                </div>
 
+                <script>
+                    const ta = document.getElementById('message');
+                    const help = document.getElementById('message-help');
+                    const MAX = 1000;
+                    ta.setAttribute('maxlength', MAX);
+                    ta.addEventListener('input', () => {
+                    const remaining = MAX - ta.value.length;
+                    help.textContent = remaining + ' characters remaining.';
+                    });
+                </script>
+                
             <!-- Submit Button -->
             <div class="text-center">
                 <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition">

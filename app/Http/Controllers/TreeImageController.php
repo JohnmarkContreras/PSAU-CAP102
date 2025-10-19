@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use App\TreeCode;
 use App\TreeImage;
 use App\TreeType;
-
+use App\User;
 class TreeImageController extends Controller
 {
     protected $service;

@@ -5,7 +5,7 @@ namespace App\Services;
 use App\PendingGeotag;
 use App\Notifications\GeotagSubmittedNotification;
 use Spatie\Permission\Models\Role;
-
+use App\User;
 class GeotagNotificationService
 {
     public function notifyAdmins(PendingGeotag $geotag)

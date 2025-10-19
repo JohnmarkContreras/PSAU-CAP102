@@ -33,7 +33,7 @@ class FeedbackController extends Controller
         ]);
 
         // Notify all admins & superadmins
-        $admins = User::role(['admin', 'superadmin'])->get();
+        $admins = User::query()->role(['admin','superadmin'])->get();
         foreach ($admins as $admin) {
             $admin->notify(new FeedbackSubmitted($feedback));
         }

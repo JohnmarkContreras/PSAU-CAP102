@@ -15,4 +15,8 @@ class TreeImage extends Model
         return $this->hasOne(TreeCode::class, 'tree_image_id');
     }
 
+    public function treeData()
+    {
+        return $this->hasOne(TreeData::class, 'id', 'tree_image_id');
+    }
 }

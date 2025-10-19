@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Route;
+use TCG\Voyager\Facades\Voyager;
 
 class RouteServiceProvider extends ServiceProvider
 {
@@ -21,7 +22,7 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @var string
      */
-    public const HOME = '/home';
+    public const HOME = '/redirect-by-role';
 
     /**
      * Define your route model bindings, pattern filters, etc.
@@ -30,9 +31,16 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
-
         parent::boot();
+
+        // Force Voyager routes to load
+        \Route::group([
+            'prefix' => config('voyager.prefix', 'voyager'),
+            'middleware' => ['web'],
+        ], function () {
+            Voyager::routes();
+        });
+
     }
 
     /**

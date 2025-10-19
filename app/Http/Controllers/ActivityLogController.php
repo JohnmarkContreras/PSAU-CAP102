@@ -4,8 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Spatie\Activitylog\Models\Activity;
 use Illuminate\Support\Facades\Auth;
-
-
+use App\User;
 class ActivityLogController extends Controller
 {
     public function index()
@@ -14,13 +13,13 @@ class ActivityLogController extends Controller
 
         if (in_array($user->role, ['admin', 'superadmin'])) {
             // Admin/Superadmin can see all logs
-            $logs = Activity::with('causer')->latest()->get();
+            $logs = Activity::with('causer')->latest()->paginate(50);
         } else {
             // Normal users only see their own logs
             $logs = Activity::where('causer_id', $user->id)
                             ->with('causer')
                             ->latest()
-                            ->get();
+                            ->paginate(50);
         }
 
         return view('pages.activity-log', compact('logs'));
