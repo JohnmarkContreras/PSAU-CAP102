@@ -13,7 +13,7 @@
 
 
 <main class="flex-1 p-6 space-y-6">
-    <section class="bg-[#e9eee9] rounded-lg p-4 relative">
+    <section class="bg-[#e9eee9] rounded-lg p-4 relative z-51">
         <x-card title="Tamarind Tree Locations">
             <div class="flex items-center justify-between mb-4">
                 <!-- Search Box -->
@@ -64,7 +64,7 @@
                         <p><strong>Code:</strong> <span id="detail-code"></span></p>
                         <p class="hidden"><strong>Filename:</strong> <span id="detail-filename"></span></p>
                         <p><strong>Taken At:</strong> <span id="detail-taken"></span></p>
-
+                        <p><strong>Age:</strong> <span id="detail-age">—</span></p>
                         <div class="mt-4">
                             <img id="detail-image" src="" alt="Tree Image" class="rounded shadow max-h-64 hidden mx-auto">
                         </div>
@@ -296,12 +296,40 @@ qs('harvest-prev').disabled = currentPage <= 1;
 qs('harvest-next').disabled = currentPage >= totalPages;
 }
 
+function calculateTreeAge(tree) {
+    if (!tree || !tree.planted_at) return null;
+
+    const now = new Date();
+    const plantedDate = new Date(tree.planted_at);
+
+    if (isNaN(plantedDate)) return null;
+
+    let age = now.getFullYear() - plantedDate.getFullYear();
+
+    const hasMonthDay = plantedDate.getMonth && plantedDate.getDate;
+    if (hasMonthDay) {
+        const thisYearBirthday = new Date(now.getFullYear(), plantedDate.getMonth(), plantedDate.getDate());
+        if (now < thisYearBirthday) {
+            age -= 1;
+        }
+    }
+
+    return age >= 0 ? age : null;
+}
+
+
 function showTreeDetails(tree) {
 if (!tree) return console.error('showTreeDetails: tree is null/undefined');
 
 qs('detail-code').innerText = tree.code || '';
 qs('detail-filename').innerText = tree.filename || '';
 qs('detail-taken').innerText = tree.taken_at ?? '—';
+
+const ageElement = qs('detail-age');
+if (ageElement) {
+  const age = calculateTreeAge(tree);
+  ageElement.innerText = age !== null ? `${age} years` : 'Unknown';
+}
 
 const img = qs('detail-image');
 if (img) {

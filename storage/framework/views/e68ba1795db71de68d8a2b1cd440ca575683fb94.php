@@ -24,7 +24,7 @@
 
 <aside class="bg-[#003300] w-48 h-screen flex flex-col items-center py-6 text-white select-none">
     <img src="<?php echo e(asset('PSAU_Logo.png')); ?>" alt="Pamanga State Agricultural University official seal logo in green and yellow colors" class="mb-3" width="100" height="100" />
-    <h1 class="font-extrabold text-sm mb-6">PSAU Tamarind R&DE</h1>
+    <h1 class="font-bold text-lg mb-6">PSAU Tamarind R&DE</h1>
 
     <nav class="flex flex-col space-y-1 text-lg font-normal leading-tight">
         <?php if(auth()->guard()->check()): ?>
@@ -62,6 +62,9 @@
                 </a>
                 <a href="<?php echo e(route('harvests.upcoming')); ?>" class="px-3 py-2 rounded flex items-center gap-3 <?php echo e(request()->routeIs('harvests.upcoming') ? 'bg-[#1F7D53] text-white' : 'hover:underline'); ?>">
                     <i class="fa-solid fa-chart-pie text-lg text-gray-400"></i> Harvest Calendar
+                </a>
+                <a href="<?php echo e(route('pages.harvest-management')); ?>" class="px-3 py-2 rounded flex items-center gap-3 <?php echo e(request()->routeIs('pages.harvest-management') ? 'bg-[#1F7D53] text-white' : 'hover:underline'); ?>">
+                    <i class="fa-solid fa-chart-pie text-lg text-gray-400"></i> Harvest Management
                 </a>
             <?php endif; ?>
 
@@ -121,7 +124,7 @@
         <!-- Dropdown -->
         <div x-show="open" @click.away="open = false"
             x-transition
-            class="absolute left-0 mt-2 w-40 bg-[#1F7D53] text-white rounded-lg shadow-lg z-50">
+            class="absolute left-0 mt-2 w-46 bg-[#1F7D53] text-white rounded-lg shadow-lg z-50">
 
             <a href="<?php echo e(route('tree-images.index')); ?>"
                class="block px-4 py-2 hover:bg-[#186342] <?php echo e(request()->routeIs('tree-images.index') ? 'bg-[#145b3a]' : ''); ?>">

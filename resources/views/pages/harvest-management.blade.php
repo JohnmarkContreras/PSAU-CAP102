@@ -297,68 +297,49 @@
             });
         });
 
-        async function runPredict(yieldingOnly = false) {
-            const url = `{{ route('harvest.predictAll') }}`;
-            const res = await fetch(url + (yieldingOnly ? '?yielding=1' : ''), {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
-            });
-            return res.json();
-        }
+async function runPredict(yieldingOnly = false) {
+        const url = `{{ route('harvest.predictAll') }}`;
+        const res = await fetch(url + (yieldingOnly ? '?yielding=1' : ''), {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+        });
+        return res.json();
+    }
 
-        document.getElementById('predict-all-btn').addEventListener('click', async () => {
-            const btn = document.getElementById('predict-all-btn');
-            btn.disabled = true;
-            const old = btn.textContent;
-            btn.textContent = 'Predicting...';
+    document.getElementById('predict-all-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('predict-all-btn');
+        btn.disabled = true;
+        const old = btn.textContent;
+        btn.textContent = 'Predicting...';
 
-            try {
-                const data = await runPredict(false);
+        try {
+            const data = await runPredict(false);
                 console.log("Prediction results:", data);
 
-                if (!data.ok) {
+                const results = data.results?.results || {};
+
+                if (!data.ok || !data.results.ok) {
                     alert('Prediction failed.');
                 } else {
                     let summary = '';
-                    for (const [code, result] of Object.entries(data.results)) {
+                    for (const [code, result] of Object.entries(results)) {
                         if (result.ok) {
-                            summary += `Tree ${code}: Predicted ${result.predicted_quantity}kg on ${result.predicted_date}\n`;
+                            summary += `Tree ${code}: 'Successfull, check records'\n`;
                         } else {
-                            summary += `Tree ${code}: ⚠️ ${result.message}\n`;
+                            summary += `Tree ${code}: ⚠️ ${result.message ?? 'Unknown error'}\n`;
                         }
                     }
                     alert(summary);
                 }
-            } catch (e) {
-                console.error(e);
-                alert('Prediction error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = old;
-            }
-        });
 
-        document.getElementById('predict-yielding-btn').addEventListener('click', async () => {
-            const btn = document.getElementById('predict-yielding-btn');
-            btn.disabled = true;
-            const old = btn.textContent;
-            btn.textContent = 'Predicting...';
-            
-            try {
-                const data = await runPredict(true);
-                if (!data.ok) {
-                    alert('Prediction failed.');
-                    return;
-                }
-                alert('Predicted yielding trees only.');
-            } catch (e) {
-                console.error(e);
-                alert('Prediction error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = old;
-            }
-        });
+        } catch (e) {
+            console.error(e);
+            alert('Prediction error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = old;
+        }
+    });
 
         // Calendar initialization
         document.addEventListener("DOMContentLoaded", function () {
@@ -531,5 +512,12 @@
         });
     </script>
     @endpush
+@if (session('prediction_warning'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            toastr.warning(@json(nl2br(session('prediction_warning'))), 'Prediction Issues');
+        });
+    </script>
+@endif
 
 @endsection

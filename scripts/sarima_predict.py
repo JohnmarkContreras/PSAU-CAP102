@@ -84,7 +84,6 @@ def main():
     months_to_target = (target_start.year - start_forecast.year) * 12 + (target_start.month - start_forecast.month)
     args.steps = max(args.steps, months_to_target + 12) if months_to_target >= 0 else args.steps
 
-    # --- JSON-safe formatter ---
     def safe_output(pred_series):
         if not isinstance(pred_series.index, pd.DatetimeIndex):
             pred_series.index = pd.date_range(start=pd.Timestamp.today(), periods=len(pred_series), freq='MS')
@@ -97,26 +96,25 @@ def main():
         # Keep only harvest months
         pred_series = pred_series.where(pred_series.index.month.astype(int).isin(HARVEST_MONTHS), 0.0)
 
-        # Clean and limit unrealistic values
+        # Clean and clip values
         pred_series = pred_series.fillna(0.0).replace([np.inf, -np.inf], 0.0)
         pred_series = pred_series.clip(lower=0.0)
 
-        # --- Relaxed cap for realism ---
+        # Cap max forecast values
         max_val = float(df['harvest_weight_kg'].max()) if not df.empty else 0.0
-        if max_val > 0:
-            cap = max_val * 5.0   # at most 5× historical max
-            pred_series = pred_series.clip(upper=cap)
-        else:
-            pred_series = pred_series.clip(upper=20.0)  # fallback cap for tiny datasets
+        cap = max_val * 5.0 if max_val > 0 else 20.0
+        pred_series = pred_series.clip(upper=cap)
 
-        # --- Removed smoothing to avoid dilution ---
-
-        # --- Typical harvest day per month using mode ---
+        # Typical harvest day per month
         df['day'] = df['harvest_date'].dt.day
-        best_day_by_month = df.groupby(df['harvest_date'].dt.month)['day'].apply(lambda x: stats.mode(x)[0]).to_dict()
+        best_day_by_month = df.groupby(df['harvest_date'].dt.month)['day'].apply(
+            lambda x: int(x.mode().iloc[0]) if len(x.mode()) > 0 else 1
+        ).to_dict()
 
         monthly = []
         for d, v in pred_series.items():
+            if v == 0.0:
+                continue
             month = d.month
             year = d.year
             best_day = int(best_day_by_month.get(month, 1))
@@ -128,32 +126,42 @@ def main():
                 "predicted_quantity": round(float(v), 2)
             })
 
-        # --- Season totals ---
+        # --- Season-specific slice ---
         season_slice = pred_series[(pred_series.index >= season_start_ts) & (pred_series.index <= season_end_ts)]
         season_total = round(float(season_slice.sum()), 2) if not season_slice.empty else 0.0
 
-        nonzero = season_slice[season_slice > 0]
-        if len(nonzero) > 0:
-            first_month = nonzero.index[0]
-            best_day = int(best_day_by_month.get(first_month.month, 1))
-            last_day = (first_month + pd.offsets.MonthEnd(0)).day
-            best_day = min(best_day, last_day)
-            first_date = pd.Timestamp(first_month.year, first_month.month, best_day).date().isoformat()
-            first_qty = round(float(nonzero.iloc[0]), 2)
-        else:
-            first_date = season_start_ts.date().isoformat()
-            first_qty = 0.0
+        season_predictions = []
+        for month_ts in season_slice.index:
+            if month_ts.month in HARVEST_MONTHS:
+                best_day = int(best_day_by_month.get(month_ts.month, 1))
+                last_day = (month_ts + pd.offsets.MonthEnd(0)).day
+                best_day = min(best_day, last_day)
+                pred_date = pd.Timestamp(month_ts.year, month_ts.month, best_day)
+                pred_qty = round(float(season_slice.loc[month_ts]), 2)
+                season_predictions.append({
+                    "predicted_date": pred_date.date().isoformat(),
+                    "predicted_quantity": pred_qty
+                })
+
+        # --- Updated behavior ---
+        # Instead of using just January's prediction (first), we now use:
+        # - Total quantity across Jan–Mar (or whatever HARVEST_MONTHS are)
+        # - Season start date as reference
+        first_date = season_start_ts.date().isoformat()
+        first_qty = season_total
 
         return {
             "predicted_quantity": first_qty,
             "predicted_date": first_date,
             "monthly_predictions": monthly,
+            "season_predictions": season_predictions,
             "season_total": {
                 "season_start": season_start_ts.date().isoformat(),
                 "season_end": season_end_ts.date().isoformat(),
                 "predicted_total": season_total
             }
         }
+
 
     # --- Evaluation and chart ---
     def evaluate_accuracy(pred_df, actual_df, save_path=None):

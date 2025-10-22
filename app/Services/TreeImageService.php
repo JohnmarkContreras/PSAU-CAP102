@@ -18,7 +18,7 @@ class TreeImageService
                 $q->select(['id', 'code', 'harvest_date', 'harvest_weight_kg']);
             },
             'code.treeData' => function($q) {
-                $q->select(['id', 'tree_code_id', 'dbh', 'height'])->latest('id')->limit(1);
+                $q->select(['id', 'tree_code_id', 'dbh', 'height', 'planted_at', 'planted_year_only'])->latest('id')->limit(1);
             }
         ])->select(['id', 'latitude', 'longitude', 'filename', 'taken_at']);
 
@@ -38,6 +38,13 @@ class TreeImageService
         $query->limit($filters['limit'] ?? 1000);
 
         return $query->get()->map(function ($t) {
+            $code = $t->code;
+            $treeData = null;
+
+            if ($code && $code->relationLoaded('treeData')) {
+                $treeData = $code->treeData->first(); // ← remember: we limited to 1 latest in with()
+            }
+
             return [
                 'id'            => $t->id,
                 'code'          => $t->code ? $t->code->code : 'N/A',
@@ -47,6 +54,8 @@ class TreeImageService
                 'longitude'     => (float) $t->longitude,
                 'filename'      => $t->filename,
                 'taken_at'      => $t->taken_at,
+                'planted_at' => $treeData ? $treeData->planted_at : null,
+                'planted_year_only' => $treeData ? $treeData->planted_year_only : null,
                 'harvests'      => $t->code && $t->code->harvests
                     ? $t->code->harvests->map(function ($h) {
                         return [
@@ -58,4 +67,5 @@ class TreeImageService
             ];
         });
     }
+    
 }

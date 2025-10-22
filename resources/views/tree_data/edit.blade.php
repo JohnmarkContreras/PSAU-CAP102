@@ -4,19 +4,17 @@
 
 @section('content')
 
-<div class="min-h-screen bg-gray-50 py-4 px-4 sm:px-6 lg:px-8">
     <div class="max-w-2xl mx-auto">
+        <!-- Form Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 sm:p-8">
         <!-- Header with Back Button -->
         <div class="mb-6 flex items-center justify-between">
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Update Tree Data</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold text-green-800">Update Tree Data</h1>
             <a href="{{ url()->previous() }}"
                class="inline-flex items-center px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md shadow-sm hover:bg-gray-200 transition">
                 ← Back
             </a>
         </div>
-
-        <!-- Form Card -->
-        <div class="bg-white rounded-lg shadow-md p-6 sm:p-8">
             <form id="editTreeForm" action="{{ route('tree_data.update', $tree->id) }}" method="POST" class="space-y-5">
                 @csrf
                 @method('PUT')
@@ -49,20 +47,20 @@
                 </div>
 
                 <!-- Age -->
-                <div>
+                <!-- <div>
                     <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age (years)</label>
                     <input type="number" name="age" id="age"
                            value="{{ old('age', $tree->age) }}"
                            class="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 text-sm">
-                </div>
+                </div> -->
 
                 <!-- Stem Diameter -->
-                <div>
+                <!-- <div>
                     <label for="stem_diameter" class="block text-sm font-medium text-gray-700 mb-1">Stem Diameter (cm)</label>
                     <input type="number" step="0.01" name="stem_diameter" id="stem_diameter"
                            value="{{ old('stem_diameter', $tree->stem_diameter) }}"
                            class="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 text-sm">
-                </div>
+                </div> -->
 
                 <!-- Canopy Diameter -->
                 <div>
@@ -82,7 +80,6 @@
             </form>
         </div>
     </div>
-</div>
 
 <!-- Confirmation Modal -->
 <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">

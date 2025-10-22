@@ -79,7 +79,6 @@ class HarvestManagementController extends Controller
         $groupedHarvests = $codes->mapWithKeys(function ($tc) {
             return [strtoupper(trim($tc->code)) => $tc->harvests];
         });
-        
 
         if ($hasRecordsOnly) {
             $codes = $codes->filter(fn($c) => isset($groupedHarvests[$c->code]) && $groupedHarvests[$c->code]->isNotEmpty())->values();
@@ -324,9 +323,18 @@ class HarvestManagementController extends Controller
     {
         $yieldingOnly = (bool) request('yielding', false);
         $results = $this->predictionService->predictAllTrees($yieldingOnly);
+        // If results contains 'message' key, treat as error
+        if (isset($results['message'])) {
+            return response()->json([
+                'ok' => false,
+                'results' => [],
+                'message' => $results['message']
+            ]);
+        }
+
         return response()->json([
             'ok' => true,
-            'results' => $results
+            'results' => $results,
         ]);
     }
 
@@ -552,7 +560,7 @@ class HarvestManagementController extends Controller
         foreach ($predictions as $p) {
             $predictedMonth = Carbon::parse($p->predicted_date)->format('Y-m');
 
-            // ✅ Compute total actual harvest within the same month
+            //  Compute total actual harvest within the same month
             $monthlyTotal = optional($p->treeCode->harvests)
                 ->filter(function ($h) use ($predictedMonth) {
                     return Carbon::parse($h->harvest_date)->format('Y-m') === $predictedMonth;
@@ -615,25 +623,18 @@ public function backtest(Request $request)
     if (isset($data['error'])) {
         return view('harvests.backtest', [
             'error' => $data['error'],
-            'mape' => null,
-            'rmse' => null,
-            'dates' => [],
-            'actual' => [],
-            'predicted' => [],
+            'backtests' => [],
             'selectedCode' => $code,
             'codes' => $codes,
         ]);
     }
 
     return view('harvests.backtest', [
-        'mape' => $data['mape'] ?? null,
-        'rmse' => $data['rmse'] ?? null,
-        'dates' => $data['dates'] ?? [],
-        'actual' => $data['actual'] ?? [],
-        'predicted' => $data['predicted'] ?? [],
+        'backtests' => $data['backtests'] ?? [],
         'selectedCode' => $code,
         'codes' => $codes,
     ]);
+
 }
 
 }

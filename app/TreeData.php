@@ -4,8 +4,32 @@ namespace App;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
+use Carbon\Carbon;
 class TreeData extends Model
 {
+
+    public function getAgeAttribute()
+    {
+        $now = Carbon::now();
+
+        if ($this->planted_at) {
+            $planted = $this->planted_at instanceof Carbon
+                ? $this->planted_at
+                : Carbon::parse($this->planted_at);
+
+            return $this->planted_year_only
+                ? $now->year - $planted->year   // year-only flag set
+                : $planted->diffInYears($now);  // full date, precise diff
+        }
+
+        if ($this->planted_year_only) {
+            // If no planted_at but we have a year-only value stored
+            return $now->year - (int) $this->planted_year_only;
+        }
+
+        return null;
+    }
+
     protected $table = 'tree_data';
     protected $primaryKey = 'id';
     public $incrementing = true;
@@ -18,9 +42,12 @@ class TreeData extends Model
         'age',
         'stem_diameter',
         'canopy_diameter',
+        'planted_at',
+        'planted_year_only',
         'estimated_biomass_kg',
         'carbon_stock_kg',
-        'annual_sequestration_kgco2'
+        'annual_sequestration_kgco2',
+        'harvests',
     ];
 
     use LogsActivity;
@@ -151,6 +178,8 @@ class TreeData extends Model
         // tree_data.tree_code_id → tree_code.id
         return $this->belongsTo(TreeCode::class, 'tree_code_id', 'id');
     }
-
-
+    protected $casts = [
+        'planted_year_only' => 'boolean',
+        'planted_at' => 'date',
+    ];
 }

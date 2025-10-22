@@ -5,44 +5,6 @@
 @section('content')
 <main id="dashboard-container" class="flex-1 p-4 md:p-6 space-y-4 md:space-y-6">
     <section class="bg-[#e9eee9] rounded-lg p-4 relative">
-        <x-card title="Add Harvest recods">
-            <div class="container mx-auto p-2 md:p-4">
-                {{-- Manual Entry --}}
-                <form action="{{ route('harvest.store') }}" method="POST" class="mb-8 grid grid-cols-1 md:grid-cols-5 gap-3">
-                    @csrf
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Tree</label>
-                        <select name="code" class="w-full border rounded-lg p-2">
-                            @foreach($codes as $tc)
-                                <option value="{{ $tc->code }}">{{ $tc->code }}</option>
-                            @endforeach
-                        </select>
-                        @error('code') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Harvest Date</label>
-                        <input type="date" name="harvest_date" class="w-full border rounded-lg p-2" required>
-                        @error('harvest_date') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Weight (kg)</label>
-                        <input type="number" step="0.01" name="harvest_weight_kg" class="w-full border rounded-lg p-2" required>
-                        @error('harvest_weight_kg') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Quality</label>
-                        <input type="text" name="quality" placeholder="A/B/C" class="w-full border rounded-lg p-2">
-                    </div>
-                    <div class="md:col-span-1 flex items-end">
-                        <button class="w-full rounded-xl bg-blue-600 text-white py-2 px-4 hover:bg-blue-700">Add Harvest</button>
-                    </div>
-                    <div class="md:col-span-5">
-                        <label class="block text-sm font-medium mb-1">Notes</label>
-                        <textarea name="notes" class="w-full border rounded-lg p-2" rows="2"></textarea>
-                    </div>
-                </form>
-            </div>
-        </x-card>
         <x-card title="Harvest calendar">
             <div class="container mx-auto p-2 md:p-4">
                 <h1 class="text-xl md:text-2xl font-bold mb-4">Upcoming Harvests</h1>

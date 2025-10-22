@@ -15,6 +15,8 @@
     <link href="<?php echo e(mix('css/app.css')); ?>" rel="stylesheet">
     <script src="<?php echo e(mix('js/app.js')); ?>" defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+
     <script src="//unpkg.com/alpinejs" defer></script>
     <style>
         /* Toast Container */
@@ -245,6 +247,11 @@
 <?php echo $__env->yieldPushContent('scripts'); ?>
 </head>
 <body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col md:flex-row w-full overflow-x-hidden">
+        <img
+        src="<?php echo e(asset('tamarind-bg.png')); ?>"
+        alt="Tamarind products background"
+        class="fixed inset-0 w-full h-full object-cover filter blur-sm brightness-75"
+    />
     <!-- Sidebar (Desktop) -->
     <aside class="hidden md:flex fixed top-0 left-0 bg-[#003300] w-60 h-screen flex-col items-center py-6 text-white z-50">
         <?php echo $__env->make('components.navbar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
@@ -265,7 +272,7 @@
 
         <!-- Panel -->
         <aside id="sidebarPanel"
-            class="relative bg-[#003300] w-3/4 max-w-xs h-full p-6 text-white transform -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto rounded-r-2xl shadow-lg">
+            class="relative bg-[#003300] w-3/4 max-w-xl h-full p-6 text-white transform -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto rounded-r-2xl shadow-lg">
             <!-- Close button -->
             <button id="closeSidebar" class="text-white text-2xl mb-6 p-2 rounded focus:outline-none focus:ring-2 focus:ring-white" aria-label="Close menu">
                 <i class="fa-solid fa-xmark"></i>
@@ -533,5 +540,6 @@
             }
         });
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 </body>
 </html><?php /**PATH /var/www/PSAU-CAP102/resources/views/layouts/app.blade.php ENDPATH**/ ?>

@@ -17,32 +17,33 @@ class HarvestPredictionService
     private const MIN_RECORDS_REQUIRED = 6;
     private const MIN_DBH_CM = 10.0;
     private const MIN_HEIGHT_M = 2.0;
-    private const TIMEOUT_SECONDS = 120;  // Increased for longer forecasts
+    private const TIMEOUT_SECONDS = 120;
 
     public function predictAllTrees(bool $yieldingOnly = false)
     {
-        // NEW: Get trees with actual harvest records
         $codesWithHarvests = Harvest::select('code')
             ->whereNotNull('harvest_date')
             ->distinct()
             ->pluck('code')
             ->toArray();
 
-        // If no trees have harvests, return empty results
         if (empty($codesWithHarvests)) {
-            return ['message' => 'No trees with actual harvest records found.'];
+            return [
+                'ok' => false,
+                'results' => [],
+                'message' => 'No trees with actual harvest records found.'
+            ];
         }
 
         $codes = TreeCode::orderBy('code')
-            ->whereIn('code', $codesWithHarvests)  // FILTER: Only trees with actual harvests
+            ->whereIn('code', $codesWithHarvests)
             ->paginate(50);
 
         $results = [];
 
         foreach ($codes as $tc) {
             $code = $tc->code;
-            
-            // Skip trees based on requested policy
+
             if ($yieldingOnly) {
                 if (! $this->isYieldingByCode($code)) {
                     $results[$code] = $this->errorResult($code, 'Not yielding (below DBH/Height thresholds)');
@@ -57,15 +58,19 @@ class HarvestPredictionService
 
             $results[$code] = $this->predictForCode($code);
         }
-        return $results;
+
+        return [
+            'ok' => true,
+            'results' => $results
+        ];
     }
+
 
     public function predictForCode(string $code)
     {
         try {
             $harvests = $this->getCombinedHarvests($code);
 
-            // Require at least 6 total points OR 6 distinct months OR 6 distinct years
             $numPoints = count($harvests);
             $monthKeys = [];
             $yearKeys = [];
@@ -79,19 +84,23 @@ class HarvestPredictionService
             $distinctYears = count($yearKeys);
 
             if ($numPoints < self::MIN_RECORDS_REQUIRED && $distinctMonths < self::MIN_RECORDS_REQUIRED && $distinctYears < self::MIN_RECORDS_REQUIRED) {
-                // REMOVED: No fallback estimation - only use actual harvest data
                 return $this->errorResult($code, 'Need ≥6 records (points/months/years) to forecast.');
             }
 
             $csvPath = $this->generateCsvFileForCode($code, $harvests);
-            $prediction = $this->runPredictionScript($csvPath, $code);
+            $predictions = $this->runPredictionScript($csvPath, $code); // Now returns array
 
-            if (!$this->isValidPrediction($prediction)) {
+            if (!$this->isValidPredictions($predictions)) {
                 return $this->errorResult($code, 'Invalid prediction output from Python.');
             }
 
-            $savedPrediction = $this->savePrediction($code, $prediction);
-            return $this->successResult($code, $savedPrediction);
+            // Save all predictions (Jan, Feb, Mar)
+            $savedPredictions = [];
+            foreach ($predictions as $prediction) {
+                $savedPredictions[] = $this->savePrediction($code, $prediction);
+            }
+
+            return $this->successResult($code, $savedPredictions);
 
         } catch (\Throwable $e) {
             return $this->errorResult($code, $e->getMessage());
@@ -100,7 +109,6 @@ class HarvestPredictionService
 
     private function getCombinedHarvests(string $code): array
     {
-        // DB harvests (match common SOUR/SWEET/SEMI_SWEET code prefix variants case-insensitively)
         $variants = $this->codeVariants($code);
         $rows = Harvest::where(function ($q) use ($variants) {
                 foreach ($variants as $v) {
@@ -117,14 +125,12 @@ class HarvestPredictionService
                 ];
             })->toArray();
 
-        // JSON harvests from latest TreeData
         $td = \App\TreeData::whereHas('treeCode', function ($q) use ($code) { $q->where('code', $code); })
             ->latest('id')->first();
         if ($td && !empty($td->harvests)) {
             $rows = array_merge($rows, $this->parseHarvestsJson($td->harvests));
         }
 
-        // Sort by date and return raw rows (Python groups by month)
         usort($rows, function ($a, $b) {
             return strcmp($a['harvest_date'], $b['harvest_date']);
         });
@@ -137,7 +143,6 @@ class HarvestPredictionService
         $low = mb_strtolower($code);
         $variants = [$code];
         
-        // Handle new prefixes: SOUR, SWEET, SEMI_SWEET
         if (strpos($low, 'sour') === 0) {
             $rest = mb_substr($code, 4);
             $variants[] = 'SOUR' . $rest;
@@ -154,7 +159,6 @@ class HarvestPredictionService
             $variants[] = 'semi-sweet' . $rest;
         }
         
-        // Legacy support for old SL/SI prefixes
         $pfx = mb_substr($low, 0, 2);
         $rest = mb_substr($code, 2);
         if ($pfx === 'si' || $pfx === 'sl') {
@@ -224,6 +228,7 @@ class HarvestPredictionService
         return storage_path("app/$path");
     }
 
+    // CHANGED: Now returns array of predictions
     private function runPredictionScript(string $csvPath, string $treeCode)
     {
         $script = base_path('scripts/sarima_predict.py');
@@ -267,25 +272,46 @@ class HarvestPredictionService
                 'stderr' => $errorOutput,
                 'json_error' => json_last_error_msg(),
             ]);
-            return null;
+            return [];
         }
 
+        // CHANGED: Return season_predictions array (all Jan-Mar predictions)
+        if (isset($decoded['forecast']['season_predictions'])) {
+            return $decoded['forecast']['season_predictions'];
+        }
+
+        // Fallback to single prediction for backward compatibility
         if (isset($decoded['forecast'])) {
-            return [
+            return [[
                 'predicted_quantity' => $decoded['forecast']['predicted_quantity'] ?? null,
                 'predicted_date' => $decoded['forecast']['predicted_date'] ?? null,
-            ];
+            ]];
         }
 
-        return $decoded;
+        return [];
     }
 
-    private function isValidPrediction($prediction)
-    {
-        return $prediction 
-            && isset($prediction['predicted_quantity']) 
-            && isset($prediction['predicted_date']);
+    // CHANGED: Validate array of predictions
+private function isValidPredictions($predictions)
+{
+    if (!is_array($predictions) || empty($predictions)) {
+        return false;
     }
+
+    foreach ($predictions as $prediction) {
+        if (
+            !isset($prediction['predicted_quantity']) || 
+            !isset($prediction['predicted_date']) ||
+            $prediction['predicted_quantity'] === null || 
+            $prediction['predicted_date'] === null
+        ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 
     private function savePrediction($treeCode, $prediction)
     {
@@ -295,13 +321,18 @@ class HarvestPredictionService
         );
     }
 
-    private function successResult($code, $prediction)
+    // CHANGED: Handle multiple predictions in success result
+    private function successResult($code, $predictions)
     {
         return [
             'code' => $code,
             'ok' => true,
-            'predicted_date' => $prediction->predicted_date,
-            'predicted_quantity' => (float) $prediction->predicted_quantity,
+            'predictions' => array_map(function($p) {
+                return [
+                    'predicted_date' => $p->predicted_date,
+                    'predicted_quantity' => (float) $p->predicted_quantity,
+                ];
+            }, $predictions)
         ];
     }
 

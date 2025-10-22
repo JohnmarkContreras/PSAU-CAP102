@@ -27,9 +27,9 @@ class Kernel extends ConsoleKernel
      */
         protected function schedule(Schedule $schedule)
         {
-        // $schedule->command('harvest:reminders')->daily()->at('01:00');
-        // $schedule->command('harvest:predict')->daily()->at('01:00');
-        // $schedule->command('backup:hdd')->daily()->at('01:00');
+        $schedule->command('harvest:reminders')->daily()->at('01:00');
+        $schedule->command('harvest:predict')->daily()->at('01:00');
+        $schedule->command('backup:hdd')->daily()->at('01:00');
         }
     /**
      * Register the commands for the application.

@@ -23,7 +23,7 @@ class FixMissingTreeData extends Command
         $codesWithoutData = TreeCode::whereDoesntHave('treeData')->get();
 
         if ($codesWithoutData->isEmpty()) {
-            $this->info('✅ All tree codes already have TreeData records!');
+            $this->info(' All tree codes already have TreeData records!');
             return 0;
         }
 
@@ -73,7 +73,7 @@ class FixMissingTreeData extends Command
         }
 
         echo "\n";
-        $this->info("✅ Summary:");
+        $this->info(" Summary:");
         $this->info("   - Created: {$created}");
         
         if ($errors > 0) {

@@ -22,103 +22,122 @@ class PendingGeotagTreeController extends Controller
     }
 
 
-    public function store(Request $request)
-    {
-        try {
-            logger()->info('Mobile Request Received:', [
-                'has_file' => $request->hasFile('filename'),
-                'latitude' => $request->latitude,
-                'longitude' => $request->longitude,
-            ]);
-            
-            $validated = $request->validate([
-                'filename' => 'required|image|max:10240', // 10MB max
-                'latitude' => 'required|numeric',
-                'longitude' => 'required|numeric',
-                'code' => 'required|string|unique:pending_geotag_trees,code',
-                'dbh' => 'nullable|numeric',
-                'height' => 'nullable|numeric',
-                'age' => 'nullable|numeric',
-                'canopy_diameter' => 'nullable|numeric',
-                'tree_type_id' => 'required|exists:tree_types,id',
-                'taken_at' => 'nullable|date',
-            ]);
+ public function store(Request $request)
+{
+    try {
+        logger()->info('Mobile Request Received:', [
+            'has_file' => $request->hasFile('filename'),
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+        ]);
 
-            $path = $request->file('filename')->store('pending_tree_images', 'public');
+        $validated = $request->validate([
+            'filename'       => 'required|image|max:10240',
+            'latitude'       => 'required|numeric',
+            'longitude'      => 'required|numeric',
+            'code'           => 'required|string|unique:pending_geotag_trees,code',
+            'dbh'            => 'nullable|numeric',
+            'height'         => 'nullable|numeric',
+            'age'            => 'nullable|numeric',
+            'canopy_diameter'=> 'nullable|numeric',
+            'tree_type_id'   => 'required|exists:tree_types,id',
+            'taken_at'       => 'nullable|date',
 
-            $pending = PendingGeotagTree::create([
-                'image_path' => $path,
-                'latitude' => $validated['latitude'],
-                'longitude' => $validated['longitude'],
-                'code' => $validated['code'],
-                'dbh' => $validated['dbh'] ?? null,
-                'height' => $validated['height'] ?? null,
-                'age' => $validated['age'] ?? null,
-                'canopy_diameter' => $validated['canopy_diameter'] ?? null,
-                'taken_at' => $validated['taken_at'] ?? null,
-                'tree_type_id' => $validated['tree_type_id'],
-                'user_id' => auth()->id(),
-            ]);
+            // new: explicit type and conditional requirements
+            'planted_type' => ['nullable', 'in:date,year'],
+            'planted_at'   => ['nullable', 'date'],
+            'planted_year' => ['nullable', 'digits:4','integer','min:1900','max:' . date('Y')],
+        ]);
 
-            // Notify admins and superadmins
-            $admins = User::query()->role(['admin', 'superadmin'])->get();
-            if ($admins->count()) {
-                foreach ($admins as $admin) {
-                    $admin->notify(new GeotagStatusChanged('pending', $pending->id));
-                }
-            }
+        $path = $request->file('filename')->store('pending_tree_images', 'public');
 
-            return redirect()->back()
-                ->with('success', '🌳 Tree added to pending trees successfully!');
+        // Prepare attributes safely (no undefined indexes)
+        $attrs = [
+            'image_path'       => $path,
+            'latitude'         => $validated['latitude'],
+            'longitude'        => $validated['longitude'],
+            'code'             => $validated['code'],
+            'dbh'              => $validated['dbh'] ?? null,
+            'height'           => $validated['height'] ?? null,
+            'age'              => $validated['age'] ?? null,
+            'canopy_diameter'  => $validated['canopy_diameter'] ?? null,
+            'taken_at'         => $validated['taken_at'] ?? null,
+            'tree_type_id'     => $validated['tree_type_id'],
+            'user_id'          => auth()->id(),
+            'planted_type'     => $validated['planted_type'] ?? null,
+        ];
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            logger()->error('Validation failed:', $e->errors());
-            
-            $errors = $e->errors();
-            
-            // Handle specific validation errors
-            if (isset($errors['code']) && strpos($errors['code'][0], 'unique') !== false) {
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', '⚠️ Tree Code "' . $request->code . '" already exists. Please use a different code.');
-            }
-            
-            // Build friendly error message for other validation errors
-            $errorMessages = [];
-            foreach ($errors as $field => $messages) {
-                $fieldLabel = ucfirst(str_replace('_', ' ', $field));
-                $errorMessages[] = $fieldLabel . ': ' . $messages[0];
-            }
-            
-            return redirect()->back()
-                ->withInput()
-                ->with('error', '❌ ' . implode(' | ', $errorMessages));
+        //store date
+        $type = $validated['planted_type'] ?? null;
 
-        } catch (\Illuminate\Database\QueryException $e) {
-            logger()->error('Database error: ' . $e->getMessage());
-            
-            // Handle duplicate entry error
-            if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', '⚠️ Tree Code "' . $request->code . '" already exists. Please use a different code.');
-            }
-            
-            return redirect()->back()
-                ->withInput()
-                ->with('error', '❌ Database error occurred. Please try again.');
-
-        } catch (\Exception $e) {
-            logger()->error('Store failed: ' . $e->getMessage(), [
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return redirect()->back()
-                ->withInput()
-                ->with('error', '❌ An unexpected error occurred. Please try again.');
+        if ($type === 'date') {
+            $attrs['planted_at'] = $validated['planted_at'];
+            $attrs['planted_year_only'] = 0;
+        } elseif ($type === 'year') {
+            $attrs['planted_at'] = $validated['planted_year'] . '-01-01';
+            $attrs['planted_year_only'] = 1;
+        } else {
+            // No selection made
+            $attrs['planted_at'] = null;
+            $attrs['planted_year_only'] = 0;
         }
+
+        $pending = PendingGeotagTree::create($attrs);
+
+        // Notify admins and superadmins
+        $admins = User::query()->role(['admin', 'superadmin'])->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new GeotagStatusChanged('pending', $pending->id));
+        }
+
+        return redirect()->back()->with('success', '🌳 Tree added to pending trees successfully!');
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        logger()->error('Validation failed:', $e->errors());
+
+        $errors = $e->errors();
+
+        if (isset($errors['code']) && str_contains($errors['code'][0], 'unique')) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', '⚠️ Tree Code "' . $request->code . '" already exists. Please use a different code.');
+        }
+
+        $errorMessages = [];
+        foreach ($errors as $field => $messages) {
+            $fieldLabel = ucfirst(str_replace('_', ' ', $field));
+            $errorMessages[] = $fieldLabel . ': ' . $messages[0];
+        }
+
+        return redirect()->back()
+            ->withInput()
+            ->with('error', '❌ ' . implode(' | ', $errorMessages));
+
+    } catch (\Illuminate\Database\QueryException $e) {
+        logger()->error('Database error: ' . $e->getMessage());
+
+        if (str_contains($e->getMessage(), 'Duplicate entry')) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', '⚠️ Tree Code "' . $request->code . '" already exists. Please use a different code.');
+        }
+
+        return redirect()->back()
+            ->withInput()
+            ->with('error', '❌ Database error occurred. Please try again.');
+
+    } catch (\Exception $e) {
+        logger()->error('Store failed: ' . $e->getMessage(), [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
+
+        return redirect()->back()
+            ->withInput()
+            ->with('error', '❌ An unexpected error occurred. Please try again.');
     }
+}
+
 
     public function index(Request $request)
     {

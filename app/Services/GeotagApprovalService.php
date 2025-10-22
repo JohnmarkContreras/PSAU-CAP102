@@ -96,6 +96,8 @@ class GeotagApprovalService
             'age'             => $geotag->age,
             'stem_diameter'   => $geotag->stem_diameter,
             'canopy_diameter' => $geotag->canopy_diameter,
+            'planted_at'      => $geotag->planted_at,
+            'planted_year_only'=> $geotag->planted_year_only,
             'created_by'      => auth()->id(),
         ]);
 

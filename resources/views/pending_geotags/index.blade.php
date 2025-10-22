@@ -106,7 +106,7 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // ✅ Initialize DataTable
+    //  Initialize DataTable
     if ($.fn.DataTable.isDataTable('#pendingTable')) {
         $('#pendingTable').DataTable().clear().destroy();
     }
@@ -124,14 +124,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // ✅ Delegated handler for image preview
+    //  Delegated handler for image preview
     $(document).on('click', '.preview-image', function (e) {
         e.preventDefault();
         const imgUrl = $(this).data('img');
         window.dispatchEvent(new CustomEvent('open-modal', { detail: imgUrl }));
     });
 
-    // ✅ Show success toast from session
+    //  Show success toast from session
     @if(session('success'))
         showToast('success', 'Success!', '{{ session('success') }}');
     @elseif(session('status'))

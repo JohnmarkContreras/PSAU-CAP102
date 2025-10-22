@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
+                <div class="hidden">
                     <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age (years)</label>
                     <input type="number" name="age" id="age" 
                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-green-500 focus:border-green-500"
@@ -133,6 +133,43 @@ document.addEventListener("DOMContentLoaded", function () {
                         value="{{ old('canopy_diameter') }}">
                 </div>
             </div>
+
+            <div class="col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Planted input type</label>
+                <div class="flex items-center space-x-6">
+                    <label class="flex items-center">
+                        <input type="radio" name="planted_type" id="radio_date" value="date"
+                            {{ old('planted_type') === 'date' ? 'checked' : '' }} class="mr-2">
+                        Full date
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="planted_type" id="radio_year" value="year"
+                            {{ old('planted_type') === 'year' ? 'checked' : '' }} class="mr-2">
+                        Year only
+                    </label>
+                </div>
+            </div>
+
+            {{-- Full date input --}}
+            <div id="date_input_wrapper" class="{{ old('planted_type') === 'date' ? '' : 'hidden' }}">
+                <input type="date" name="planted_at" id="planted_at"
+                    value="{{ old('planted_at') ? \Carbon\Carbon::parse(old('planted_at'))->format('Y-m-d') : '' }}"
+                    class="border rounded px-2 py-1 w-full"
+                    {{ old('planted_type') === 'date' ? '' : 'disabled' }}>
+            </div>
+
+            {{-- Year only input --}}
+            <div id="year_input_wrapper" class="{{ old('planted_type') === 'year' ? '' : 'hidden' }}">
+                <select name="planted_year" id="planted_year"
+                        class="border rounded px-2 py-1 w-full"
+                        {{ old('planted_type') === 'year' ? '' : 'disabled' }}>
+                    <option value="">-- Select year --</option>
+                    @for ($y = now()->year; $y >= 1900; $y--)
+                        <option value="{{ $y }}" {{ old('planted_year') == $y ? 'selected' : '' }}>{{ $y }}</option>
+                    @endfor
+                </select>
+            </div>
+            
 
             <input type="hidden" name="taken_at" id="taken_at">
 
@@ -210,8 +247,47 @@ function convertToDecimal(coord, ref) {
     return decimal.toFixed(8);
 }
 </script>
+<script>
+const radioDate   = document.getElementById('radio_date');
+const radioYear   = document.getElementById('radio_year');
+const dateWrapper = document.getElementById('date_input_wrapper');
+const yearWrapper = document.getElementById('year_input_wrapper');
+const dateInput   = document.getElementById('planted_at');
+const yearSelect  = document.getElementById('planted_year');
 
-{{-- ✅ Toast Notifications (matching Notifications page) --}}
+function toggleInputs() {
+    if (radioDate.checked) {
+        dateWrapper.classList.remove('hidden');
+        dateInput.disabled = false;
+
+        yearWrapper.classList.add('hidden');
+        yearSelect.disabled = true;
+        yearSelect.value = '';
+    } else if (radioYear.checked) {
+        yearWrapper.classList.remove('hidden');
+        yearSelect.disabled = false;
+
+        dateWrapper.classList.add('hidden');
+        dateInput.disabled = true;
+        dateInput.value = '';
+    } else {
+        // Neither selected: hide both
+        dateWrapper.classList.add('hidden');
+        dateInput.disabled = true;
+        yearWrapper.classList.add('hidden');
+        yearSelect.disabled = true;
+    }
+}
+
+
+radioDate.addEventListener('change', toggleInputs);
+radioYear.addEventListener('change', toggleInputs);
+
+// Run once on page load
+toggleInputs();
+</script>
+
+{{--  Toast Notifications (matching Notifications page) --}}
 @if (session('success'))
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -226,5 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('error', 'Error!', @json(session('error')));
 });
 </script>
+
+
 @endif
 @endsection

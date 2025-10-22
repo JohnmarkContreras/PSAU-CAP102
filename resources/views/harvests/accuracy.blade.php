@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto p-4 md:p-6">
+<div class="container mx-auto p-4 md:p-6 bg-white">
     <h2 class="text-xl md:text-2xl font-bold mb-4">Prediction Accuracy</h2>
 
     <div class="w-full overflow-x-auto">
@@ -10,7 +10,7 @@
 
     <div class="mt-6">
         <h3 class="text-base md:text-lg font-semibold mb-3">Error Metrics</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <!-- <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div class="bg-gray-50 p-3 rounded">
                 <p class="text-xs md:text-sm text-gray-600">MAE</p>
                 <p class="text-lg md:text-xl font-semibold">{{ $metrics['MAE'] }}</p>
@@ -18,7 +18,7 @@
             <div class="bg-gray-50 p-3 rounded">
                 <p class="text-xs md:text-sm text-gray-600">MSE</p>
                 <p class="text-lg md:text-xl font-semibold">{{ $metrics['MSE'] }}</p>
-            </div>
+            </div> -->
             <div class="bg-gray-50 p-3 rounded">
                 <p class="text-xs md:text-sm text-gray-600">RMSE</p>
                 <p class="text-lg md:text-xl font-semibold">{{ $metrics['RMSE'] }}</p>

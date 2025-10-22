@@ -111,7 +111,7 @@ class importTreeImages extends Command
                 'created_by'    => auth()->id() ?? 1,
             ]);
 
-            // ✅ NEW: Create TreeData record for this tree
+            //  NEW: Create TreeData record for this tree
             TreeData::create([
                 'tree_code_id'    => $treeCode->id,
                 'dbh'             => null,
@@ -124,7 +124,7 @@ class importTreeImages extends Command
             $this->info("Imported: {$basename} → Type ID: {$treeTypeId}, Code: {$formattedCode}");
         }
 
-        $this->info("\n✅ Import complete!");
+        $this->info("\n Import complete!");
     }
 
     protected function getGps($coord, $hemisphere)
