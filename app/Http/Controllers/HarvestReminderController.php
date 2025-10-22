@@ -16,7 +16,7 @@ class HarvestReminderController extends Controller
         $predictions = HarvestPrediction::orderBy('predicted_date')
             ->get(['code','predicted_date','predicted_quantity']);
 
-        $users = User::paginate(50);
+        $users = User::all();
 
         foreach ($users as $user) {
             // 1. Send Email

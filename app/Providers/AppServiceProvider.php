@@ -25,5 +25,15 @@ class AppServiceProvider extends ServiceProvider
                 }
             });
         }
+        
+        View::composer('*', function ($view) {
+        $unreadCount = 0;
+
+        if (Auth::check()) {
+            $unreadCount = Auth::user()->unreadNotifications()->count();
+        }
+
+        $view->with('unreadNotificationsCount', $unreadCount);
+    });
     }
 }

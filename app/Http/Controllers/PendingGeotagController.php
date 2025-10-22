@@ -22,7 +22,7 @@ class PendingGeotagController extends Controller
         $pending = PendingGeotag::with(['user', 'processor'])
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->get();
         return view('geotags.pending', compact('pending'));
     }
 
@@ -34,7 +34,6 @@ class PendingGeotagController extends Controller
         return redirect()->back()->with('success', 'Geotag approved and added to Trees!');
     }
 
-    // Reject a geotag with optional reason
     public function reject($id, Request $request)
     {
         $request->validate([
@@ -45,6 +44,7 @@ class PendingGeotagController extends Controller
 
         return redirect()->back()->with('status', 'Geotag rejected successfully.');
     }
+
 
     // View approved and rejected geotags (audit trail)
     public function history()

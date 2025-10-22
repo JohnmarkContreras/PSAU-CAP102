@@ -12,23 +12,138 @@ class TreeDataController extends Controller
 {
     
     // Show form to create new tree data entry
+// public function create(Request $request)
+// {
+//     $treeCodes = TreeCode::all();
+//     $defaultCode = $request->query('code');
+//     $defaultCodeId = null;
+//     if ($defaultCode) {
+//         $matched = TreeCode::where('code', $defaultCode)->first();
+//         if ($matched) $defaultCodeId = $matched->id;
+//     }
+//     if (!$defaultCodeId && $request->query('tree_code_id')) {
+//         $defaultCodeId = $request->query('tree_code_id');
+//     }
+//     return view('tree_data.create', compact('treeCodes', 'defaultCodeId'));
+// }
+//     // Store new tree data entry
+//     public function store(Request $request)
+//     {
+//         $data = $request->validate([
+//             'tree_code_id' => 'nullable|exists:tree_code,id',
+//             'dbh' => 'required|numeric',      // cm
+//             'height' => 'required|numeric',   // meters
+//             'age' => 'nullable|integer',
+//             'stem_diameter' => 'nullable|numeric',
+//             'canopy_diameter' => 'nullable|numeric',
+//             // other fields...
+//         ]);
+
+//         //Prevent duplicates based on tree_code_id
+//         $exists = \App\TreeData::where('tree_code_id', $data['tree_code_id'])->exists();
+
+//         if ($exists) {
+//             return redirect()->back()
+//                 ->with('error', 'A tree data record for this code already exists. Please choose a different tree code.')
+//                 ->withInput();
+//         }
+
+//         try {
+//             $treeData = \App\TreeData::create($data);
+
+//             // Compute carbon sequestration if applicable
+//             $params = [];
+//             if ($treeData->treeCode && isset($treeData->treeCode->alpha)) {
+//                 $params['alpha'] = (float) $treeData->treeCode->alpha;
+//             }
+
+//             $treeData->computeAndSaveCarbon($params, true);
+
+//             return redirect()
+//                 ->route('trees-images.index')
+//                 ->with('success', 'Tree data added successfully! Carbon sequestration computed.');
+//         } catch (\Exception $e) {
+//             \Log::error('Error creating tree data: ' . $e->getMessage(), [
+//                 'file' => $e->getFile(),
+//                 'line' => $e->getLine(),
+//             ]);
+
+//             return redirect()
+//                 ->back()
+//                 ->with('error', 'An unexpected error occurred while saving the tree data. Please try again.')
+//                 ->withInput();
+//         }
+//     }
+
+// // TreeDataController.php
+// public function edit($tree_code_id)
+//     {
+//         // Optional: Restrict to superadmin
+//         // $this->authorize('isSuperAdmin');
+        
+//         $tree = TreeData::where('tree_code_id', $tree_code_id)->firstOrFail();
+//         return view('tree_data.edit', compact('tree'));
+//     }
+
+//     /**
+//      * Update tree data including coordinates
+//      */
+//     public function update(Request $request, $tree_code_id)
+//     {
+//         // Optional: Restrict to superadmin
+//         // $this->authorize('isSuperAdmin');
+        
+//         $tree = TreeData::where('tree_code_id', $tree_code_id)->firstOrFail();
+
+//         $validated = $request->validate([
+//             'tree_code_id'    => 'required|exists:tree_code,id|unique:tree_data,tree_code_id,' . $tree->id,
+//             'dbh'             => 'required|numeric|min:0',
+//             'height'          => 'required|numeric|min:0',
+//             'age'             => 'nullable|integer|min:0',
+//             'stem_diameter'   => 'nullable|numeric|min:0',
+//             'canopy_diameter' => 'nullable|numeric|min:0',
+//         ]);
+
+//         // Update the tree with validated data (including new coordinates)
+//         $tree->update($validated);
+
+//         // Recompute carbon metrics
+//         $params = $request->only(['alpha', 'carbon_fraction', 'annual_growth_fraction']);
+//         $sanitized = [];
+//         if (isset($params['alpha'])) $sanitized['alpha'] = (float)$params['alpha'];
+//         if (isset($params['carbon_fraction'])) $sanitized['carbon_fraction'] = (float)$params['carbon_fraction'];
+//         if (isset($params['annual_growth_fraction'])) $sanitized['annual_growth_fraction'] = (float)$params['annual_growth_fraction'];
+
+//         $tree->computeAndSaveCarbon($sanitized, true);
+
+//         return redirect()
+//             ->route('tree_data.edit', $tree->tree_code_id)
+//             ->with('success', 'Tree data, coordinates, and carbon metrics updated successfully!');
+//     }
+
+// Show form to create new tree data entry
 public function create(Request $request)
 {
     $treeCodes = TreeCode::all();
     $defaultCode = $request->query('code');
     $defaultCodeId = null;
+    
     if ($defaultCode) {
         $matched = TreeCode::where('code', $defaultCode)->first();
         if ($matched) $defaultCodeId = $matched->id;
     }
+    
     if (!$defaultCodeId && $request->query('tree_code_id')) {
         $defaultCodeId = $request->query('tree_code_id');
     }
+    
     return view('tree_data.create', compact('treeCodes', 'defaultCodeId'));
 }
-    // Store new tree data entry
-    public function store(Request $request)
-    {
+
+// Store new tree data entry
+public function store(Request $request)
+{
+    try {
         $data = $request->validate([
             'tree_code_id' => 'nullable|exists:tree_code,id',
             'dbh' => 'required|numeric',      // cm
@@ -36,91 +151,192 @@ public function create(Request $request)
             'age' => 'nullable|integer',
             'stem_diameter' => 'nullable|numeric',
             'canopy_diameter' => 'nullable|numeric',
-            // other fields...
         ]);
 
-        //Prevent duplicates based on tree_code_id
-        $exists = \App\TreeData::where('tree_code_id', $data['tree_code_id'])->exists();
+        // Prevent duplicates based on tree_code_id
+        if ($data['tree_code_id']) {
+            $exists = \App\TreeData::where('tree_code_id', $data['tree_code_id'])->exists();
 
-        if ($exists) {
-            return redirect()->back()
-                ->with('error', 'A tree data record for this code already exists. Please choose a different tree code.')
-                ->withInput();
-        }
+            if ($exists) {
+                $message = 'A tree data record for this code already exists. Please choose a different tree code.';
+                
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $message
+                    ], 422);
+                }
 
-        try {
-            $treeData = \App\TreeData::create($data);
-
-            // Compute carbon sequestration if applicable
-            $params = [];
-            if ($treeData->treeCode && isset($treeData->treeCode->alpha)) {
-                $params['alpha'] = (float) $treeData->treeCode->alpha;
+                return redirect()->back()
+                    ->with('error', $message)
+                    ->withInput();
             }
-
-            $treeData->computeAndSaveCarbon($params, true);
-
-            return redirect()
-                ->route('trees-images.index')
-                ->with('success', 'Tree data added successfully! Carbon sequestration computed.');
-        } catch (\Exception $e) {
-            \Log::error('Error creating tree data: ' . $e->getMessage(), [
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ]);
-
-            return redirect()
-                ->back()
-                ->with('error', 'An unexpected error occurred while saving the tree data. Please try again.')
-                ->withInput();
         }
-    }
 
-// TreeDataController.php
-public function edit($tree_code_id)
-    {
-        // Optional: Restrict to superadmin
-        // $this->authorize('isSuperAdmin');
-        
-        $tree = TreeData::where('tree_code_id', $tree_code_id)->firstOrFail();
-        return view('tree_data.edit', compact('tree'));
-    }
+        $treeData = \App\TreeData::create($data);
 
-    /**
-     * Update tree data including coordinates
-     */
-    public function update(Request $request, $tree_code_id)
-    {
-        // Optional: Restrict to superadmin
-        // $this->authorize('isSuperAdmin');
-        
-        $tree = TreeData::where('tree_code_id', $tree_code_id)->firstOrFail();
+        // Compute carbon sequestration if applicable
+        $params = [];
+        if ($treeData->treeCode && isset($treeData->treeCode->alpha)) {
+            $params['alpha'] = (float) $treeData->treeCode->alpha;
+        }
 
-        $validated = $request->validate([
-            'tree_code_id'    => 'required|exists:tree_code,id|unique:tree_data,tree_code_id,' . $tree->id,
-            'dbh'             => 'required|numeric|min:0',
-            'height'          => 'required|numeric|min:0',
-            'age'             => 'nullable|integer|min:0',
-            'stem_diameter'   => 'nullable|numeric|min:0',
-            'canopy_diameter' => 'nullable|numeric|min:0',
-        ]);
+        $treeData->computeAndSaveCarbon($params, true);
 
-        // Update the tree with validated data (including new coordinates)
-        $tree->update($validated);
+        $message = 'Tree data added successfully! Carbon sequestration computed.';
 
-        // Recompute carbon metrics
-        $params = $request->only(['alpha', 'carbon_fraction', 'annual_growth_fraction']);
-        $sanitized = [];
-        if (isset($params['alpha'])) $sanitized['alpha'] = (float)$params['alpha'];
-        if (isset($params['carbon_fraction'])) $sanitized['carbon_fraction'] = (float)$params['carbon_fraction'];
-        if (isset($params['annual_growth_fraction'])) $sanitized['annual_growth_fraction'] = (float)$params['annual_growth_fraction'];
-
-        $tree->computeAndSaveCarbon($sanitized, true);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'redirect' => route('tree-images.index')
+            ]);
+        }
 
         return redirect()
-            ->route('tree_data.edit', $tree->tree_code_id)
-            ->with('success', 'Tree data, coordinates, and carbon metrics updated successfully!');
-    }
+            ->route('tree-images.index')
+            ->with('success', $message);
 
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        }
+
+        return redirect()
+            ->back()
+            ->withErrors($e->errors())
+            ->withInput();
+
+    } catch (\Exception $e) {
+        \Log::error('Error creating tree data: ' . $e->getMessage(), [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
+
+        $message = 'An unexpected error occurred while saving the tree data. Please try again.';
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 500);
+        }
+
+        return redirect()
+            ->back()
+            ->with('error', $message)
+            ->withInput();
+    }
+}
+
+    // Show edit form
+    public function edit($id)
+    {
+        // Find by ID directly instead of relying on implicit binding
+        $tree = \App\TreeData::with('treeCode')->findOrFail($id);
+        return view('tree_data.edit', compact('tree'));
+    }
+public function update(Request $request, $id)
+{
+    // Find the tree record by ID
+    $tree = \App\TreeData::with('treeCode')->findOrFail($id);
+
+    try {
+        $data = $request->validate([
+            'tree_code_id' => 'required|exists:tree_code,id',
+            'dbh' => 'required|numeric',
+            'height' => 'required|numeric',
+            'age' => 'nullable|integer',
+            'stem_diameter' => 'nullable|numeric',
+            'canopy_diameter' => 'nullable|numeric',
+        ]);
+
+        // Check for duplicates only if tree_code_id changed
+        if ($tree->tree_code_id != $data['tree_code_id']) {
+            $exists = \App\TreeData::where('tree_code_id', $data['tree_code_id'])->exists();
+            
+            if ($exists) {
+                $message = 'A tree data record for this code already exists. Please choose a different tree code.';
+                
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $message
+                    ], 422);
+                }
+
+                return redirect()->back()
+                    ->with('error', $message)
+                    ->withInput();
+            }
+        }
+
+        $tree->update($data);
+
+        // Recompute carbon sequestration
+        $params = [];
+        if ($tree->treeCode && isset($tree->treeCode->alpha)) {
+            $params['alpha'] = (float) $tree->treeCode->alpha;
+        }
+
+        $tree->computeAndSaveCarbon($params, true);
+
+        $message = 'Tree data updated successfully!';
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'redirect' => route('tree-images.index')
+            ]);
+        }
+
+        // Redirect back to map for regular requests
+        return redirect()
+            ->route('tree-images.index')
+            ->with('success', $message);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        // Handle validation errors
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        }
+
+        return redirect()
+            ->back()
+            ->withErrors($e->errors())
+            ->withInput();
+
+    } catch (\Exception $e) {
+        \Log::error('Error updating tree data: ' . $e->getMessage(), [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
+
+        $message = 'An unexpected error occurred while updating the tree data. Please try again.';
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 500);
+        }
+
+        return redirect()
+            ->back()
+            ->with('error', $message)
+            ->withInput();
+    }
+}
     /**
      * Show a specific tree with details
      */
@@ -235,8 +451,8 @@ public function edit($tree_code_id)
             $query->where('tree_code_id', $request->input('tree_code_id'));
         }
 
-        $rows = $query->paginate(50)->withQueryString();
-        $treeCodes = \App\Models\TreeCode::orderBy('code')->get(['id', 'code']);
+        $rows = $query->get()->withQueryString();
+        $treeCodes = \App\TreeCode::orderBy('code')->get(['id', 'code']);
 
         return view('tree_data.sequestered', compact('rows', 'treeCodes'));
     }
@@ -248,7 +464,7 @@ public function analyticsCarbon(Request $request)
         ->whereNotNull('annual_sequestration_kgco2')
         ->orderBy('tree_code_id')
         ->orderBy('id')
-        ->paginate(50);
+        ->get();
 
     $chartData = $rows->map(function ($r) {
         $tree = optional($r->treeCode);
@@ -289,7 +505,7 @@ public function analyticsCarbon(Request $request)
 
     $harvests = \App\Harvest::selectRaw('code, SUM(harvest_weight_kg) as total_kg')
         ->groupBy('code')
-        ->paginate(50);
+        ->get();
 
     $harvestCodes = $harvests->pluck('code')
     ->map(function ($c) {
@@ -302,7 +518,7 @@ public function analyticsCarbon(Request $request)
 
     $treeCodes = \App\TreeCode::whereIn('code', $harvestCodes)
         ->with(['treeType', 'latestData'])
-        ->paginate(50)
+        ->get()
         ->keyBy(function ($item) {
             return strtoupper($item->code);
         });

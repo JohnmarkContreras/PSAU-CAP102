@@ -1,7 +1,7 @@
 <?php
 
 namespace App;
-
+use Spatie\Activitylog\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 class TreeData extends Model
@@ -22,6 +22,25 @@ class TreeData extends Model
         'carbon_stock_kg',
         'annual_sequestration_kgco2'
     ];
+
+    use LogsActivity;
+
+    protected static $logAttributes = [
+        'tree_code_id',
+        'dbh',
+        'height',
+        'age',
+        'latitude',
+        'longitude'
+    ];
+
+    protected static $logName = 'tree_data';
+    protected static $logOnlyDirty = true; // Only log changed fields
+
+    public function getDescriptionForEvent(string $eventName): string
+    {
+        return "TreeData record was {$eventName} by " . auth()->user()->name;
+    }
 
     public function tree()
     {

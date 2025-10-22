@@ -13,7 +13,7 @@
 
         const labels = @json(['Sour', 'Sweet', 'Semi-Sweet']);
         const data = @json([ $totalsour ?? 0, $totalsweet ?? 0, $totalsemi_sweet ?? 0 ]);
-        const colors = ['#7BD666', '#EE918C', '#4F302E']; // Green, pink, Brown
+        const colors = ['#6DAF2F', '#FFBCD6', '#EB9737']; // Green, pink, Brown
 
         const total = data.reduce((a, b) => a + b, 0);
         if (total === 0) {
@@ -31,19 +31,20 @@
 
         // Build chart
         const chart = new Chart(ctx, {
-            type: 'pie',
+            type: 'doughnut', // Changed from 'pie' to 'doughnut'
             data: {
                 labels: labels,
                 datasets: [{
                     data: data,
                     backgroundColor: colors,
                     borderColor: '#ffffff',
-                    borderWidth: 1
+                    borderWidth: 2
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                cutout: '60%', // This controls the size of the hole (50-70% is typical)
                 plugins: {
                     legend: { display: false }, // we use custom legend
                     tooltip: { enabled: true }
@@ -77,7 +78,7 @@
             legendContainer.appendChild(row);
         });
     });
-    </script>
+</script>
 
     <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -310,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <div class="flex items-center justify-center mb-2">
                                     <div class="text-center">
                                         <div class="text-2xl font-bold">{{ number_format($totalActual, 2) }} kg</div>
-                                        <div class="text-sm">Total Actual Harvest</div>
+                                        <div class="text-sm">Recorded Harvest</div>
                                     </div>
                                 </div>
                             </div>

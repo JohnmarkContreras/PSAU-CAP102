@@ -8,7 +8,7 @@
     <div class="max-w-2xl mx-auto">
         <!-- Header with Back Button -->
         <div class="mb-6 flex items-center justify-between">
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Update Tree Data</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Edit Tree Data</h1>
             <a href="{{ url()->previous() }}"
                class="inline-flex items-center px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md shadow-sm hover:bg-gray-200 transition">
                 ← Back
@@ -27,7 +27,7 @@
                     <input type="text" name="tree_code_id" id="tree_code_id"
                            value="{{ old('tree_code_id', $tree->tree_code_id) }}"
                            class="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 text-sm"
-                           required readonly>
+                           required>
                 </div>
 
                 <!-- DBH -->
@@ -86,7 +86,7 @@
 
 <!-- Confirmation Modal -->
 <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
-    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-auto">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm">
         <h2 class="text-lg font-semibold text-gray-800 mb-2">Confirm Update</h2>
         <p class="text-gray-600 mb-6">Are you sure you want to update this tree data? This action cannot be undone.</p>
         <div class="flex gap-3">
@@ -113,39 +113,10 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.classList.remove('hidden');
     });
 
-    // Confirm and submit via AJAX
+    // Confirm and submit
     confirmBtn.addEventListener('click', function() {
         modal.classList.add('hidden');
-        
-        // Show loading toast
-        showToast('info', 'Updating', 'Please wait while we update the tree data...');
-        
-        // Submit form via AJAX
-        const formData = new FormData(form);
-        
-        fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast('success', 'Success!', data.message || 'Tree data updated successfully!');
-                setTimeout(() => {
-                    window.location.href = data.redirect || '{{ url()->previous() }}';
-                }, 2000);
-            } else {
-                showToast('error', 'Error!', data.message || 'Failed to update tree data');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('error', 'Error!', 'An error occurred while updating');
-        });
+        form.submit();
     });
 
     // Cancel modal

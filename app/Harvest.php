@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Harvest extends Model
 {
-    protected $fillable = ['code', 'harvest_date', 'harvest_weight_kg', 'quality', 'notes'];
+    protected $fillable = ['code', 'harvest_date', 'harvest_weight_kg', 'quality', 'notes', 'created_by'];
 
     // Keep method name 'tree' for backward compatibility, but point to TreeCode
     public function tree()
@@ -18,5 +18,9 @@ class Harvest extends Model
     {
         return $this->belongsTo(TreeCode::class, 'code', 'code');
     }
-    
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

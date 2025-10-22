@@ -45,7 +45,7 @@ class CarbonTrackingService
     {
         return TreeData::whereBetween('created_at', [$startDate, $endDate])
             ->with('treeCode') // assuming TreeData belongsTo TreeCode
-            ->paginate(50)
+            ->get()
             ->groupBy('tree_code_id')
             ->map(function ($records, $treeCodeId) {
                 return [

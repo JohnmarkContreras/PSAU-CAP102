@@ -95,7 +95,7 @@
                     const id = this.dataset.id;
                     if (!confirm('Recompute and save carbon for measurement #' + id + '?')) return;
                     this.disabled = true;
-                    fetch(`/tree_data/${id}/compute-carbon`, {
+                    fetch(`/pages/${id}/compute-carbon`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

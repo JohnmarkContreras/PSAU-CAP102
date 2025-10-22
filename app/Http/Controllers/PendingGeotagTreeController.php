@@ -8,7 +8,8 @@ use App\Services\GeotagApprovalService;
 use App\User;
 use App\Notifications\GeotagStatusChanged;
 use App\Services\CarbonTrackingService;
-
+use App\Helpers\ActivityLogHelper;
+use Illuminate\Support\Facades\Auth;
 class PendingGeotagTreeController extends Controller
 {
     protected $approvalService;
@@ -150,7 +151,7 @@ class PendingGeotagTreeController extends Controller
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
             ]);
-
+            ActivityLogHelper::log('User approved geotag', ['fields' => $request->only(['name', 'email'])], 'user_actions', $user);
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
@@ -162,9 +163,9 @@ class PendingGeotagTreeController extends Controller
         $request->validate([
             'rejection_reason' => 'nullable|string|max:255',
         ]);
-
+        $user = Auth::user();
         $this->approvalService->rejectGeotag($id, $request->input('rejection_reason'));
-
+        ActivityLogHelper::log('User rejected geotag', ['fields' => $request->only(['name', 'email'])], 'user_actions', $user);
         return redirect()->back()->with('status', 'Geotag rejected successfully.');
     }
 }

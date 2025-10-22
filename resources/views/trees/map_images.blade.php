@@ -159,39 +159,63 @@ document.addEventListener('DOMContentLoaded', fetchAllMarkers);
 var userMarker = null;
 var userCircle = null;
 
+// Check if we should return to a specific tree location
+const returnToTree = sessionStorage.getItem('returnToTree');
+if (returnToTree) {
+    const treeLocation = JSON.parse(returnToTree);
+    map.setView([treeLocation.lat, treeLocation.lng], treeLocation.zoom || 19);
+    
+    // Clear the stored location
+    sessionStorage.removeItem('returnToTree');
+    
+    // Optionally re-open the tree details
+    setTimeout(() => {
+        const codeKey = String(treeLocation.code).toUpperCase();
+        if (markers[codeKey]) {
+            const marker = markers[codeKey];
+            const tree = treeData[codeKey];
+            setActiveMarker(marker, tree);
+            marker.openPopup();
+        }
+    }, 500);
+}
+
 if (navigator.geolocation) {
-navigator.geolocation.watchPosition(
-    (pos) => {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    const accuracy = pos.coords.accuracy;
+    navigator.geolocation.watchPosition(
+        (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const accuracy = pos.coords.accuracy;
 
-    if (!userMarker) {
-        userMarker = L.marker([lat, lng], {
-        icon: new L.Icon({
-            iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34]
-        })
-        }).addTo(map).bindPopup("You are here");
+            if (!userMarker) {
+                userMarker = L.marker([lat, lng], {
+                    icon: new L.Icon({
+                        iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34]
+                    })
+                }).addTo(map).bindPopup("You are here");
 
-        map.setView([lat, lng], 17);
-    } else {
-        userMarker.setLatLng([lat, lng]);
-    }
-    },
-    (err) => {
-    console.error("Geolocation error:", err);
-    },
-    {
-    enableHighAccuracy: true,
-    maximumAge: 10000,
-    timeout: 10000
-    }
-);
+                // Only center on user location if we're not returning to a tree
+                if (!returnToTree) {
+                    map.setView([lat, lng], 17);
+                }
+            } else {
+                userMarker.setLatLng([lat, lng]);
+            }
+        },
+        (err) => {
+            console.error("Geolocation error:", err);
+        },
+        {
+            enableHighAccuracy: true,
+            maximumAge: 10000,
+            timeout: 10000
+        }
+    );
 } else {
-console.warn("Geolocation is not supported by this browser.");
+    console.warn("Geolocation is not supported by this browser.");
 }
 
 /* ========= Add markers and keep data for lookup ========= */
@@ -325,22 +349,29 @@ qs('harvest-next').addEventListener('click', () => {
 });
 
 function prepareEditLink(tree) {
-const href = `/tree_data/${tree.tree_code_id}/edit`;
-const link = document.getElementById('edit-tree-link');
-if (!link) return;
+    const href = `/tree_data/${tree.id}/edit`;
+    const link = document.getElementById('edit-tree-link');
+    if (!link) return;
 
-link.href = href;
-link.onclick = function (e) {
-    e.preventDefault();
+    link.href = href;
+    link.onclick = function (e) {
+        e.preventDefault();
 
-    const modal = document.getElementById('tree-details');
-    if (modal) modal.remove();
-    document.querySelectorAll('.modal-backdrop, .backdrop').forEach(el => el.remove());
+        // Store the tree's location in sessionStorage before navigating
+        sessionStorage.setItem('returnToTree', JSON.stringify({
+            lat: tree.latitude,
+            lng: tree.longitude,
+            code: tree.code,
+            zoom: map.getZoom()
+        }));
 
-    setTimeout(() => { window.location.href = href; }, 50);
-};
+        const modal = document.getElementById('tree-details');
+        if (modal) modal.remove();
+        document.querySelectorAll('.modal-backdrop, .backdrop').forEach(el => el.remove());
+
+        setTimeout(() => { window.location.href = href; }, 50);
+    };
 }
-
 function closeTreeDetails() {
 const modal = qs('tree-details');
 if (modal) {
@@ -424,41 +455,61 @@ matches.forEach(code => {
     li.className = 'px-3 py-2 hover:bg-green-100 cursor-pointer text-sm';
     li.textContent = code;
     li.onclick = function () {
-    qs('treeCode').value = code;
-    suggestionsBox.classList.add('hidden');
-    
-    const codeKey = code.toUpperCase();
-    
-    // Check if marker already loaded
-    if (markers[codeKey]) {
-        const marker = markers[codeKey];
-        const tree = treeData[codeKey];
-        setActiveMarker(marker, tree);
-        showTreeDetails(tree);
-    } else {
-        // Fetch the tree data
-        fetch(`/tree-images/data?code=${code}`, {
-            credentials: 'include',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-            .then(r => r.json())
-            .then(data => {
-            if (data.length > 0) {
-                addMarkers(data);
-                const k = (data[0].code || '').toUpperCase();
-                if (markers[k]) {
-                    const marker = markers[k];
-                    const tree = treeData[k];
-                    setActiveMarker(marker, tree);
-                    showTreeDetails(tree);
+        qs('treeCode').value = code;
+        suggestionsBox.classList.add('hidden');
+        
+        const codeKey = code.toUpperCase();
+        
+        // Check if marker already loaded
+        if (markers[codeKey]) {
+            const marker = markers[codeKey];
+            const tree = treeData[codeKey];
+            
+            // Set active marker (turns red)
+            setActiveMarker(marker, tree);
+            
+            // Center map on tree location
+            map.setView([tree.latitude, tree.longitude], 19);
+            
+            // Open popup
+            marker.openPopup();
+            
+            // Show tree details
+            showTreeDetails(tree);
+        } else {
+            // Fetch the tree data
+            fetch(`/tree-images/data?code=${code}`, {
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
-            }
             })
-            .catch(err => console.error('Error fetching tree:', err));
-    }
+                .then(r => r.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        addMarkers(data);
+                        const k = (data[0].code || '').toUpperCase();
+                        if (markers[k]) {
+                            const marker = markers[k];
+                            const tree = treeData[k];
+                            
+                            // Set active marker (turns red)
+                            setActiveMarker(marker, tree);
+                            
+                            // Center map on tree location
+                            map.setView([tree.latitude, tree.longitude], 19);
+                            
+                            // Open popup
+                            marker.openPopup();
+                            
+                            // Show tree details
+                            showTreeDetails(tree);
+                        }
+                    }
+                })
+                .catch(err => console.error('Error fetching tree:', err));
+        }
     };
     suggestionsBox.appendChild(li);
 });

@@ -19,6 +19,7 @@ use App\HarvestPrediction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\Process\Process;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
@@ -48,11 +49,10 @@ class HarvestManagementController extends Controller
 
         // OPTIMIZATION: Single query with eager loading
         $codes = TreeCode::with(['latestTreeData', 'latestPrediction'])
-            ->when($q, function ($query) use ($q) {
-                $query->where('code', 'like', "%".trim($q)."%");
-            })
-            ->orderBy('code')
+            ->when($q, fn($query) => $query->where('code', 'like', "%".trim($q)."%"))
+            ->orderBy($sort, $dir)
             ->paginate(50);
+
 
         // OPTIMIZATION: Fetch ALL harvest counts in ONE query instead of N queries
         $harvestCounts = DB::table('harvests')
@@ -74,11 +74,17 @@ class HarvestManagementController extends Controller
             return $tc;
         });
 
+        $codes = TreeCode::with(['harvests', 'latestPrediction'])->get();
+
+        $groupedHarvests = $codes->mapWithKeys(function ($tc) {
+            return [strtoupper(trim($tc->code)) => $tc->harvests];
+        });
+        
+
         if ($hasRecordsOnly) {
-            $codes = $codes->filter(fn($c) => $c->records_count > 0)->values();
-        } else {
-            $codes = $codes->filter(fn($c) => $c->is_yielding || $c->records_count > 0)->values();
+            $codes = $codes->filter(fn($c) => isset($groupedHarvests[$c->code]) && $groupedHarvests[$c->code]->isNotEmpty())->values();
         }
+
 
         if ($sort === 'dbh') {
             $codes = $codes->sortBy('computed_dbh', SORT_REGULAR, $dir === 'desc');
@@ -93,11 +99,11 @@ class HarvestManagementController extends Controller
 
         // Recent harvests list
         $harvests = Harvest::orderByRaw('CAST(STR_TO_DATE(TRIM(harvest_date), "%b %e, %Y") AS DATE) DESC')
-            ->paginate(50);
+            ->get();
 
         $predictions = HarvestPrediction::select('code', 'predicted_quantity', 'predicted_date')
             ->orderBy('predicted_date')
-            ->paginate(50);
+            ->get();
 
         $grouped = $predictions->groupBy('code')->map(function ($rows) {
             $latest = $rows->last();
@@ -121,7 +127,7 @@ class HarvestManagementController extends Controller
         // Get actual harvest records for calendar
         $actualHarvests = Harvest::select('code', 'harvest_date', 'harvest_weight_kg')
             ->whereNotNull('harvest_date')
-            ->paginate(50);
+            ->get();
 
         $codesWithHarvests = $actualHarvests->pluck('code')->unique()->toArray();
 
@@ -205,6 +211,7 @@ class HarvestManagementController extends Controller
             'yieldingOnly' => $yieldingOnly,
             'forecast' => $data['forecast'] ?? null,
             'evaluation' => $data['evaluation'] ?? null,
+            'groupedHarvests' => $groupedHarvests,
         ]);
     }
 
@@ -212,32 +219,39 @@ class HarvestManagementController extends Controller
     {
         $payload = $request->validated();
 
-        $tc = TreeCode::whereRaw('LOWER(code) = ?', [mb_strtolower(trim($payload['code']))])->first();
-        if ($tc) {
-            $payload['code'] = $tc->code;
-        }
+        $code = mb_strtoupper(trim($payload['code']));
+        $payload['code'] = $code;
 
         $dir = 'harvest_data';
-        $filename = "{$payload['code']}.csv";
+        $filename = "{$code}.csv";
         $path = "{$dir}/{$filename}";
 
         Storage::disk('local')->makeDirectory($dir);
 
+        // --- Read existing CSV records ---
         $existing = [];
         if (Storage::disk('local')->exists($path)) {
             $existing = collect(explode("\n", trim(Storage::disk('local')->get($path))))
                 ->skip(1)
                 ->filter()
                 ->map(fn($line) => str_getcsv($line))
-                ->map(fn($arr) => ['harvest_date' => $arr[0], 'harvest_weight_kg' => $arr[1]])
+                ->map(fn($arr) => [
+                    'harvest_date' => $arr[0],
+                    'harvest_weight_kg' => $arr[1]
+                ])
                 ->toArray();
         }
 
-        $alreadyExists = collect($existing)->contains(fn($row) => $row['harvest_date'] === $request->harvest_date);
+        // --- Check duplicate ---
+        $alreadyExists = collect($existing)->contains(fn($row) =>
+            $row['harvest_date'] === $request->harvest_date
+        );
+
         if ($alreadyExists) {
             return back()->with('error', 'A record for this date already exists.');
         }
 
+        // --- Add new entry ---
         $existing[] = [
             'harvest_date' => $request->harvest_date,
             'harvest_weight_kg' => $request->harvest_weight_kg,
@@ -249,31 +263,56 @@ class HarvestManagementController extends Controller
         foreach ($existing as $row) {
             $csvContent .= "{$row['harvest_date']},{$row['harvest_weight_kg']}\n";
         }
-
         Storage::disk('local')->put($path, $csvContent);
-        Harvest::create($payload);
 
-        $prediction = HarvestPrediction::where('code', $payload['code'])
-            ->whereDate('predicted_date', $request->harvest_date)
-            ->first();
+        // --- Start DB transaction ---
+        DB::beginTransaction();
+        try {
+            $payload['created_by'] = auth()->id();
+            // Create the harvest record
+            $harvest = Harvest::create($payload);
 
-        if ($prediction) {
-            $prediction->update([
-                'actual_quantity' => $request->harvest_weight_kg,
-                'status' => 'done'
-            ]);
-        } else {
-            HarvestPrediction::create([
-                'code' => $payload['code'],
-                'predicted_date' => $request->harvest_date,
-                'predicted_quantity' => $request->harvest_weight_kg,
-                'actual_quantity' => $request->harvest_weight_kg,
-                'status' => 'done'
-            ]);
+            // Find nearest prediction (within ±7 days)
+            $prediction = HarvestPrediction::where('code', $code)
+                ->whereBetween('predicted_date', [
+                    Carbon::parse($request->harvest_date)->subDays(7),
+                    Carbon::parse($request->harvest_date)->addDays(7)
+                ])
+                ->first();
+
+                if ($prediction) {
+                    // Link actual data to existing prediction
+                    $prediction->update([
+                        'actual_quantity' => $request->harvest_weight_kg,
+                        'status' => 'done',
+                        'harvest_id' => $harvest->id,
+                    ]);
+                }
+                // } else {
+                //     // Count existing actual harvests for this tree
+                //     $harvestCount = Harvest::where('code', $code)->count();
+
+                //     //  Only create a prediction record if we have enough history (>= 6)
+                //     if ($harvestCount >= 6) {
+                //         HarvestPrediction::create([
+                //             'code' => $code,
+                //             'predicted_date' => $request->harvest_date,
+                //             'predicted_quantity' => $request->harvest_weight_kg,
+                //             'actual_quantity' => $request->harvest_weight_kg,
+                //             'status' => 'done',
+                //             'harvest_id' => $harvest->id,
+                //         ]);
+                //     }
+            DB::commit();
+            return back()->with('success', 'Harvest record added successfully.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            report($e);
+            return back()->with('error', 'An error occurred while saving harvest data.');
         }
-
-        return back()->with('success', 'Harvest record added successfully.');
     }
+
+
 
     public function import(HarvestImportRequest $request)
     {
@@ -392,28 +431,6 @@ class HarvestManagementController extends Controller
 
     public function upcoming(Request $request)
     {
-        // Auto-mark predictions as done if date has passed
-        DB::transaction(function () {
-            HarvestPrediction::where('status', HarvestPrediction::STATUS_PENDING)
-                ->whereDate('predicted_date', '<=', now()->toDateString())
-                ->chunkById(50, function ($predictions) {
-                    foreach ($predictions as $prediction) {
-                        $harvest = Harvest::create([
-                            'code' => $prediction->code,
-                            'harvest_date' => $prediction->predicted_date ?? now(),
-                            'harvest_weight_kg' => $prediction->predicted_quantity ?? 0,
-                            'created_by' => Auth::id() ?? 1,
-                        ]);
-
-                        $prediction->update([
-                            'status' => HarvestPrediction::STATUS_DONE,
-                            'actual_quantity' => $harvest->harvest_weight_kg,
-                            'harvest_id' => $harvest->id,
-                        ]);
-                    }
-                });
-        });
-
         // Reload fresh predictions (pending only) with eager loading
         $query = HarvestPrediction::with(['treeCode.treeType'])
             ->where('status', HarvestPrediction::STATUS_PENDING);
@@ -451,8 +468,9 @@ class HarvestManagementController extends Controller
 
         $codes = TreeCode::with(['latestTreeData', 'latestPrediction'])
             ->when($q, fn($query) => $query->where('code', 'like', "%".trim($q)."%"))
-            ->orderBy('code')
+            ->orderBy($sort, $dir)
             ->paginate(50);
+
 
         // Use pre-fetched counts
         $codes = $codes->map(function ($tc) use ($minDbh, $minHeight, $harvestCounts) {
@@ -521,24 +539,101 @@ class HarvestManagementController extends Controller
 
     public function accuracy()
     {
-        $harvests = HarvestPrediction::orderBy('predicted_date')
-            ->whereNotNull('actual_quantity')
-            ->limit(1000)
+        // Load predictions and related harvests
+        $predictions = HarvestPrediction::with(['treeCode.harvests'])
+            ->whereHas('treeCode.harvests')
+            ->orderBy('predicted_date')
             ->get();
 
-        $labels = $harvests->map(fn($h) => $h->predicted_date->format('M Y'))->toArray();
-        $actual = $harvests->pluck('actual_quantity')->toArray();
-        $predicted = $harvests->pluck('predicted_quantity')->toArray();
+        $labels = [];
+        $actual = [];
+        $predicted = [];
 
-        $metrics = [
-            'MAE'  => round($harvests->avg(fn($h) => abs($h->actual_quantity - $h->predicted_quantity)), 2),
-            'MSE' => round($harvests->avg(fn($h) => pow($h->actual_quantity - $h->predicted_quantity, 2)), 4),
-            'RMSE' => round(sqrt($harvests->avg(fn($h) => pow($h->actual_quantity - $h->predicted_quantity, 2))), 2),
-            'MAPE' => round($harvests->avg(fn($h) => $h->actual_quantity != 0
-                ? abs(($h->actual_quantity - $h->predicted_quantity) / $h->actual_quantity) * 100
-                : 0), 2) . '%',
-        ];
+        foreach ($predictions as $p) {
+            $predictedMonth = Carbon::parse($p->predicted_date)->format('Y-m');
+
+            // ✅ Compute total actual harvest within the same month
+            $monthlyTotal = optional($p->treeCode->harvests)
+                ->filter(function ($h) use ($predictedMonth) {
+                    return Carbon::parse($h->harvest_date)->format('Y-m') === $predictedMonth;
+                })
+                ->sum('harvest_weight_kg');
+
+            // Add to datasets
+            $labels[] = Carbon::parse($p->predicted_date)->format('M Y');
+            $predicted[] = (float) $p->predicted_quantity;
+            $actual[] = (float) $monthlyTotal;
+        }
+
+        // Compute metrics only on valid pairs (non-zero actual)
+        $validPairs = collect($actual)
+            ->zip($predicted)
+            ->filter(fn($pair) => $pair[0] > 0);
+
+        $MAE = round($validPairs->avg(fn($p) => abs($p[0] - $p[1])), 2);
+        $MSE = round($validPairs->avg(fn($p) => pow($p[0] - $p[1], 2)), 4);
+        $RMSE = round(sqrt($validPairs->avg(fn($p) => pow($p[0] - $p[1], 2))), 2);
+        $MAPE = round($validPairs->avg(fn($p) => $p[0] != 0
+            ? abs(($p[0] - $p[1]) / $p[0]) * 100
+            : 0), 2) . '%';
+
+        $metrics = compact('MAE', 'MSE', 'RMSE', 'MAPE');
 
         return view('harvests.accuracy', compact('labels', 'actual', 'predicted', 'metrics'));
     }
+
+public function backtest(Request $request)
+{
+    $code = $request->input('code');
+
+    // Get distinct codes with records
+    $codes = Harvest::select('code')
+        ->distinct()
+        ->orderBy('code')
+        ->pluck('code');
+
+    $query = Harvest::select('code','harvest_date','harvest_weight_kg');
+    if ($code) {
+        $query->where('code', $code);
+    }
+    $harvests = $query->orderBy('harvest_date')->get()->toArray();
+
+    // Run Python process
+    $process = new Process([
+        base_path('venv/bin/python3'),
+        base_path('scripts/backtest_sarima.py')
+    ]);
+    $process->setInput(json_encode($harvests));
+    $process->run();
+
+    if (!$process->isSuccessful()) {
+        throw new \RuntimeException($process->getErrorOutput());
+    }
+
+    $data = json_decode($process->getOutput(), true);
+
+    if (isset($data['error'])) {
+        return view('harvests.backtest', [
+            'error' => $data['error'],
+            'mape' => null,
+            'rmse' => null,
+            'dates' => [],
+            'actual' => [],
+            'predicted' => [],
+            'selectedCode' => $code,
+            'codes' => $codes,
+        ]);
+    }
+
+    return view('harvests.backtest', [
+        'mape' => $data['mape'] ?? null,
+        'rmse' => $data['rmse'] ?? null,
+        'dates' => $data['dates'] ?? [],
+        'actual' => $data['actual'] ?? [],
+        'predicted' => $data['predicted'] ?? [],
+        'selectedCode' => $code,
+        'codes' => $codes,
+    ]);
+}
+
 }

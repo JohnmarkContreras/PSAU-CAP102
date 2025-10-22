@@ -1,18 +1,250 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <?php $role = Auth::user()->role; ?>
+    <?php
+        // Safely resolve role name if authenticated (Spatie roles or simple column)
+        $roleName = Auth::check()
+            ? (Auth::user()->roles->pluck('name')->first() ?? Auth::user()->role ?? 'User')
+            : 'Guest';
+    ?>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title><?php echo $__env->yieldContent('title', 'PSAU Tamarind RDE'); ?></title>
     <link rel="icon" href="/PSAU_Logo.png">
     <link href="<?php echo e(mix('css/app.css')); ?>" rel="stylesheet">
     <script src="<?php echo e(mix('js/app.js')); ?>" defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet" />
-</head>
+    <script src="//unpkg.com/alpinejs" defer></script>
+    <style>
+        /* Toast Container */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-width: 90vw;
+            pointer-events: none;
+        }
 
+        @media (max-width: 640px) {
+            .toast-container {
+                top: 70px;
+                right: 10px;
+                left: 10px;
+                max-width: calc(100vw - 20px);
+            }
+        }
+
+        /* Toast Styles */
+        .toast {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.3s ease forwards;
+            pointer-events: auto;
+            max-width: 400px;
+            min-width: 280px;
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (max-width: 640px) {
+            .toast {
+                max-width: calc(100vw - 20px);
+                min-width: auto;
+                width: 100%;
+            }
+        }
+
+        .toast::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .toast.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .toast.success::before {
+            background: #10b981;
+        }
+
+        .toast.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .toast.error::before {
+            background: #ef4444;
+        }
+
+        .toast.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .toast.info::before {
+            background: #3b82f6;
+        }
+
+        .toast.warning {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .toast.warning::before {
+            background: #f59e0b;
+        }
+
+        .toast-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .toast.success .toast-icon {
+            color: #10b981;
+        }
+
+        .toast.error .toast-icon {
+            color: #ef4444;
+        }
+
+        .toast.info .toast-icon {
+            color: #3b82f6;
+        }
+
+        .toast.warning .toast-icon {
+            color: #f59e0b;
+        }
+
+        .toast-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .toast-message {
+            color: #6b7280;
+            font-size: 13px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: #d1d5db;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            flex-shrink: 0;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+        }
+
+        .toast-close:hover {
+            color: #9ca3af;
+        }
+
+        /* Progress bar for auto-dismiss */
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            opacity: 0.3;
+        }
+
+        .toast.success .toast-progress {
+            background: #10b981;
+        }
+
+        .toast.error .toast-progress {
+            background: #ef4444;
+        }
+
+        .toast.info .toast-progress {
+            background: #3b82f6;
+        }
+
+        .toast.warning .toast-progress {
+            background: #f59e0b;
+        }
+
+        @keyframes  slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(400px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes  slideOut {
+            to {
+                opacity: 0;
+                transform: translateX(400px);
+            }
+        }
+
+        @keyframes  progress {
+            from {
+                width: 100%;
+            }
+            to {
+                width: 0%;
+            }
+        }
+
+        .toast.removing {
+            animation: slideOut 0.3s ease forwards;
+        }
+
+        @media (max-width: 640px) {
+            @keyframes  slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            @keyframes  slideOut {
+                to {
+                    opacity: 0;
+                    transform: translateY(-20px);
+                }
+            }
+        }
+    </style>
 <?php echo $__env->yieldPushContent('scripts'); ?>
-<body class="bg-gray-100 text-gray-900 min-h-screen flex">
+</head>
+<body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col md:flex-row w-full overflow-x-hidden">
     <!-- Sidebar (Desktop) -->
     <aside class="hidden md:flex fixed top-0 left-0 bg-[#003300] w-60 h-screen flex-col items-center py-6 text-white z-50">
         <?php echo $__env->make('components.navbar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
@@ -27,301 +259,229 @@
     </header>
 
     <!-- Mobile Sidebar (Slide-over) -->
-    <div id="mobileSidebar"
-        class="fixed inset-0 z-50 hidden md:hidden"
-        aria-hidden="true">
+    <div id="mobileSidebar" class="fixed inset-0 z-50 hidden md:hidden" aria-hidden="true">
         <!-- Backdrop -->
-        <div id="backdrop"
-            class="absolute inset-0 bg-black transition-opacity duration-300 opacity-0"></div>
+        <div id="backdrop" class="absolute inset-0 bg-black transition-opacity duration-300 opacity-0"></div>
 
         <!-- Panel -->
-    <aside id="sidebarPanel"
-        class="relative bg-[#003300] w-3/4 max-w-xs h-full p-6 text-white transform -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto rounded-r-2xl shadow-lg">
-        
-        <!-- Close button -->
-        <button id="closeSidebar" 
-                class="text-white text-2xl mb-6 p-2 rounded focus:outline-none focus:ring-2 focus:ring-white" 
-                aria-label="Close menu">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-
-        <!-- Navbar links -->
-        <nav class="flex flex-col items-center space-y-6 text-2xl md:text-lg font-bold">
-            <?php echo $__env->make('components.navbar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
-        </nav>
-    </aside>
-
-
+        <aside id="sidebarPanel"
+            class="relative bg-[#003300] w-3/4 max-w-xs h-full p-6 text-white transform -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto rounded-r-2xl shadow-lg">
+            <!-- Close button -->
+            <button id="closeSidebar" class="text-white text-2xl mb-6 p-2 rounded focus:outline-none focus:ring-2 focus:ring-white" aria-label="Close menu">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <!-- Navbar links -->
+            <nav class="flex flex-col items-center space-y-6 text-2xl md:text-lg font-bold">
+                <?php echo $__env->make('components.navbar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+            </nav>
+        </aside>
     </div>
 
     <!-- Page Wrapper -->
     <div class="flex flex-col flex-1 w-full md:ml-60">
         <!-- Spacer for fixed mobile header -->
         <div class="md:hidden h-[56px]"></div>
+
         <!-- Top Right User Info -->
-        <div class="p-4 flex justify-end items-center gap-3">
-            <?php if(auth()->guard()->check()): ?>
-                <span class="text-sm md:text-base font-medium truncate max-w-[60%] md:max-w-none text-right">
-                    <?php echo e(Auth::user()->name); ?> - <?php echo e($role); ?>
+<div class="p-4 flex justify-end items-center gap-3 z-50">
+    <?php if(auth()->guard()->check()): ?>
+        <div class="relative">
+            <button id="dropdownBtn" class="focus:outline-none focus:ring-2 focus:ring-green-500 rounded-full" aria-haspopup="true" aria-expanded="false">
+                <div class="flex items-center gap-2">
+                    <?php if(Auth::user()->profile_picture): ?>
+                        <img src="<?php echo e(asset('storage/' . Auth::user()->profile_picture)); ?>" 
+                             alt="<?php echo e(Auth::user()->name); ?>" 
+                             class="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-green-600 hover:border-green-700 transition-all">
+                    <?php else: ?>
+                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-green-600 flex items-center justify-center text-white font-semibold border-2 border-green-700 hover:bg-green-700 transition-all">
+                            <?php echo e(strtoupper(substr(Auth::user()->name, 0, 1))); ?>
 
-                </span>
-                <div class="relative">
-                    <button id="dropdownBtn" class="text-2xl p-2 rounded focus:outline-none focus:ring-2 focus:ring-gray-300" aria-haspopup="true" aria-expanded="false">
-                        <i class="fa-solid fa-user"></i>
-                    </button>
-                    <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-40 bg-white shadow rounded-md overflow-hidden z-50">
-                        <a href="<?php echo e(route('profile.index')); ?>" class="block px-4 py-2 text-sm hover:bg-gray-100">Profile</a>
-                        <form id="logout-form" action="<?php echo e(route('logout')); ?>" method="POST" class="hidden"><?php echo csrf_field(); ?></form>
-                        <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="block px-4 py-2 text-sm hover:bg-gray-100">Logout</a>
-                    </div>
+                        </div>
+                    <?php endif; ?>
+                    <span class="hidden md:inline-block px-3 py-1 text-xs rounded-full bg-green-100 text-green-800 font-medium">
+                        <?php echo e(ucfirst($roleName)); ?>
+
+                    </span>
                 </div>
-            <?php endif; ?>
-
-            <?php if(auth()->guard()->guest()): ?>
-                <span class="text-sm md:text-base font-medium truncate max-w-[60%] md:max-w-none text-right">
-                    Guest
-                </span>
-            <?php endif; ?>
+            </button>
+            <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg overflow-hidden z-50 border border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                    <p class="text-sm font-semibold text-gray-900 truncate"><?php echo e(Auth::user()->name); ?></p>
+                    <p class="text-xs text-gray-500 truncate"><?php echo e(Auth::user()->email); ?></p>
+                </div>
+                <a href="<?php echo e(route('profile.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                    <i class="fa-solid fa-user mr-2"></i>Profile
+                </a>
+                <form id="logout-form" action="<?php echo e(route('logout')); ?>" method="POST" class="hidden"><?php echo csrf_field(); ?></form>
+                <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-200">
+                    <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+                </a>
+            </div>
         </div>
+    <?php endif; ?>
+
+    <?php if(auth()->guard()->guest()): ?>
+        <span class="text-sm md:text-base font-medium text-gray-600">
+            Guest
+        </span>
+    <?php endif; ?>
+</div>
 
         <!-- Page Content -->
         <main class="flex-grow px-3 py-4 md:p-6 z-0">
             <?php echo $__env->yieldContent('content'); ?>
         </main>
-</div>
+    </div>
 
-<!-- Toast Notifications -->
-<style>
-    @keyframes  slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
-    @keyframes  slideUp {
-        from {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        to {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-    }
-
-    @keyframes  pulse {
-        0%, 100% {
-            opacity: 1;
-        }
-        50% {
-            opacity: 0.7;
-        }
-    }
-
-    .-container {
-        position: fixed;
-        top: 24px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 50;
-        animation: slideDown 0.4s ease-out;
-    }
-
-    .toast-container.removing {
-        animation: slideUp 0.4s ease-out forwards;
-    }
-
-    .toast-success {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        border-left: 4px solid #047857;
-    }
-
-    .toast-error {
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        border-left: 4px solid #b91c1c;
-    }
-
-    .toast-warning {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        border-left: 4px solid #b45309;
-    }
-
-    .toast-icon {
-        flex-shrink-0;
-        animation: pulse 2s infinite;
-    }
-</style>
-
-<?php if(session('success')): ?>
-    <div class="toast-container toast-success text-white px-6 py-4 rounded-lg shadow-2xl flex items-center space-x-4 max-w-md">
-<?php $__env->startSection('title', 'Edit Tree Data'); ?>
-<?php $__env->startSection('content'); ?>
-<main class="flex-1 p-6 space-y-6">
-    <section class="bg-white rounded-lg shadow-md p-6 relative">
-         <?php if (isset($component)) { $__componentOriginal5f1c24da064cdf37917762bf37a30d0804319ee8 = $component; } ?>
-<?php $component = $__env->getContainer()->make(App\View\Components\Card::class, ['title' => 'Edit Tamarind Tree Data']); ?>
-<?php $component->withName('card'); ?>
-<?php if ($component->shouldRender()): ?>
-<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
-<?php $component->withAttributes([]); ?>
-
-            <!-- Back button -->
-            <div class="flex justify-end mb-4">
-                <a href="<?php echo e(url()->previous()); ?>"
-                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md shadow-sm hover:bg-gray-200 transition">
-                    ← Back
-                </a>
-            </div>
-
-            <!-- Form -->
-            <form id="editTreeForm" action="<?php echo e(route('tree_data.update', $tree->tree_code_id)); ?>" method="POST" class="space-y-5">
-                <?php echo csrf_field(); ?>
-                <?php echo method_field('PUT'); ?>
-                <!-- Tree Code -->
-                <div>
-                    <label for="tree_code_id" class="block text-sm font-medium text-gray-700">ID</label>
-                    <input type="text" name="tree_code_id" id="tree_code_id"
-                           value="<?php echo e(old('tree_code_id', $tree->tree_code_id)); ?>"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm"
-                           required>
-                </div>
-                <!-- DBH -->
-                <div>
-                    <label for="dbh" class="block text-sm font-medium text-gray-700">DBH (cm)</label>
-                    <input type="number" step="0.01" name="dbh" id="dbh"
-                           value="<?php echo e(old('dbh', $tree->dbh)); ?>"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm"
-                           required>
-                </div>
-                <!-- Height -->
-                <div>
-                    <label for="height" class="block text-sm font-medium text-gray-700">Height (m)</label>
-                    <input type="number" step="0.01" name="height" id="height"
-                           value="<?php echo e(old('height', $tree->height)); ?>"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm"
-                           required>
-                </div>
-                <!-- Age -->
-                <div>
-                    <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
-                    <input type="number" name="age" id="age"
-                           value="<?php echo e(old('age', $tree->age)); ?>"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
-                </div>
-                <!-- Stem Diameter -->
-                <div>
-                    <label for="stem_diameter" class="block text-sm font-medium text-gray-700">Stem Diameter (cm)</label>
-                    <input type="number" step="0.01" name="stem_diameter" id="stem_diameter"
-                           value="<?php echo e(old('stem_diameter', $tree->stem_diameter)); ?>"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
-                </div>
-                <!-- Canopy Diameter -->
-                <div>
-                    <label for="canopy_diameter" class="block text-sm font-medium text-gray-700">Canopy Diameter (m)</label>
-                    <input type="number" step="0.01" name="canopy_diameter" id="canopy_diameter"
-                           value="<?php echo e(old('canopy_diameter', $tree->canopy_diameter)); ?>"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
-                </div>
-                <!-- Submit -->
-                <div class="pt-4">
-                    <button type="submit"
-                            class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition">
-                        Update Tree Data
-                    </button>
-                </div>
-            </form>
-         <?php if (isset($__componentOriginal5f1c24da064cdf37917762bf37a30d0804319ee8)): ?>
-<?php $component = $__componentOriginal5f1c24da064cdf37917762bf37a30d0804319ee8; ?>
-<?php unset($__componentOriginal5f1c24da064cdf37917762bf37a30d0804319ee8); ?>
-<?php endif; ?>
-<?php echo $__env->renderComponent(); ?>
-<?php endif; ?> 
-    </section>
-</main>
-
-    <!-- Confirmation Modal -->
-    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
-            <h2 class="text-lg font-semibold text-gray-800 mb-2">Confirm Update</h2>
-            <p class="text-gray-600 mb-6">Are you sure you want to update this tree data? This action cannot be undone.</p>
-            <div class="flex gap-3">
-                <button id="confirmBtn" class="flex-1 rounded-lg bg-green-600 text-white py-2 hover:bg-green-700 transition font-medium">
-                    Yes, Update
-                </button>
-                <button id="cancelBtn" class="flex-1 rounded-lg border border-gray-300 text-gray-700 py-2 hover:bg-gray-50 transition">
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+        <!-- Backdrop -->
+        <div id="confirmBackdrop" class="absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-300"></div>
+        
+        <!-- Modal Content -->
+        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6 animate-in">
+            <h3 id="confirmTitle" class="text-lg font-semibold text-gray-900 mb-2">Confirm Action</h3>
+            <p id="confirmMessage" class="text-gray-600 text-sm mb-6">Are you sure you want to proceed?</p>
+            
+            <div class="flex gap-3 justify-end">
+                <button id="confirmCancel" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
                     Cancel
+                </button>
+                <button id="confirmOk" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                    Confirm
                 </button>
             </div>
         </div>
     </div>
 
-        <svg class="toast-icon w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-        </svg>
-        <span class="font-medium"><?php echo e(session('success')); ?></span>
-    </div>
-
+    <!-- Scripts -->
     <script>
-        setTimeout(() => {
-            const toast = document.querySelector('.toast-container.toast-success');
-            if (toast) {
-                toast.classList.add('removing');
-                setTimeout(() => toast.remove(), 400);
-            }
-        }, 4000);
-    </script>
-<?php endif; ?>
+        // Toast notification system
+        function showToast(type, title, message, duration = 5000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
 
-<?php if(session('error')): ?>
-    <div class="toast-container toast-error text-white px-6 py-4 rounded-lg shadow-2xl flex items-center space-x-4 max-w-md">
-        <svg class="toast-icon w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-        </svg>
-        <span class="font-medium"><?php echo e(session('error')); ?></span>
-    </div>
+            const icons = {
+                success: 'fas fa-check-circle',
+                error: 'fas fa-exclamation-circle',
+                info: 'fas fa-info-circle',
+                warning: 'fas fa-exclamation-triangle'
+            };
 
-    <script>5
-        setTimeout(() => {
-            const toast = document.querySelector('.toast-container.toast-error');
-            if (toast) {
-                toast.classList.add('removing');
-                setTimeout(() => toast.remove(), 400);
-            }
-        }, 4000);
-    </script>
-<?php endif; ?>
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    <i class="${icons[type]}"></i>
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" aria-label="Close notification">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="toast-progress" style="animation: progress ${duration}ms linear forwards;"></div>
+            `;
 
-<?php if(session('warning')): ?>
-    <div class="toast-container toast-warning text-white px-6 py-4 rounded-lg shadow-2xl flex items-center space-x-4 max-w-md">
-        <svg class="toast-icon w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-        </svg>
-        <span class="font-medium"><?php echo e(session('warning')); ?></span>
-    </div>
+            container.appendChild(toast);
 
-    <script>
-        setTimeout(() => {
-            const toast = document.querySelector('.toast-container.toast-warning');
-            if (toast) {
-                toast.classList.add('removing');
-                setTimeout(() => toast.remove(), 400);
-            }
-        }, 4000);
-    </script>
-<?php endif; ?>
+            const closeBtn = toast.querySelector('.toast-close');
+            closeBtn.addEventListener('click', () => removeToast(toast));
 
-    <script>
-        // User dropdown
+            setTimeout(() => removeToast(toast), duration);
+
+            return toast;
+        }
+
+        function removeToast(toast) {
+            toast.classList.add('removing');
+            setTimeout(() => toast.remove(), 300);
+        }
+
+        // Confirmation Modal System
+        let confirmCallback = null;
+
+        function showConfirmModal(title, message, onConfirm) {
+            const modal = document.getElementById('confirmModal');
+            const titleEl = document.getElementById('confirmTitle');
+            const messageEl = document.getElementById('confirmMessage');
+            const okBtn = document.getElementById('confirmOk');
+            const cancelBtn = document.getElementById('confirmCancel');
+            const backdrop = document.getElementById('confirmBackdrop');
+
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            confirmCallback = onConfirm;
+
+            modal.classList.remove('hidden');
+
+            const handleCancel = () => {
+                modal.classList.add('hidden');
+                confirmCallback = null;
+                okBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+                backdrop.removeEventListener('click', handleCancel);
+            };
+
+            const handleConfirm = () => {
+                modal.classList.add('hidden');
+                if (confirmCallback) {
+                    confirmCallback();
+                }
+                confirmCallback = null;
+                okBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+                backdrop.removeEventListener('click', handleCancel);
+            };
+
+            okBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+            backdrop.addEventListener('click', handleCancel);
+        }
+
+        // Delete with confirmation helper
+        function deleteWithConfirmation(url, itemName = 'item') {
+            showConfirmModal(
+                'Delete ' + itemName + '?',
+                'Are you sure you want to delete this ' + itemName + '? This action cannot be undone.',
+                () => {
+                    fetch(url, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                            'Accept': 'application/json',
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            showToast('success', 'Success!', data.message || itemName + ' deleted successfully.');
+                            if (data.redirect) {
+                                setTimeout(() => window.location.href = data.redirect, 1500);
+                            }
+                        } else {
+                            showToast('error', 'Error!', data.message || 'Failed to delete ' + itemName + '.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('error', 'Error!', 'An error occurred while deleting the ' + itemName + '.');
+                    });
+                }
+            );
+        }
+
+        // Dropdown toggle
         document.addEventListener('click', (e) => {
             const btn = document.getElementById('dropdownBtn');
             const menu = document.getElementById('dropdownMenu');
             if (!btn || !menu) return;
-
             if (btn.contains(e.target)) {
                 menu.classList.toggle('hidden');
             } else if (!menu.contains(e.target)) {
@@ -329,7 +489,7 @@
             }
         });
 
-        // Mobile slide-over
+        // Mobile sidebar toggle
         const mobileSidebar = document.getElementById('mobileSidebar');
         const sidebarPanel = document.getElementById('sidebarPanel');
         const backdrop = document.getElementById('backdrop');
@@ -374,6 +534,4 @@
         });
     </script>
 </body>
-</html>
-
-<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /var/www/PSAU-CAP102/resources/views/layouts/app.blade.php ENDPATH**/ ?>
+</html><?php /**PATH /var/www/PSAU-CAP102/resources/views/layouts/app.blade.php ENDPATH**/ ?>

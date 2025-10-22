@@ -43,7 +43,7 @@ class GeotagApprovalService
             $existingTreeData->refresh();
             app(\App\Services\CarbonTrackingService::class)->updateCarbonForTreeData($existingTreeData, $params);
 
-            // ✅ Mark geotag approved
+            //  Mark geotag approved
             $this->markGeotagAsApproved($geotag);
 
             if ($geotag->user) {

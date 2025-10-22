@@ -102,7 +102,15 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', async function () {
-    // === CARBON SEQUESTRATION CHART WITH FILTERING ===
+
+    // 🎨 Define colors per tree type
+    const typeColors = {
+        'SOUR': '#6DAF2F',
+        'SWEET': '#FFBCD6',
+        'SEMI_SWEET': '#EB9737',
+    };
+
+    // === 🌿 CARBON SEQUESTRATION CHART ===
     const chartData = @json($chartData);
     let carbonChart = null;
 
@@ -124,29 +132,25 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     function sortByType(a, b) {
-        const typeOrder = { 'SOUR': 0, 'SWEET': 1, 'SEMI_SWEET': 2 };
-        const typeA = typeOrder[a.type] ?? 999;
-        const typeB = typeOrder[b.type] ?? 999;
-        if (typeA !== typeB) return typeA - typeB;
-        return a.label.localeCompare(b.label);
+        const order = { 'SOUR': 0, 'SWEET': 1, 'SEMI_SWEET': 2 };
+        const ta = order[a.type] ?? 999;
+        const tb = order[b.type] ?? 999;
+        return ta !== tb ? ta - tb : a.label.localeCompare(b.label);
     }
 
     function updateCarbonChart() {
         const filtered = filterData(chartData);
         const sorted = filtered.sort(sortByType);
-        
+
         const labels = sorted.map(c => c.label);
         const data = sorted.map(c => c.sequestration);
-        const total = data.reduce((s, v) => s + v, 0);
-        
+        const total = data.reduce((sum, val) => sum + val, 0);
+
         document.getElementById('totalCount').textContent = sorted.length;
         document.getElementById('totalSum').textContent = total.toFixed(2);
 
         const ctx = document.getElementById('carbonAnalyticsChart').getContext('2d');
-        
-        if (carbonChart) {
-            carbonChart.destroy();
-        }
+        if (carbonChart) carbonChart.destroy();
 
         carbonChart = new Chart(ctx, {
             type: 'bar',
@@ -155,7 +159,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 datasets: [{
                     label: 'Annual CO₂ sequestration (kg / yr)',
                     data: data,
-                    backgroundColor: labels.map(() => '#4CAF50'),
+                    backgroundColor: sorted.map(c => typeColors[c.type] || '#95a5a6'),
                     borderRadius: 6
                 }]
             },
@@ -176,65 +180,15 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
-    function updateCarbonChart() {
-        const filtered = filterData(chartData);
-        const sorted = filtered.sort(sortByType);
-        
-        const labels = sorted.map(c => c.label);
-        const data = sorted.map(c => c.sequestration);
-        const total = data.reduce((s, v) => s + v, 0);
-        
-        document.getElementById('totalCount').textContent = sorted.length;
-        document.getElementById('totalSum').textContent = total.toFixed(2);
+    // 🌱 Load chart immediately on page load
+    updateCarbonChart();
 
-        const ctx = document.getElementById('carbonAnalyticsChart').getContext('2d');
-        
-        if (carbonChart) {
-            carbonChart.destroy();
-        }
-
-        carbonChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Annual CO₂ sequestration (kg / yr)',
-                    data: data,
-                    backgroundColor: labels.map(() => '#4CAF50'),
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: ctx => `${ctx.parsed.y} kg CO₂ / yr`
-                        }
-                    }
-                },
-                scales: {
-                    y: { beginAtZero: true, title: { display: true, text: 'kg CO₂ / yr' } }
-                }
-            }
-        });
-    }
-
-    // Filter button click
+    // Filter and reset events
     document.getElementById('carbonFilterBtn').addEventListener('click', updateCarbonChart);
-
-    // Reset button click
     document.getElementById('carbonResetFilters').addEventListener('click', () => {
-        document.getElementById('carbonTypeSelect').value = '';
-        document.getElementById('carbon_min_dbh').value = '';
-        document.getElementById('carbon_max_dbh').value = '';
-        document.getElementById('carbon_min_height').value = '';
-        document.getElementById('carbon_max_height').value = '';
+        document.querySelectorAll('#carbonFilterForm input, #carbonFilterForm select').forEach(el => el.value = '');
         updateCarbonChart();
     });
-
-    // Type select auto-filter and clear numeric fields
     document.getElementById('carbonTypeSelect').addEventListener('change', () => {
         document.getElementById('carbon_min_dbh').value = '';
         document.getElementById('carbon_max_dbh').value = '';
@@ -243,25 +197,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         updateCarbonChart();
     });
 
-    // === PROJECTION CHART ===
+    // === 📈 PROJECTION CHART ===
     const projCtx = document.getElementById('projectionChart').getContext('2d');
     const projChart = new Chart(projCtx, {
         type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Projected CO₂ Sequestration (kg / yr)',
-                data: [],
-                borderColor: '#16a34a',
-                fill: false,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, title: { display: true, text: 'kg CO₂ / yr' } } }
-        }
+        data: { labels: [], datasets: [{ label: 'Projected CO₂ Sequestration (kg / yr)', data: [], borderColor: '#16a34a', fill: false, tension: 0.3 }] },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'kg CO₂ / yr' } } } }
     });
 
     async function loadProjection(years) {
@@ -285,23 +226,22 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     }
 
-    //default 5 years
     await loadProjection(5);
-
-    //When dropdown changes, reload with new years
-    document.getElementById('projectionYears').addEventListener('change', async (e) => {
-        const years = e.target.value;
-        await loadProjection(years);
-    });
+    document.getElementById('projectionYears').addEventListener('change', e => loadProjection(e.target.value));
 });
 </script>
 
-{{-- HARVEST BAR CHART & FILTERS --}}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{-- 🍈 HARVEST BAR CHART --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const harvestData = @json($harvestData);
     const ctx = document.getElementById('harvestChart').getContext('2d');
+
+    const typeColors = {
+        'SOUR': '#6DAF2F',
+        'SWEET': '#FFBCD6',
+        'SEMI_SWEET': '#EB9737',
+    };
 
     new Chart(ctx, {
         type: 'bar',
@@ -310,71 +250,23 @@ document.addEventListener('DOMContentLoaded', function () {
             datasets: [{
                 label: 'Harvest Weight (kg)',
                 data: harvestData.map(t => t.total_kg),
-                backgroundColor: '#4CAF50',
+                backgroundColor: harvestData.map(t => typeColors[t.type] || '#95a5a6'),
                 borderRadius: 6
             }]
         },
         options: {
             responsive: true,
-            scales: {
-                y: { beginAtZero: true, title: { display: true, text: 'Total Harvest (kg)' } }
-            },
             plugins: {
                 tooltip: {
-                    callbacks: {
-                        label: ctx => `${ctx.parsed.y} kg`
-                    }
+                    callbacks: { label: ctx => `${ctx.parsed.y} kg` }
                 }
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Total Harvest (kg)' } }
             }
         }
     });
 });
 </script>
 
-{{-- === Script for Reset + Auto-Clear === --}}
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('harvestFilterForm');
-    const typeSelect = document.getElementById('typeSelect');
-    const resetBtn = document.getElementById('resetFilters');
-
-    // 🔹 When the type changes → clear numeric fields & submit form
-    typeSelect.addEventListener('change', () => {
-        document.getElementById('min_dbh').value = '';
-        document.getElementById('max_dbh').value = '';
-        document.getElementById('min_height').value = '';
-        document.getElementById('max_height').value = '';
-        form.submit();
-    });
-
-    // 🔹 When "Reset" button clicked → clear all & submit (show all records)
-    resetBtn.addEventListener('click', () => {
-        form.querySelectorAll('input, select').forEach(el => el.value = '');
-        form.submit();
-    });
-});
-</script>
-{{-- === Script for Carbon Filter Reset + Auto-Clear === --}}
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('carbonFilterForm');
-    const typeSelect = document.getElementById('carbonTypeSelect');
-    const resetBtn = document.getElementById('carbonResetFilters');
-
-    // 🔹 When the type changes → clear numeric fields & submit form
-    typeSelect.addEventListener('change', () => {
-        document.getElementById('carbon_min_dbh').value = '';
-        document.getElementById('carbon_max_dbh').value = '';
-        document.getElementById('carbon_min_height').value = '';
-        document.getElementById('carbon_max_height').value = '';
-        form.submit();
-    });
-
-    // 🔹 When "Reset" button clicked → clear all & submit (show all records)
-    resetBtn.addEventListener('click', () => {
-        form.querySelectorAll('input, select').forEach(el => el.value = '');
-        form.submit();
-    });
-});
-</script>
 @endsection

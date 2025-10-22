@@ -17,7 +17,7 @@ class HarvestPredictionService
     private const MIN_RECORDS_REQUIRED = 6;
     private const MIN_DBH_CM = 10.0;
     private const MIN_HEIGHT_M = 2.0;
-    private const TIMEOUT_SECONDS = 60;
+    private const TIMEOUT_SECONDS = 120;  // Increased for longer forecasts
 
     public function predictAllTrees(bool $yieldingOnly = false)
     {
@@ -109,7 +109,7 @@ class HarvestPredictionService
             })
             ->select('harvest_date', 'harvest_weight_kg')
             ->orderBy('harvest_date')
-            ->paginate(50)
+            ->get()
             ->map(function ($r) {
                 return [
                     'harvest_date' => (string) $r->harvest_date,
@@ -229,8 +229,8 @@ class HarvestPredictionService
         $script = base_path('scripts/sarima_predict.py');
         $pythonPath = base_path('venv/bin/python3');
         
-        $order = config('services.harvest.sarima_order', '4,1,4');
-        $seasonal = config('services.harvest.sarima_seasonal', '0,1,0,12');
+        $order = config('services.harvest.sarima_order', '1,1,1');
+        $seasonal = config('services.harvest.sarima_seasonal', '1,1,1,12');
         $months = config('services.harvest.harvest_months', '1,2,3');
 
         $process = new Process([

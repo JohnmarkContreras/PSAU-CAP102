@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use App\TreeImage;
 use App\TreeCode;
+use App\TreeData;
 use Carbon\Carbon;
 
 class importTreeImages extends Command
@@ -72,7 +73,7 @@ class importTreeImages extends Command
             preg_match('/^(Sour|Sweet|Semi|Semi_sweet)/i', $filename, $typeMatch);
             $treeType = strtoupper(str_replace(' ', '_', $typeMatch[1] ?? 'UNKNOWN'));
 
-            // Normalize “SEMI” to “SEMI_SWEET”
+            // Normalize "SEMI" to "SEMI_SWEET"
             if ($treeType === 'SEMI') {
                 $treeType = 'SEMI_SWEET';
             }
@@ -103,15 +104,27 @@ class importTreeImages extends Command
             }
 
             // Save TreeCode
-            TreeCode::create([
+            $treeCode = TreeCode::create([
                 'tree_image_id' => $treeImage->id,
-                'tree_type_id'  => $treeTypeId, // <-- use ID instead of string
+                'tree_type_id'  => $treeTypeId,
                 'code'          => $formattedCode,
                 'created_by'    => auth()->id() ?? 1,
             ]);
 
+            // ✅ NEW: Create TreeData record for this tree
+            TreeData::create([
+                'tree_code_id'    => $treeCode->id,
+                'dbh'             => null,
+                'height'          => null,
+                'age'             => null,
+                'stem_diameter'   => null,
+                'canopy_diameter' => null,
+            ]);
+
             $this->info("Imported: {$basename} → Type ID: {$treeTypeId}, Code: {$formattedCode}");
         }
+
+        $this->info("\n✅ Import complete!");
     }
 
     protected function getGps($coord, $hemisphere)

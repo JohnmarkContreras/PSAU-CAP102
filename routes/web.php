@@ -80,8 +80,7 @@ Route::group(['middleware' => ['auth', 'role:user']], function () {
         Route::post('/backup/device', [BackupDeviceController::class, 'backupToDevice'])
             ->name('backup.device');
     });
-    //notifications
-    // Route::post('/notifications/{id}/read', 'NotificationController@markAsRead')->name('notifications.markAsRead');
+
     // Route::get('/geotags/{id}', [PendingGeotagController::class, 'show'])->name('geotags.pending');
 
     Route::middleware(['auth'])->group(function () {
@@ -116,6 +115,8 @@ Route::group(['middleware' => ['auth', 'role:user']], function () {
     Route::post('tree_data/{treeData}/compute-carbon', 'TreeDataController@computeCarbon')->name('tree_data.compute-carbon');
     // bulk compute (compute+save for all rows or filtered set)
     Route::post('tree_data/compute-carbon/bulk', 'TreeDataController@computeCarbonBulk')->name('tree_data.compute-carbon.bulk');
+    Route::get('tree_data/{id}/edit', 'TreeDataController@edit')->name('tree_data.edit');
+    Route::put('/tree_data/{id}', 'TreeDataController@update')->name('tree_data.update');
     // list only sequestered records
     Route::get('tree_data/sequestered', [TreeDataController::class, 'indexSequestered'])->name('tree_data.sequestered');
     Route::get('analytics/carbon', [TreeDataController::class, 'analyticsCarbon'])->name('analytics.carbon');
@@ -130,12 +131,14 @@ Route::group(['middleware' => ['auth', 'role:user']], function () {
     // Route::post('/profile/update', 'ProfileController@update')->name('profile.update');
     Route::put('/profile', 'ProfileController@update')->name('profile.update');
     // web.php
-});
+    Route::get('/harvest-management/backtest', 'HarvestManagementController@backtest')
+    ->name('harvest.backtest');
 
+});
 
 // Superadmin routes
 Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
-    Route::get('/superadmin', 'DashboardController@index')->name('superadmin.dashboard');
+    Route::get('/superadmin', 'SuperAdminController@accounts')->name('pages.accounts');
     Route::get('/harvest-records/filter', 'DashboardController@filterHarvests')->name('harvest.filter');
     Route::get('/farm-data', 'SuperAdminController@farmData')->name('pages.farm-data');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
@@ -148,7 +151,7 @@ Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
     Route::delete('/accounts/{id}', 'SuperAdminController@deleteAccount')->name('superadmin.delete.account');
     Route::get('/create-account', 'SuperAdminController@createAccount')->name('create.account');
     Route::post('/create-account', 'SuperAdminController@storeAccount')->name('store.account');
-    Route::get('/activity-log', 'ActivityLogController@index')->name('pages.activity-log');
+    Route::get('/activity-logs', 'ActivityLogController@index')->name('pages.activity-log');
     Route::group(['prefix' => 'voyager'], function () {
         // Route::put('roles/{id}', [RoleController::class, 'update'])->name('voyager.roles.update');
         // Route::post('bread', [CustomBreadController::class, 'storeBread'])->name('voyager.bread.store');
@@ -191,8 +194,7 @@ Route::group(['middleware' => ['auth', 'role:admin|superadmin']], function () {
     Route::get('/pending-geotags', 'PendingGeotagTreeController@index')->name('pending-geotags.index');
     Route::post('/pending-geotags/{id}/approve', 'PendingGeotagTreeController@approve')->name('pending-geotags.approve');
     Route::post('/pending-geotags/{id}/reject', 'PendingGeotagTreeController@reject')->name('pending-geotags.reject');
-    Route::get('/tree_data/{tree_code_id}/edit', 'TreeDataController@edit')->name('tree_data.edit');
-    Route::put('/tree_data/{tree_code_id}', 'TreeDataController@update')->name('tree_data.update');
+    Route::get('/accuracy-chart', 'HarvestManagementController@accuracy')->name('accuracy.chart');
 });
 
 // User routes
@@ -200,11 +202,9 @@ Route::group(['middleware' => ['auth', 'role:user|admin|superadmin']], function 
     Route::get('/user', 'DashboardController@index')->name('user.dashboard');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
     Route::get('/feedback', 'BackupController@index')->name('pages.feedback');
-    Route::post('/notifications/{id}/read', 'NotificationController@markAsRead')->name('notifications.markAsRead');
     Route::get('/notifications', 'NotificationController@index')->name('pages.Notifications');
-    // Mark all as read
+    Route::post('/notifications/{id}/read', 'NotificationController@markAsRead')->name('notifications.markAsRead');
     Route::post('/notifications/mark-all-read', 'NotificationController@markAllRead')->name('notifications.markAllRead');
-    // Delete a notification
     Route::delete('/notifications/{id}', 'NotificationController@destroy')->name('notifications.destroy');
     Route::get('/harvests/upcoming', 'HarvestManagementController@upcoming')->name('harvests.upcoming');
     //mark as done for harvest
@@ -232,6 +232,5 @@ Route::post('/logout', 'LoginController@logout')->name('logout');
 Auth::routes();
 
 // Route::get('/home', 'HomeController@index')->name('home');
-Route::get('/accuracy-chart', 'HarvestManagementController@accuracy')->name('accuracy.chart');
 // Route::resource('harvests', HarvestController::class);
 

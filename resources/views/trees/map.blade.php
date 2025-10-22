@@ -137,17 +137,18 @@
 }
 
 
-    function searchTree() {
-        var code = document.getElementById('treeCode').value.trim().toUpperCase();
-        var messageDiv = document.getElementById('search-message');
+// // DELETE THIS FUNCTION - no longer needed
+//     function searchTree() {
+//         var code = document.getElementById('treeCode').value.trim().toUpperCase();
+//         var messageDiv = document.getElementById('search-message');
 
-        if (markers[code]) {
-            setActiveMarker(markers[code], treeData[code]);
-            messageDiv.innerHTML = '';
-        } else {
-            messageDiv.innerHTML = 'Tree not found on the map';
-        }
-    }
+//         if (markers[code]) {
+//             setActiveMarker(markers[code], treeData[code]);
+//             messageDiv.innerHTML = '';
+//         } else {
+//             messageDiv.innerHTML = 'Tree not found on the map';
+//         }
+//     }
 
     function closeTreeDetails() {
     document.getElementById('tree-details').classList.add('hidden');
@@ -205,7 +206,24 @@
             li.onclick = function() {
                 document.getElementById("treeCode").value = code;
                 suggestionsBox.classList.add("hidden");
-                searchTree();
+                
+                // Get the marker and tree data
+                const marker = markers[code];
+                const tree = treeData[code];
+                
+                if (marker && tree) {
+                    // Set active marker (turns red)
+                    setActiveMarker(marker, tree);
+                    
+                    // Center map on tree location
+                    map.setView([tree.latitude, tree.longitude], 19);
+                    
+                    // Open popup
+                    marker.openPopup();
+                    
+                    // Show tree details
+                    showTreeDetails(tree);
+                }
             };
             suggestionsBox.appendChild(li);
         });
