@@ -158,5 +158,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('keydown', function(e) {
+            if (['e', 'E', '+', '-'].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
 @endsection

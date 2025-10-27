@@ -112,7 +112,6 @@ Route::group(['middleware' => ['auth', 'role:user']], function () {
 Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
     Route::get('/superadmin', 'DashboardController@index')->name('superadmin.dashboard');
     Route::get('/harvest-records/filter', 'DashboardController@filterHarvests')->name('harvest.filter');
-    Route::get('/farm-data', 'SuperAdminController@farmData')->name('pages.farm-data');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
     Route::get('/harvest-management', 'HarvestManagementController@index')->name('pages.harvest-management');
     Route::post('/harvest-management/store', 'HarvestManagementController@store')->name('harvest.store');
@@ -137,7 +136,6 @@ Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
 // Admin routes
 Route::group(['middleware' => ['auth', 'role:admin|superadmin']], function () {
     Route::get('/admin', 'DashboardController@index')->name('admin.dashboard');
-    Route::get('/farm-data', 'AdminController@farmData')->name('pages.farm-data');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
     Route::get('/harvest-management', 'HarvestManagementController@index')->name('pages.harvest-management');
     Route::post('/harvest-management/store', 'HarvestManagementController@store')->name('harvest.store');

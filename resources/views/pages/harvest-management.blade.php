@@ -60,7 +60,7 @@
                         </div>
                     </form>
 
-                    {{-- Search / Filters --}}
+                    <!-- {{-- Search / Filters --}}
                     <form method="get" class="mb-4 grid grid-cols-1 md:grid-cols-6 gap-2">
                         <input type="text" name="q" value="{{ $q ?? '' }}" placeholder="Search code..." class="border rounded px-3 py-2 md:col-span-2">
                         <select name="sort" class="border rounded px-3 py-2">
@@ -78,7 +78,7 @@
                         <div>
                             <button class="rounded-lg bg-emerald-600 text-white py-2 px-4">Apply</button>
                         </div>
-                    </form>
+                    </form> -->
                 </x-card>
         </section>
 
@@ -91,12 +91,12 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <button id="predict-all-btn"
                                 class="rounded-xl bg-emerald-600 text-white py-2 px-4 hover:bg-emerald-700">
-                                Predict All (SARIMA 4,1,4 or fallback)
+                                Predict All (SARIMA)
                             </button>
-                            <button id="predict-yielding-btn"
+                            <!-- <button id="predict-yielding-btn"
                                 class="rounded-xl bg-amber-600 text-white py-2 px-4 hover:bg-amber-700">
                                 Predict Yielding Only
-                            </button>
+                            </button> -->
                             <button id="toggle-all-tables"
                                 class="rounded-xl bg-gray-600 text-white py-2 px-4 hover:bg-gray-700">
                                 Toggle All Tables
@@ -519,5 +519,15 @@ async function runPredict(yieldingOnly = false) {
         });
     </script>
 @endif
-
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('keydown', function(e) {
+            if (['e', 'E', '+', '-'].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
 @endsection

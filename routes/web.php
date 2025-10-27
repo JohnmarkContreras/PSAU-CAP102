@@ -24,6 +24,7 @@ use App\Http\Controllers\BackupDeviceController;
 use App\User;
 use App\Tree;
 use App\Http\Controllers\RoleRedirectController;
+use App\Http\Controllers\SuperAdminController;
 
 Route::get('/redirect-by-role', [RoleRedirectController::class, 'handle'])->middleware('auth');
 
@@ -137,6 +138,13 @@ Route::group(['middleware' => ['auth', 'role:user']], function () {
     Route::post('/harvest-management/store', 'HarvestManagementController@store')->name('harvest.store');
     Route::post('/harvest-management/import', 'HarvestManagementController@import')->name('harvest.import');
     Route::post('/harvest-management/predict-all', 'HarvestManagementController@predictAll')->name('harvest.predictAll');
+// Farm data view
+    Route::get('/farm-data', [SuperAdminController::class, 'farmData'])->name('pages.farm-data');
+    // Tree data CRUD
+    Route::get('/tree-data/{id}/edit', [SuperAdminController::class, 'editTreeData'])->name('superadmin.treeData.edit');
+    Route::post('/tree-data/store', [SuperAdminController::class, 'storeTreeData'])->name('superadmin.storeTreeData');
+    Route::put('/tree-data/{treeData}', [SuperAdminController::class, 'updateTreeData'])->name('superadmin.updateTreeData');
+    Route::delete('/tree-data/{treeData}', [SuperAdminController::class, 'destroyTreeData'])->name('superadmin.destroyTreeData');
 
 });
 
@@ -144,18 +152,12 @@ Route::group(['middleware' => ['auth', 'role:user']], function () {
 Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
     Route::get('/superadmin', 'SuperAdminController@accounts')->name('pages.accounts');
     Route::get('/harvest-records/filter', 'DashboardController@filterHarvests')->name('harvest.filter');
-    Route::get('/farm-data', 'SuperAdminController@farmData')->name('pages.farm-data');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
     Route::get('/feedback', 'FeedbackController@index')->name('pages.feedback');
-    Route::get('/accounts', 'SuperAdminController@accounts')->name('pages.accounts');
     Route::delete('/accounts/{id}', 'SuperAdminController@deleteAccount')->name('superadmin.delete.account');
     Route::get('/create-account', 'SuperAdminController@createAccount')->name('create.account');
     Route::post('/create-account', 'SuperAdminController@storeAccount')->name('store.account');
     Route::get('/activity-logs', 'ActivityLogController@index')->name('pages.activity-log');
-    Route::get('/tree-data', 'SuperAdminController@treeData')->name('superadmin.tree-data');
-    Route::get('/tree-data/json', 'SuperAdminController@getTreeDataJson')->name('superadmin.tree-data.json');
-    Route::post('/tree-data/update/{id}', 'SuperAdminController@updateTreeData')->name('superadmin.tree-data.update');
-    Route::get('/tree-codes/list', 'SuperAdminController@getTreeCodes')->name('superadmin.tree-codes.list');
     Route::group(['prefix' => 'voyager'], function () {
         // Route::put('roles/{id}', [RoleController::class, 'update'])->name('voyager.roles.update');
         // Route::post('bread', [CustomBreadController::class, 'storeBread'])->name('voyager.bread.store');
@@ -166,7 +168,6 @@ Route::group(['middleware' => ['auth', 'role:superadmin']], function () {
 // Admin routes
 Route::group(['middleware' => ['auth', 'role:admin|superadmin']], function () {
     Route::get('/admin', 'DashboardController@index')->name('admin.dashboard');
-    Route::get('/farm-data', 'AdminController@farmData')->name('pages.farm-data');
     Route::get('/analytics', 'TreeController@index')->name('pages.analytics');
     Route::get('/feedbacks', 'FeedbackController@index')->name('feedback.index');
     Route::get('/user_table', 'AdminController@usertable')->name('admin.user_table');

@@ -57,11 +57,11 @@
                                 </button>
 
                                 <!-- Choose a device button -->
-                                <a href="{{ route('backup.device.index') }}" 
+                                <!-- <a href="{{ route('backup.device.index') }}" 
                                     class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2 text-sm font-semibold">
                                     <i class="fas fa-usb"></i>
                                     <span>Choose a Device</span>
-                                </a>
+                                </a> -->
                             </form>
                         </div>
                     <!-- Backup Status Message -->

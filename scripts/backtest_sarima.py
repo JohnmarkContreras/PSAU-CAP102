@@ -21,7 +21,7 @@ series = (
 )
 
 # Define cutoff dates for backtesting
-cutoffs = ['2022-12-01', '2023-06-01', '2023-12-01']
+cutoffs = ['2022-12-01', '2024-06-01', '2024-12-01']
 results = []
 
 for cutoff in cutoffs:

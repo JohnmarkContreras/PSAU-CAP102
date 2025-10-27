@@ -48,7 +48,7 @@
                     <i class="fa-solid fa-chart-line text-lg text-gray-400"></i> Analytics
                 </a>
                 <a href="<?php echo e(route('accuracy.chart')); ?>" class="px-3 py-2 rounded flex items-center gap-3 <?php echo e(request()->routeIs('accuracy.chart') ? 'bg-[#1F7D53] text-white' : 'hover:underline'); ?>">
-                    <i class="fas fa-map-pin text-xl text-gray-400"></i> Accuracy
+                    <i class="fas fa-crosshairs text-lg text-gray-400"></i> </i> Accuracy
                 </a>
             <?php endif; ?>
 
@@ -85,6 +85,9 @@
                 <a href="<?php echo e(route('pages.harvest-management')); ?>" class="px-3 py-2 rounded flex items-center gap-3 <?php echo e(request()->routeIs('pages.harvest-management') ? 'bg-[#1F7D53] text-white' : 'hover:underline'); ?>">
                     <i class="fa-solid fa-chart-pie text-lg text-gray-400"></i> Harvest Management
                 </a>
+                <a href="<?php echo e(route('pages.farm-data')); ?>" class="px-3 py-2 rounded flex items-center gap-3 <?php echo e(request()->routeIs('pages.farm-data') ? 'bg-[#1F7D53] text-white' : 'hover:underline'); ?>">
+                    <i class="fa-solid fa-tree text-lg text-gray-400"></i> Farm Data
+                </a>
                 <a href="<?php echo e(route('pages.backup')); ?>" class="px-3 py-2 rounded flex items-center gap-3 <?php echo e(request()->routeIs('pages.backup') ? 'bg-[#1F7D53] text-white' : 'hover:underline'); ?>">
                     <i class="fa-solid fa-bars-progress text-lg text-gray-400"></i> Backup
                 </a>
@@ -110,6 +113,9 @@
                 <a href="<?php echo e(route('pages.backup')); ?>" class="px-3 py-2 rounded flex items-center gap-3 <?php echo e(request()->routeIs('pages.backup') ? 'bg-[#1F7D53] text-white' : 'hover:underline'); ?>">
                     <i class="fa-solid fa-bars-progress text-lg text-gray-400"></i> Backup
                 </a>
+                <a href="<?php echo e(route('pages.farm-data')); ?>" class="px-3 py-2 rounded flex items-center gap-3 <?php echo e(request()->routeIs('pages.farm-data') ? 'bg-[#1F7D53] text-white' : 'hover:underline'); ?>">
+                    <i class="fa-solid fa-tree text-lg text-gray-400"></i> Farm Data
+                </a>
             <?php endif; ?>
 
 <?php if($role === 'superadmin'): ?>
@@ -130,7 +136,6 @@
                class="block px-4 py-2 hover:bg-[#186342] <?php echo e(request()->routeIs('tree-images.index') ? 'bg-[#145b3a]' : ''); ?>">
                 <i class="fas fa-map-pin mr-2"></i> Map
             </a>
-
             <a href="<?php echo e(route('analytics.carbon')); ?>"
                class="block px-4 py-2 hover:bg-[#186342] <?php echo e(request()->routeIs('analytics.carbon') ? 'bg-[#145b3a]' : ''); ?>">
                 <i class="fa-solid fa-chart-line mr-2"></i> Analytics
@@ -140,7 +145,6 @@
                class="block px-4 py-2 hover:bg-[#186342] <?php echo e(request()->routeIs('accuracy.chart') ? 'bg-[#145b3a]' : ''); ?>">
                 <i class="fas fa-crosshairs mr-2"></i> Accuracy
             </a>
-
             <a href="<?php echo e(route('pages.Notifications')); ?>"
                class="relative block px-4 py-2 hover:bg-[#186342] <?php echo e(request()->routeIs('pages.Notifications') ? 'bg-[#145b3a]' : ''); ?>">
                 <i class="fa-solid fa-bell mr-2"></i> Notifications
@@ -169,12 +173,10 @@
         </div>
     </div>
 <?php endif; ?>
-
- 
             
             <?php if($role === 'admin'): ?>
                 <a href="<?php echo e(route('admin.user_table')); ?>" class="px-3 py-2 rounded flex items-center gap-3 <?php echo e(request()->routeIs('admin.user_table') ? 'bg-[#1F7D53] text-white' : 'hover:underline'); ?>">
-                    <i class="fa-solid fa-user text-lg text-gray-400"></i> User
+                    <i class="fa-solid fa-user text-lg text-gray-400"></i> Users
                 </a>
             <?php endif; ?>
 
@@ -198,6 +200,5 @@
             <?php endif; ?>
         <?php endif; ?>
     </nav>
-
     <div class="mt-auto text-[9px] px-2 text-white/80 select-text">© 2025 PSAU Tamarind RDE</div>
 </aside><?php /**PATH /var/www/PSAU-CAP102/resources/views/components/navbar.blade.php ENDPATH**/ ?>

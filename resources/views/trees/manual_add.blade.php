@@ -105,7 +105,7 @@ document.addEventListener("DOMContentLoaded", function () {
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label for="dbh" class="block text-sm font-medium text-gray-700 mb-1">DBH (cm)</label>
-                    <input type="number" name="dbh" id="dbh" step="0.01" 
+                    <input type="number" min="0" name="dbh" id="dbh" step="0.01" 
                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-green-500 focus:border-green-500"
                         value="{{ old('dbh') }}">
                 </div>
@@ -305,4 +305,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 @endif
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('keydown', function(e) {
+            if (['e', 'E', '+', '-'].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
 @endsection

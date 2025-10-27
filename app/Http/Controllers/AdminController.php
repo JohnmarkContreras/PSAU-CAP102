@@ -69,7 +69,6 @@ class AdminController extends Controller
         if ($user->getRoleNames()->first() !== $request->role) {
             $user->syncRoles([$request->role]);
         }
-        logActivity('Updated Account', "Updated user account: {$userName}");
         return redirect()->back()->with('success', 'User updated successfully!');
     }
 }

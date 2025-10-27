@@ -28,26 +28,131 @@
                 {{-- Backtests --}}
                 @if(!empty($backtests))
                     @foreach($backtests as $i => $bt)
+                        @php
+                            // Calculate accuracy percentage (100% - MAPE)
+                            $accuracy = $bt['mape'] !== null ? max(0, 100 - $bt['mape']) : null;
+                            
+                            // Determine accuracy level and styling
+                            $accuracyLevel = '';
+                            $accuracyColor = '';
+                            $accuracyBgColor = '';
+                            $accuracyIcon = '';
+                            
+                            if ($accuracy !== null) {
+                                if ($accuracy >= 90) {
+                                    $accuracyLevel = 'Excellent';
+                                    $accuracyColor = 'text-green-700';
+                                    $accuracyBgColor = 'bg-green-50';
+                                    $accuracyIcon = '🎯';
+                                } elseif ($accuracy >= 80) {
+                                    $accuracyLevel = 'Very Good';
+                                    $accuracyColor = 'text-blue-700';
+                                    $accuracyBgColor = 'bg-blue-50';
+                                    $accuracyIcon = '✓';
+                                } elseif ($accuracy >= 70) {
+                                    $accuracyLevel = 'Good';
+                                    $accuracyColor = 'text-teal-700';
+                                    $accuracyBgColor = 'bg-teal-50';
+                                    $accuracyIcon = '👍';
+                                } elseif ($accuracy >= 60) {
+                                    $accuracyLevel = 'Fair';
+                                    $accuracyColor = 'text-yellow-700';
+                                    $accuracyBgColor = 'bg-yellow-50';
+                                    $accuracyIcon = '⚠️';
+                                } else {
+                                    $accuracyLevel = 'Needs Improvement';
+                                    $accuracyColor = 'text-orange-700';
+                                    $accuracyBgColor = 'bg-orange-50';
+                                    $accuracyIcon = '⚡';
+                                }
+                            }
+                        @endphp
+                        
                         <div class="mb-10 border-t pt-6">
                             <h3 class="text-lg font-bold mb-4">
                                 Backtest Cutoff: {{ $bt['cutoff'] }}
                             </h3>
 
-                            {{-- Metrics --}}
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                <div class="p-4 bg-green-100 rounded-lg text-center">
-                                    <p class="text-sm text-gray-600">MAPE (non-zero)</p>
-                                    <p class="text-2xl font-semibold text-green-800">
-                                        {{ $bt['mape'] !== null ? number_format($bt['mape'], 2).'%' : 'N/A' }}
-                                    </p>
+                            {{-- User-Friendly Accuracy Display --}}
+                            @if($accuracy !== null)
+                                <div class="mb-6 {{ $accuracyBgColor }} border-2 border-{{ explode('-', $accuracyColor)[1] }}-200 rounded-xl p-6">
+                                    <div class="flex items-center justify-between flex-wrap gap-4">
+                                        <div class="flex items-center gap-4">
+                                            <span class="text-4xl">{{ $accuracyIcon }}</span>
+                                            <div>
+                                                <p class="text-sm text-gray-600 mb-1">Forecast Accuracy</p>
+                                                <p class="text-3xl font-bold {{ $accuracyColor }}">
+                                                    {{ number_format($accuracy, 1) }}%
+                                                </p>
+                                                <p class="text-sm font-medium {{ $accuracyColor }} mt-1">
+                                                    {{ $accuracyLevel }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        {{-- Visual Progress Bar --}}
+                                        <div class="flex-1 min-w-[200px] max-w-md">
+                                            <div class="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
+                                                <div class="h-full rounded-full transition-all duration-500 flex items-center justify-end pr-2
+                                                    {{ $accuracy >= 90 ? 'bg-green-600' : '' }}
+                                                    {{ $accuracy >= 80 && $accuracy < 90 ? 'bg-blue-600' : '' }}
+                                                    {{ $accuracy >= 70 && $accuracy < 80 ? 'bg-teal-600' : '' }}
+                                                    {{ $accuracy >= 60 && $accuracy < 70 ? 'bg-yellow-600' : '' }}
+                                                    {{ $accuracy < 60 ? 'bg-orange-600' : '' }}"
+                                                    style="width: {{ $accuracy }}%">
+                                                    <span class="text-white text-xs font-bold">{{ number_format($accuracy, 1) }}%</span>
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                                <span>0%</span>
+                                                <span>50%</span>
+                                                <span>100%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {{-- Explanation --}}
+                                    <div class="mt-4 pt-4 border-t border-{{ explode('-', $accuracyColor)[1] }}-200">
+                                        <p class="text-sm text-gray-700">
+                                            <strong>What this means:</strong> 
+                                            @if($accuracy >= 90)
+                                                Our forecast is highly accurate! Predictions are typically within 10% of actual harvest amounts.
+                                            @elseif($accuracy >= 80)
+                                                Our forecast is very reliable. Predictions are typically within 20% of actual harvest amounts.
+                                            @elseif($accuracy >= 70)
+                                                Our forecast provides good guidance. Predictions are typically within 30% of actual harvest amounts.
+                                            @elseif($accuracy >= 60)
+                                                Our forecast gives a fair estimate. Consider adding a margin of ±40% for planning.
+                                            @else
+                                                Our forecast provides a general estimate. Predictions may vary significantly from actual results.
+                                            @endif
+                                        </p>
+                                    </div>
                                 </div>
-                                <div class="p-4 bg-blue-100 rounded-lg text-center">
-                                    <p class="text-sm text-gray-600">RMSE (non-zero)</p>
-                                    <p class="text-2xl font-semibold text-blue-800">
-                                        {{ $bt['rmse'] !== null ? number_format($bt['rmse'], 2).' kg' : 'N/A' }}
-                                    </p>
+                            @endif
+
+                            {{-- Technical Metrics (Collapsible) --}}
+                            <details class="mb-6">
+                                <summary class="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800 mb-2">
+                                    📊 Show Technical Metrics
+                                </summary>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div class="p-4 bg-green-100 rounded-lg text-center">
+                                        <p class="text-sm text-gray-600">MAPE (non-zero)</p>
+                                        <p class="text-2xl font-semibold text-green-800">
+                                            {{ $bt['mape'] !== null ? number_format($bt['mape'], 2).'%' : 'N/A' }}
+                                        </p>
+                                        <p class="text-xs text-gray-500 mt-1">Mean Absolute Percentage Error</p>
+                                    </div>
+                                    <div class="p-4 bg-blue-100 rounded-lg text-center">
+                                        <p class="text-sm text-gray-600">RMSE (non-zero)</p>
+                                        <p class="text-2xl font-semibold text-blue-800">
+                                            {{ $bt['rmse'] !== null ? number_format($bt['rmse'], 2).' kg' : 'N/A' }}
+                                        </p>
+                                        <p class="text-xs text-gray-500 mt-1">Root Mean Square Error</p>
+                                    </div>
                                 </div>
-                            </div>
+                            </details>
 
                             {{-- Backtest Records --}}
                             @if(!empty($bt['dates']) && !empty($bt['actual']))

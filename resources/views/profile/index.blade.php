@@ -3,7 +3,7 @@
 @section('title', 'My Profile')
 
 @section('content')
-<div class="min-h-screen flex justify-center items-start bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen flex justify-center items-start bg-gray/95 py-10 px-4 sm:px-6 lg:px-8">
     <div class="w-full max-w-2xl bg-white p-6 rounded-2xl shadow-md">
         <h2 class="text-xl font-bold mb-4 text-center">My Profile</h2>
 

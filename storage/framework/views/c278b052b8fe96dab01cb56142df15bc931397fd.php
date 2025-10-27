@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', function() {
         data: {
             labels: months,
             datasets: [{
-                label: 'Actual Harvest (kg)',
+                label: 'Harvest this year (kg)',
                 data: totals,
                 backgroundColor: '#0A400C',
                 borderColor: '#0A400C',
@@ -427,7 +427,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 legend: { display: false },
                 title: {
                     display: true,
-                    text: 'Actual Harvests',
+                    text: 'Harvest this year',
                     font: { size: 14, weight: 'bold' },
                     color: '#000000'
                 }

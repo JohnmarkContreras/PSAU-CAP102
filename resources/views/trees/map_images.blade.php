@@ -58,13 +58,13 @@
                         <a href="#"
                         class="text-green-700 hover:underline block mb-2"
                         id="edit-tree-link">
-                        Edit Tamarind Tree Data
+                        Update Tamarind Tree Data
                         </a>
 
                         <p><strong>Code:</strong> <span id="detail-code"></span></p>
                         <p class="hidden"><strong>Filename:</strong> <span id="detail-filename"></span></p>
                         <p><strong>Taken At:</strong> <span id="detail-taken"></span></p>
-                        <p><strong>Age:</strong> <span id="detail-age">—</span></p>
+                        <!-- <p><strong>Age:</strong> <span id="detail-age">—</span></p> -->
                         <div class="mt-4">
                             <img id="detail-image" src="" alt="Tree Image" class="rounded shadow max-h-64 hidden mx-auto">
                         </div>
@@ -551,6 +551,18 @@ const editLink = qs('edit-tree-link');
 if (editLink && !editLink.getAttribute('href')) {
     editLink.href = "{{ route('tree_data.create') }}";
 }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('keydown', function(e) {
+            if (['e', 'E', '+', '-'].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+    });
 });
 </script>
 @endsection
