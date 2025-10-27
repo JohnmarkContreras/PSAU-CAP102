@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Tree;
-
+use App\User;
 class CarbonRecordController extends Controller
 {
     public function store(Request $request)
@@ -17,13 +17,27 @@ class CarbonRecordController extends Controller
             'recorded_at' => 'nullable|date',
         ]);
 
-        $carbonRecord = CarbonRecord::create($validated);
+    //     $carbonRecord = CarbonRecord::create($validated);
 
-        return response()->json([
-            'message' => 'Carbon data recorded successfully.',
-            'data' => $carbonRecord
-        ], 201);
-    }
+    //     return response()->json([
+    //         'message' => 'Carbon data recorded successfully.',
+    //         'data' => $carbonRecord
+    //     ], 201);
+    // }
+    $tree = Tree::findOrFail($validated['tree_id']);
+
+    $biomass = 0.25 * pow($tree->stem_diameter, 2) * $tree->height;
+    $carbon_stock = $biomass * 0.5;
+    $annual_sequestration = $carbon_stock * 0.07;
+
+    $carbonRecord = $tree->carbonRecords()->create([
+        'estimated_biomass_kg'    => round($biomass, 2),
+        'carbon_stock_kg'         => round($carbon_stock, 2),
+        'annual_sequestration_kg' => round($annual_sequestration, 2),
+        'recorded_at'             => now(),
+    ]);
+}
+
 
     public function create()
     {

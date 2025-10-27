@@ -7,53 +7,137 @@ use App\PendingGeotagTree;
 use App\Services\GeotagApprovalService;
 use App\User;
 use App\Notifications\GeotagStatusChanged;
+use App\Services\CarbonTrackingService;
+use App\Helpers\ActivityLogHelper;
+use Illuminate\Support\Facades\Auth;
 class PendingGeotagTreeController extends Controller
 {
     protected $approvalService;
+    protected $carbonService;
 
-    public function __construct(GeotagApprovalService $approvalService)
+    public function __construct(GeotagApprovalService $approvalService, CarbonTrackingService $carbonService)
     {
         $this->approvalService = $approvalService;
+        $this->carbonService   = $carbonService;
     }
 
-    public function store(Request $request)
-    {
-        logger()->info('Store PendingGeotagTree Request:', $request->all());
+
+ public function store(Request $request)
+{
+    try {
+        logger()->info('Mobile Request Received:', [
+            'has_file' => $request->hasFile('filename'),
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+        ]);
+
         $validated = $request->validate([
-            'filename' => 'required|image',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'code' => 'required|string|unique:pending_geotag_trees,code',
-            'tree_type_id' => 'required|exists:tree_types,id',
-            'taken_at' => 'nullable|date',
+            'filename'       => 'required|image|max:10240',
+            'latitude'       => 'required|numeric',
+            'longitude'      => 'required|numeric',
+            'code'           => 'required|string|unique:pending_geotag_trees,code',
+            'dbh'            => 'nullable|numeric',
+            'height'         => 'nullable|numeric',
+            'age'            => 'nullable|numeric',
+            'canopy_diameter'=> 'nullable|numeric',
+            'tree_type_id'   => 'required|exists:tree_types,id',
+            'taken_at'       => 'nullable|date',
+
+            // new: explicit type and conditional requirements
+            'planted_type' => ['nullable', 'in:date,year'],
+            'planted_at'   => ['nullable', 'date'],
+            'planted_year' => ['nullable', 'digits:4','integer','min:1900','max:' . date('Y')],
         ]);
 
         $path = $request->file('filename')->store('pending_tree_images', 'public');
 
-        $pending = PendingGeotagTree::create([
-            'image_path' => $path,
-            'latitude' => $validated['latitude'],
-            'longitude' => $validated['longitude'],
-            'code' => $validated['code'],
-            'taken_at' => $validated['taken_at'] ?? null,
-            'tree_type_id' => $validated['tree_type_id'],
-            'user_id' => auth()->id(), // attach user
-        ]);
+        // Prepare attributes safely (no undefined indexes)
+        $attrs = [
+            'image_path'       => $path,
+            'latitude'         => $validated['latitude'],
+            'longitude'        => $validated['longitude'],
+            'code'             => $validated['code'],
+            'dbh'              => $validated['dbh'] ?? null,
+            'height'           => $validated['height'] ?? null,
+            'age'              => $validated['age'] ?? null,
+            'canopy_diameter'  => $validated['canopy_diameter'] ?? null,
+            'taken_at'         => $validated['taken_at'] ?? null,
+            'tree_type_id'     => $validated['tree_type_id'],
+            'user_id'          => auth()->id(),
+            'planted_type'     => $validated['planted_type'] ?? null,
+        ];
 
-            // 🔔 Notify admins and superadmins
-        $admins = User::role(['admin', 'superadmin'])->get(); // Spatie Role check
-        if ($admins->count()) {
-            foreach ($admins as $admin) {
-                $admin->notify(new GeotagStatusChanged('pending', $pending->id));
-            }
+        //store date
+        $type = $validated['planted_type'] ?? null;
+
+        if ($type === 'date') {
+            $attrs['planted_at'] = $validated['planted_at'];
+            $attrs['planted_year_only'] = 0;
+        } elseif ($type === 'year') {
+            $attrs['planted_at'] = $validated['planted_year'] . '-01-01';
+            $attrs['planted_year_only'] = 1;
+        } else {
+            // No selection made
+            $attrs['planted_at'] = null;
+            $attrs['planted_year_only'] = 0;
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Tree added to pending trees successfully!',
-            'pending' => $pending
+        $pending = PendingGeotagTree::create($attrs);
+
+        // Notify admins and superadmins
+        $admins = User::query()->role(['admin', 'superadmin'])->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new GeotagStatusChanged('pending', $pending->id));
+        }
+
+        return redirect()->back()->with('success', '🌳 Tree added to pending trees successfully!');
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        logger()->error('Validation failed:', $e->errors());
+
+        $errors = $e->errors();
+
+        if (isset($errors['code']) && str_contains($errors['code'][0], 'unique')) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', '⚠️ Tree Code "' . $request->code . '" already exists. Please use a different code.');
+        }
+
+        $errorMessages = [];
+        foreach ($errors as $field => $messages) {
+            $fieldLabel = ucfirst(str_replace('_', ' ', $field));
+            $errorMessages[] = $fieldLabel . ': ' . $messages[0];
+        }
+
+        return redirect()->back()
+            ->withInput()
+            ->with('error', '❌ ' . implode(' | ', $errorMessages));
+
+    } catch (\Illuminate\Database\QueryException $e) {
+        logger()->error('Database error: ' . $e->getMessage());
+
+        if (str_contains($e->getMessage(), 'Duplicate entry')) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', '⚠️ Tree Code "' . $request->code . '" already exists. Please use a different code.');
+        }
+
+        return redirect()->back()
+            ->withInput()
+            ->with('error', '❌ Database error occurred. Please try again.');
+
+    } catch (\Exception $e) {
+        logger()->error('Store failed: ' . $e->getMessage(), [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
         ]);
+
+        return redirect()->back()
+            ->withInput()
+            ->with('error', '❌ An unexpected error occurred. Please try again.');
     }
+}
+
 
     public function index(Request $request)
     {
@@ -65,13 +149,32 @@ class PendingGeotagTreeController extends Controller
         return view('pending_geotags.index', compact('pending'));
     }
 
-    // Approve a geotag and create a Tree
+// In your Controller
     public function approve($id)
     {
-        $this->approvalService->approveGeotag($id);
+        try {
+            $result = $this->approvalService->approve($id);
 
-        return redirect()->back()->with('success', 'Geotag approved and added to Trees!');
+            if (is_array($result) && isset($result['duplicate'])) {
+                return redirect()->back()->with('warning', "Tree code '{$result['code']}' already exists!");
+            }
+
+            if ($result === null) {
+                return redirect()->back()->with('info', 'Geotag approved, but no tree data was found for this code.');
+            }
+
+            return redirect()->back()->with('success', 'Geotag approved successfully!');
+
+        } catch (\Exception $e) {
+            \Log::error('Approval Error: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            ActivityLogHelper::log('User approved geotag', ['fields' => $request->only(['name', 'email'])], 'user_actions', $user);
+            return redirect()->back()->with('error', $e->getMessage());
+        }
     }
+
 
     // Reject a geotag with optional reason
     public function reject(Request $request, $id)
@@ -79,9 +182,9 @@ class PendingGeotagTreeController extends Controller
         $request->validate([
             'rejection_reason' => 'nullable|string|max:255',
         ]);
-
+        $user = Auth::user();
         $this->approvalService->rejectGeotag($id, $request->input('rejection_reason'));
-
+        ActivityLogHelper::log('User rejected geotag', ['fields' => $request->only(['name', 'email'])], 'user_actions', $user);
         return redirect()->back()->with('status', 'Geotag rejected successfully.');
     }
 }

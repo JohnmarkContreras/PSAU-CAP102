@@ -9,7 +9,7 @@ class MobileGeotagMetadata extends Model
 {
     protected $fillable = [
         'pending_geotag_id',
-        'tree_id',
+        'tree_data_id',
         'image',
         'device_id',
         'source',

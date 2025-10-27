@@ -34,14 +34,14 @@ return [
     'harvest' => [
         'min_dbh_cm' => env('HARVEST_MIN_DBH_CM', 10),
         'min_height_m' => env('HARVEST_MIN_HEIGHT_M', 2),
-        'sarima_order' => env('HARVEST_SARIMA_ORDER', '4,1,4'),
+        'sarima_order' => env('HARVEST_SARIMA_ORDER', '1,1,1'),
         'sarima_seasonal' => env('HARVEST_SARIMA_SEASONAL', '0,1,0,12'),
         'harvest_months' => env('HARVEST_MONTHS', '1,2,3'),
     ],
 
     'semaphore' => [
         'semaphore.api_key' => env('SEMAPHORE_API_KEY'),
-        'semaphore.sender_name' => env('SEMAPHORE_SENDER_NAME'),
+        'semaphore.sender_name' => env('SEMAPHORE_SENDER_NAME', 'LanWired'),
     ]
 
 ];

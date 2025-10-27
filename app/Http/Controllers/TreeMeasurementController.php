@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\TreeCode;
 use App\TreeMeasurement;
-
+use App\User;
 
 class TreeMeasurementController extends Controller
 {

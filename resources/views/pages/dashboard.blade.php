@@ -13,7 +13,7 @@
 
         const labels = @json(['Sour', 'Sweet', 'Semi-Sweet']);
         const data = @json([ $totalsour ?? 0, $totalsweet ?? 0, $totalsemi_sweet ?? 0 ]);
-        const colors = ['#7BD666', '#EE918C', '#4F302E']; // Green, pink, Brown
+        const colors = ['#6DAF2F', '#FFBCD6', '#EB9737']; // Green, pink, Brown
 
         const total = data.reduce((a, b) => a + b, 0);
         if (total === 0) {
@@ -31,19 +31,20 @@
 
         // Build chart
         const chart = new Chart(ctx, {
-            type: 'pie',
+            type: 'doughnut', // Changed from 'pie' to 'doughnut'
             data: {
                 labels: labels,
                 datasets: [{
                     data: data,
                     backgroundColor: colors,
                     borderColor: '#ffffff',
-                    borderWidth: 1
+                    borderWidth: 2
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                cutout: '60%', // This controls the size of the hole (50-70% is typical)
                 plugins: {
                     legend: { display: false }, // we use custom legend
                     tooltip: { enabled: true }
@@ -77,7 +78,7 @@
             legendContainer.appendChild(row);
         });
     });
-    </script>
+</script>
 
     <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -259,6 +260,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+
 <main id="dashboard-container" class="flex-1 p-6 space-y-6">
     <section class="bg-[#e9eee9] rounded-lg p-4 relative">
         <x-card title="Dashboard">
@@ -302,21 +304,21 @@ document.addEventListener('DOMContentLoaded', function () {
                             </a>
                         </div>
 
-                    <!-- Total Predicted Card -->
-                    <div class="bg-[#04471C] text-white rounded-md shadow-md overflow-hidden w-full">
-                        <!-- Main content -->
-                        <div class="p-4 flex flex-col items-center justify-center text-center">
-                            <div class="flex items-center justify-center mb-2">
-                                <div class="text-center">
-                                        <div class="text-2xl font-bold">{{ number_format($totalPredicted, 2) }} kg</div>
-                                        <div class="text-sm">Total Predicted Harvest</div>
+                        <!-- Total Actual Harvest Card -->
+                        <div class="bg-[#04471C] text-white rounded-md shadow-md overflow-hidden w-full">
+                            <!-- Main content -->
+                            <div class="p-4 flex flex-col items-center justify-center text-center">
+                                <div class="flex items-center justify-center mb-2">
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold">{{ number_format($totalActual, 2) }} kg</div>
+                                        <div class="text-sm">Recorded Harvest</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Footer link -->
-                            <a href="{{ route('analytics.carbon') }}" 
-                                class="block bg-white text-black/90 border-solid border-2 border-[#04471C] hover:bg-[#003300] hover:text-white text-center py-3 w-full transition duration-200 shadow-inner rounded-b-lg">
+                            <!-- Footer link -->
+                            <a href="{{ route('pages.harvest-management') }}"
+                            class="block bg-white text-black/90 border-solid border-2 border-[#04471C] hover:bg-[#003300] hover:text-white text-center py-3 w-full transition duration-200 shadow-inner rounded-b-lg">
                                 <p class="font-semibold tracking-wide">View Details →</p>
                             </a>
                         </div>
@@ -396,15 +398,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const months = @json($months);
     const totals = @json($totals);
 
-    new Chart(ctx, {
+        new Chart(ctx, {
         type: 'bar',
         data: {
             labels: months,
             datasets: [{
-                label: 'Predicted Harvest (kg)',
+                label: 'Harvest this year (kg)',
                 data: totals,
-                backgroundColor: '#0A400C', // Tailwind sky-400
-                borderColor: '#0A400C', // Tailwind sky-500
+                backgroundColor: '#0A400C',
+                borderColor: '#0A400C',
                 borderWidth: 1,
                 borderRadius: 6,
             }]
@@ -415,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 legend: { display: false },
                 title: {
                     display: true,
-                    text: 'Predicted Harvests',
+                    text: 'Harvest this year',
                     font: { size: 14, weight: 'bold' },
                     color: '#000000'
                 }

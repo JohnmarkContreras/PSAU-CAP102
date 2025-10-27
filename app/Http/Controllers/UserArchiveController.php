@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Arr;
-    use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log;
 
 class UserArchiveController extends Controller
 {

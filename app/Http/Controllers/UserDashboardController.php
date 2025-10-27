@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\TreeStatsService;
-
+use App\User;
 class UserDashboardController extends Controller
 {
     private $treeStatsService;
@@ -16,7 +16,8 @@ class UserDashboardController extends Controller
     public function index()
     {
         $stats = $this->treeStatsService->getDashboardStats();
-        $unreadCount = auth()->user()->unreadNotifications()->count();
+        // $unreadCount = auth()->user()->unreadNotifications()->count();
+        $unreadCount = 0;
         return view('pages.dashboard', array_merge($stats, [
             'role' => 'user',
             'unreadCount' => $unreadCount,

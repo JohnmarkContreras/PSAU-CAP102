@@ -1,0 +1,5 @@
+Oct 19 06:52:40 srv1062748 kernel: [0;1;31m[0;1;39m[0;1;31mOut of memory: Killed process 2615 (php-fpm7.4) total-vm:4446292kB, anon-rss:3668564kB, file-rss:3200kB, shmem-rss:19328kB, UID:33 pgtables:8472kB oom_score_adj:0[0m
+Oct 19 07:05:53 srv1062748 kernel: [0;1;31m[0;1;39m[0;1;31mOut of memory: Killed process 4284 (php-fpm7.4) total-vm:8166476kB, anon-rss:6369280kB, file-rss:3072kB, shmem-rss:19968kB, UID:33 pgtables:15752kB oom_score_adj:0[0m
+Oct 19 07:24:24 srv1062748 kernel: [0;1;31m[0;1;39m[0;1;31mOut of memory: Killed process 6446 (php-fpm7.4) total-vm:2929136kB, anon-rss:2697340kB, file-rss:2816kB, shmem-rss:20480kB, UID:33 pgtables:5512kB oom_score_adj:0[0m
+Oct 19 07:45:22 srv1062748 kernel: [0;1;31m[0;1;39m[0;1;31mOut of memory: Killed process 9299 (php-fpm7.4) total-vm:4147728kB, anon-rss:3211224kB, file-rss:3200kB, shmem-rss:18944kB, UID:33 pgtables:7876kB oom_score_adj:0[0m
+Oct 19 07:58:43 srv1062748 systemd[1]: [0;1;31m[0;1;39m[0;1;31mFailed to start fwupd-refresh.service - Refresh fwupd metadata and update motd.[0m

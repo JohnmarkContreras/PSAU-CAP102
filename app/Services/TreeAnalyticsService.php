@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Tree;
-
+use App\User;
 class TreeAnalyticsService
 {
     public function getAnalyticsData()

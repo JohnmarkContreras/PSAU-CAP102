@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Imports\HarvestsImport;
 use Maatwebsite\Excel\Facades\Excel;
-
+use App\User;
 class HarvestImportService
 {
     public function import($file)

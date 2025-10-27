@@ -50,7 +50,9 @@ class TreeCode extends Model
     // Latest harvest prediction by code
     public function latestPrediction()
     {
-        return $this->hasOne(HarvestPrediction::class, 'code', 'code')->orderBy('predicted_date', 'desc');
+return $this->hasOne(HarvestPrediction::class, 'code', 'code')
+            ->where('status', 'pending')
+            ->orderByDesc('created_at'); // or 'id' if that's your timestamp proxy
     }
     // Latest tree data entry
     public function latestData()

@@ -12,47 +12,41 @@ use Carbon\Carbon;
 class HarvestsImport implements ToModel, WithHeadingRow
 {
     public function model(array $row)
-    {
-        // Normalize and clean the tree code (e.g. "SOUR101", "Sweet202", "semi_sweet303")
+{
+    try {
         $rawCode = trim($row['code'] ?? $row['tree_code'] ?? '');
-        if (empty($rawCode)) {
-            throw new \Exception("Missing tree code in row: " . json_encode($row));
-        }
+        if (empty($rawCode)) return null;
 
-        // Standardize format: uppercase and remove spaces (e.g. "Sweet 101" → "SWEET101")
         $treeCode = strtoupper(str_replace(' ', '', $rawCode));
-
-        // Ensure tree code exists in database
         $tree = TreeCode::whereRaw('UPPER(code) = ?', [$treeCode])->first();
-        if (!$tree) {
-            throw new \Exception("Tree with code {$treeCode} not found");
-        }
+        if (!$tree) return null;
 
-        // Parse and normalize the date (from DD/MM/YYYY)
         $harvestDate = $this->transformDate($row['harvest_date'] ?? $row['date'] ?? null);
-        if (!$harvestDate) {
-            throw new \Exception("Invalid or missing harvest date for {$treeCode}");
-        }
+        if (!$harvestDate) return null;
 
-        // Check if harvest already exists (same tree and date)
         $existing = Harvest::where('code', $tree->code)
             ->whereDate('harvest_date', $harvestDate)
             ->first();
 
-        if ($existing) {
-            // Skip duplicates silently
-            return null;
-        }
+        if ($existing) return null;
 
-        // Create new Harvest record
         return new Harvest([
             'code' => $tree->code,
             'harvest_date' => $harvestDate,
             'harvest_weight_kg' => $row['weight'] ?? $row['harvest_weight_kg'] ?? null,
-            'quality' => strtoupper(trim($row['quality'] ?? '')), // optional (A, B, C)
-            'notes' => $row['notes'] ?? null, // optional
+            'quality' => strtoupper(trim($row['quality'] ?? '')),
+            'notes' => $row['notes'] ?? null,
+            'created_by' => auth()->id(),
         ]);
+    } catch (\Throwable $e) {
+        \Log::error('Harvest import failed', [
+            'row' => $row,
+            'error' => $e->getMessage(),
+        ]);
+        return null; // skip bad row
     }
+}
+
 
     /**
      * Convert Excel or text date into Y-m-d format

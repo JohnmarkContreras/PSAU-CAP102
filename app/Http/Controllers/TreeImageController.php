@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use App\TreeCode;
 use App\TreeImage;
 use App\TreeType;
-
+use App\User;
 class TreeImageController extends Controller
 {
     protected $service;
@@ -27,7 +27,45 @@ class TreeImageController extends Controller
     public function data(\Illuminate\Http\Request $request)
     {
         $filters = $request->only(['south','west','north','east','limit']);
-        return response()->json($this->service->getTreeData($filters));
+        $treeImages = $this->service->getTreeData($filters);
+        
+        // Map the response to include TreeData id
+        $mappedData = collect($treeImages)->map(function($image) {
+            $treeDataId = null;
+            
+            // Get TreeCode by id (tree_code_id from service output)
+            if ($image['tree_code_id']) {
+                $treeCode = \App\TreeCode::find($image['tree_code_id']);
+                
+                if ($treeCode) {
+                    // Get TreeData by tree_code_id
+                    $treeData = \App\TreeData::where('tree_code_id', $treeCode->id)->first();
+                    
+                    if ($treeData) {
+                        $treeDataId = $treeData->id;
+                    }
+                }
+            }
+            
+            $imagePath = null;
+            if ($image['filename']) {
+                $imagePath = '/storage/tree_images/' . $image['filename'];
+            }
+            
+            return [
+                'id' => $treeDataId,
+                'tree_code_id' => $image['tree_code_id'],
+                'code' => $image['code'],
+                'latitude' => $image['latitude'],
+                'longitude' => $image['longitude'],
+                'filename' => $image['filename'],
+                'image_path' => $imagePath,
+                'taken_at' => $image['taken_at'],
+                'harvests' => $image['harvests']
+            ];
+        })->toArray();
+        
+        return response()->json($mappedData);
     }
 
     //for displaying total number of tags

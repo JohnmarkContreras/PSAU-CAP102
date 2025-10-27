@@ -1,16 +1,22 @@
 <?php
 
 namespace App\Http\Middleware;
-use Illuminate\Support\Facades\Auth;
-use Closure;
 
-class Authenticate
+use Illuminate\Auth\Middleware\Authenticate as Middleware;
+
+class Authenticate extends Middleware
 {
-    public function handle($request, Closure $next)
+    /**
+     * For API/JSON requests, do NOT redirect—return 401 JSON instead.
+     * For web requests, you can still redirect to the login page.
+     */
+    protected function redirectTo($request)
     {
-        if (!Auth::check()) {
-            return redirect('/'); // Redirect to login page if not authenticated
+        if ($request->is('api/*') || $request->expectsJson()) {
+            return null; // causes AuthenticationException → 401 JSON
         }
-        return $next($request);
+
+        // Adjust this if your login route name/path is different:
+        return route('login');
     }
 }

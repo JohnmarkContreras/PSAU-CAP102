@@ -2,20 +2,22 @@
 import argparse, json, warnings, os, sys, traceback
 import pandas as pd
 import numpy as np
+import datetime
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from dateutil.relativedelta import relativedelta
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error
+import scipy.stats as stats
 
 warnings.filterwarnings("ignore")
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('csv_path')
-    parser.add_argument('--order', default='4,1,4')
-    parser.add_argument('--seasonal', default='1,0,0,12')
+    parser.add_argument('--order', default='1,1,1')
+    parser.add_argument('--seasonal', default='1,1,1,12')
     parser.add_argument('--steps', type=int, default=24)
     parser.add_argument('--harvest_months', default='1,2,3')
     parser.add_argument('--start_from', default=None)
@@ -57,24 +59,31 @@ def main():
         .reindex(all_months, fill_value=0.0)
     )
 
-    last_idx = series.index[-1]
-    last_year = last_idx.year
-    recent_year_months = series[series.index.year == last_year]
-    months_present = set(recent_year_months[recent_year_months > 0].index.month)
-    missing_months = [m for m in sorted(HARVEST_MONTHS) if m not in months_present]
-
-    if missing_months:
-        next_month = missing_months[0]
-        season_year = last_year
+    # --- NEW: Dynamic next season based on current date ---
+    current_ts = pd.Timestamp(datetime.date.today())
+    current_year = current_ts.year
+    current_month = current_ts.month
+    max_harvest_month = max(HARVEST_MONTHS)
+    if current_month > max_harvest_month:
+        season_year = current_year + 1
     else:
-        next_month = min(HARVEST_MONTHS)
-        season_year = last_year + 1
+        season_year = current_year
+
+    # Advance if season already passed or complete in data
+    last_data_year = series.index[-1].year
+    if season_year <= last_data_year:
+        season_year = last_data_year + 1
 
     season_start_ts = pd.Timestamp(season_year, min(HARVEST_MONTHS), 1)
-    season_end_ts = pd.Timestamp(season_year, max(HARVEST_MONTHS), 1) + relativedelta(months=+1, days=-1)
+    season_end_ts = pd.Timestamp(season_year, max(HARVEST_MONTHS), 1) + relativedelta(months=1, days=-1)
 
-        # --- JSON-safe formatter ---
-        # --- JSON-safe formatter ---
+    # --- NEW: Dynamic steps ---
+    last_idx = series.index[-1]
+    start_forecast = last_idx + relativedelta(months=1)
+    target_start = pd.Timestamp(season_year, min(HARVEST_MONTHS), 1)
+    months_to_target = (target_start.year - start_forecast.year) * 12 + (target_start.month - start_forecast.month)
+    args.steps = max(args.steps, months_to_target + 12) if months_to_target >= 0 else args.steps
+
     def safe_output(pred_series):
         if not isinstance(pred_series.index, pd.DatetimeIndex):
             pred_series.index = pd.date_range(start=pd.Timestamp.today(), periods=len(pred_series), freq='MS')
@@ -87,37 +96,25 @@ def main():
         # Keep only harvest months
         pred_series = pred_series.where(pred_series.index.month.astype(int).isin(HARVEST_MONTHS), 0.0)
 
-        # Clean and limit unrealistic values
+        # Clean and clip values
         pred_series = pred_series.fillna(0.0).replace([np.inf, -np.inf], 0.0)
         pred_series = pred_series.clip(lower=0.0)
 
-        # --- NEW: tighter cap for realism ---
+        # Cap max forecast values
         max_val = float(df['harvest_weight_kg'].max()) if not df.empty else 0.0
-        if max_val > 0:
-            cap = max_val * 2.0   # at most 2× historical max
-            pred_series = pred_series.clip(upper=cap)
-        else:
-            pred_series = pred_series.clip(upper=5.0)  # fallback cap for tiny datasets
+        cap = max_val * 5.0 if max_val > 0 else 20.0
+        pred_series = pred_series.clip(upper=cap)
 
-        # --- OPTIONAL: smooth forecasts to reduce spikes ---
-        pred_series = pred_series.rolling(window=2, min_periods=1).mean()
-
-        # --- Typical harvest day per month ---
+        # Typical harvest day per month
         df['day'] = df['harvest_date'].dt.day
-        best_day_by_month = df.groupby(df['harvest_date'].dt.month)['day'].median().to_dict()
-        
-        if df.empty:
-            pred_series = pred_series.clip(upper=5.0)
-        else:
-            hist = df['harvest_weight_kg']
-        if len(hist[hist > 0]) < 4:
-            cap = max(1.5, float(hist.max()) * 1.5)
-        else:
-            cap = float(hist.max()) * 2.0
-            pred_series = pred_series.clip(upper=cap)
+        best_day_by_month = df.groupby(df['harvest_date'].dt.month)['day'].apply(
+            lambda x: int(x.mode().iloc[0]) if len(x.mode()) > 0 else 1
+        ).to_dict()
 
         monthly = []
         for d, v in pred_series.items():
+            if v == 0.0:
+                continue
             month = d.month
             year = d.year
             best_day = int(best_day_by_month.get(month, 1))
@@ -129,32 +126,42 @@ def main():
                 "predicted_quantity": round(float(v), 2)
             })
 
-        # --- Season totals ---
+        # --- Season-specific slice ---
         season_slice = pred_series[(pred_series.index >= season_start_ts) & (pred_series.index <= season_end_ts)]
         season_total = round(float(season_slice.sum()), 2) if not season_slice.empty else 0.0
 
-        nonzero = season_slice[season_slice > 0]
-        if len(nonzero) > 0:
-            first_month = nonzero.index[0]
-            best_day = int(best_day_by_month.get(first_month.month, 1))
-            last_day = (first_month + pd.offsets.MonthEnd(0)).day
-            best_day = min(best_day, last_day)
-            first_date = pd.Timestamp(first_month.year, first_month.month, best_day).date().isoformat()
-            first_qty = round(float(nonzero.iloc[0]), 2)
-        else:
-            first_date = season_start_ts.date().isoformat()
-            first_qty = 0.0
+        season_predictions = []
+        for month_ts in season_slice.index:
+            if month_ts.month in HARVEST_MONTHS:
+                best_day = int(best_day_by_month.get(month_ts.month, 1))
+                last_day = (month_ts + pd.offsets.MonthEnd(0)).day
+                best_day = min(best_day, last_day)
+                pred_date = pd.Timestamp(month_ts.year, month_ts.month, best_day)
+                pred_qty = round(float(season_slice.loc[month_ts]), 2)
+                season_predictions.append({
+                    "predicted_date": pred_date.date().isoformat(),
+                    "predicted_quantity": pred_qty
+                })
+
+        # --- Updated behavior ---
+        # Instead of using just January's prediction (first), we now use:
+        # - Total quantity across Jan–Mar (or whatever HARVEST_MONTHS are)
+        # - Season start date as reference
+        first_date = season_start_ts.date().isoformat()
+        first_qty = season_total
 
         return {
             "predicted_quantity": first_qty,
             "predicted_date": first_date,
             "monthly_predictions": monthly,
+            "season_predictions": season_predictions,
             "season_total": {
                 "season_start": season_start_ts.date().isoformat(),
                 "season_end": season_end_ts.date().isoformat(),
                 "predicted_total": season_total
             }
         }
+
 
     # --- Evaluation and chart ---
     def evaluate_accuracy(pred_df, actual_df, save_path=None):
@@ -268,11 +275,9 @@ def main():
     #  Save JSON to storage/app/predictions/
     csv_path = args.csv_path
     base_name = os.path.basename(csv_path).replace('.csv', '')
-    # output_dir = os.path.join('storage', 'app', 'predictions')
     # Resolve relative to the Laravel project root
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     output_dir = os.path.join(base_dir, 'storage', 'app', 'predictions')
-    os.makedirs(output_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f'{base_name}_prediction.json')
     with open(output_path, 'w', encoding='utf-8') as f:

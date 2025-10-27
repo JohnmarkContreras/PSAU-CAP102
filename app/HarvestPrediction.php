@@ -23,4 +23,8 @@ class HarvestPrediction extends Model
     {
         return $q->where('status', self::STATUS_PENDING);
     }
+
+        protected $casts = [
+        'predicted_date' => 'datetime',
+    ];
 }

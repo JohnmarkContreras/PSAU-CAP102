@@ -43,7 +43,8 @@ class DeadTreeRequestController extends Controller
             'submitted_by' => Auth::id(),
         ]);
 
-        User::role(['admin', 'superadmin'])->each(function ($admin) use ($deadRequest) {
+        // make sure you have: use App\User; at the top
+        $admins = User::query()->role(['admin','superadmin'])->get()->each(function ($admin) use ($deadRequest) {
             $admin->notify(new DeadTreeApprovalRequest($deadRequest));
         });
 

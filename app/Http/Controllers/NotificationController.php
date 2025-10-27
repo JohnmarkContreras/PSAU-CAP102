@@ -3,73 +3,101 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
+use App\User;
 
 class NotificationController extends Controller
 {
-    
-public function index(Request $request)
-{
-    $filter = $request->get('filter', 'all');
-    $user = auth()->user();
+    public function index(Request $request)
+    {
+        $filter = $request->get('filter', 'all');
+        $user = auth()->user();
 
-    // Start building the query for notifications
-    $query = $user->notifications()->latest();
+        $query = $user->notifications()->latest();
 
-    // Apply filter conditions
-    if ($filter === 'unread') {
-        $query = $user->unreadNotifications()->latest();
-    } elseif ($filter === 'new') {
-        $query = $user->notifications()
-            ->whereDate('created_at', now()->toDateString())
-            ->latest();
-    }
+        if ($filter === 'unread') {
+            $query->whereNull('read_at');
+        } elseif ($filter === 'new') {
+            $query->whereDate('created_at', now()->toDateString());
+        }
 
-    //  Only now, after all filters, paginate
-    $notifications = $query->paginate(10);
-
-    // 🔒 Role-based filtering for 'user' role
-    if ($user->hasRole('user')) {
-        $notifications->getCollection()->transform(function ($notification) {
-            if (in_array($notification->type, [
+        if ($user->hasRole('user')) {
+            $query->whereIn('type', [
                 'App\Notifications\GeotagStatusChanged',
                 'App\Notifications\FeedbackStatusUpdated',
-            ])) {
-                return $notification;
-            }
-            return null;
-        })->filter();
+            ]);
+        }
+
+        $notifications = $query->paginate(10);
+
+        // Return JSON for AJAX requests
+        if ($request->ajax() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'notifications' => $notifications->items(),
+                'pagination' => [
+                    'current_page' => $notifications->currentPage(),
+                    'last_page' => $notifications->lastPage(),
+                    'per_page' => $notifications->perPage(),
+                    'total' => $notifications->total(),
+                    'from' => $notifications->firstItem(),
+                    'to' => $notifications->lastItem(),
+                ]
+            ]);
+        }
+
+        // Return view with initial data
+        return view('pages.Notifications', compact('notifications', 'filter'));
     }
-
-    // AJAX partials (for live filtering)
-    if ($request->ajax()) {
-        return view('partials.notifications.filter', compact('notifications'));
-    }
-
-    // Normal full page
-    return view('pages.notifications.filter', compact('notifications', 'filter'));
-}
-
-
-    
 
     public function markAsRead($id)
     {
-        $notification = auth()->user()->notifications()->findOrFail($id);
-        $notification->markAsRead();
+        try {
+            $notification = auth()->user()->notifications()->findOrFail($id);
+            $notification->markAsRead();
 
-        return redirect()->back();
+            return response()->json([
+                'success' => true,
+                'message' => 'Notification marked as read.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to mark as read.'
+            ], 500);
+        }
     }
 
     public function markAllRead()
     {
-        auth()->user()->unreadNotifications->markAsRead();
-        return back()->with('success', 'All notifications marked as read.');
+        try {
+            auth()->user()->unreadNotifications->markAsRead();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'All notifications marked as read.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to mark all as read.'
+            ], 500);
+        }
     }
 
     public function destroy($id)
     {
-        auth()->user()->notifications()->findOrFail($id)->delete();
-        return back()->with('success', 'Notification deleted.');
+        try {
+            auth()->user()->notifications()->findOrFail($id)->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Notification deleted successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete notification.'
+            ], 500);
+        }
     }
 }

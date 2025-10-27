@@ -26,8 +26,8 @@ class DashboardController extends Controller
     {
         $year = $request->input('year', now()->year); // default current year
         $month = $request->input('month'); // optional
+
         $pendingtree = PendingGeotagTree::where('status', 'pending')->count();
-        //Total Carbon Sequestration
         $totalAnnualSequestrationKg = TreeData::query()->sum('annual_sequestration_kgco2');
 
         // Start harvest query
@@ -40,13 +40,23 @@ class DashboardController extends Controller
             $query->whereMonth('harvest_date', $month);
         }
 
-        $predictions = \App\HarvestPrediction::selectRaw('MONTH(predicted_date) as month, SUM(predicted_quantity) as total_quantity')
-        ->groupBy('month')
-        ->orderBy('month')
-        ->get();
+        // Group actual harvests by month
+        $harvestsByMonth = Harvest::selectRaw('MONTH(harvest_date) as month, SUM(harvest_weight_kg) as total_quantity')
+            ->when($year, fn($q) => $q->whereYear('harvest_date', $year))
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        // Format for Chart.js
+        $months = $harvestsByMonth->pluck('month')->map(fn($m) =>
+            \Carbon\Carbon::create()->month($m)->format('M')
+        );
+        $totals = $harvestsByMonth->pluck('total_quantity');
+
+        // Total actual harvest overall
+        $totalActual = $harvestsByMonth->sum('total_quantity');
 
         // Get filtered harvests
-        // $harvests = $query->orderBy('harvest_date', 'desc')->get();
         $harvests = $query->with('tree')->orderBy('harvest_date', 'desc')->get();
 
         // Distinct years for filter dropdown
@@ -62,18 +72,10 @@ class DashboardController extends Controller
         $totalsweet = TreeCode::where('tree_type_id', '2')->count();
         $totalsemi_sweet = TreeCode::where('tree_type_id', '3')->count();
         $notifications = auth()->user()->notifications()->latest()->take(5)->get();
+
         $selectedYear = $year;
         $selectedMonth = $month;
 
-    // Format for Chart.js
-    $months = $predictions->pluck('month')->map(function ($m) {
-        return \Carbon\Carbon::create()->month($m)->format('M'); // e.g., Jan, Feb, Mar
-    });
-    $totals = $predictions->pluck('total_quantity');
-
-    // Optional: total predicted harvest overall
-    $totalPredicted = $predictions->sum('total_quantity');
-        
         return view('pages.dashboard', compact(
             'role',
             'totaltrees',
@@ -89,9 +91,9 @@ class DashboardController extends Controller
             'totalAnnualSequestrationKg',
             'months',
             'totals',
-            'totalPredicted',
+            'totalActual'
         ));
-    }
+    }   
 
         public function filterHarvests(Request $request)
     {

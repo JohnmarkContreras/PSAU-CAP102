@@ -29,12 +29,12 @@ class Tree extends Model
                     ->orderBy('harvest_date', 'desc');
     }
 
-    // Relationship to get the most recent harvest prediction
-    public function latestPrediction()
-    {
-        return $this->hasOne(HarvestPrediction::class, 'code', 'code')
-                    ->orderBy('predicted_date', 'desc');
-    }
+    // // Relationship to get the most recent harvest prediction
+    // public function latestPrediction()
+    // {
+    //     return $this->hasOne(HarvestPrediction::class, 'code', 'code')
+    //                 ->orderBy('predicted_date', 'desc');
+    // }
 
 
     public function carbonRecords()

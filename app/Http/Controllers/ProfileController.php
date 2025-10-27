@@ -24,7 +24,7 @@ class ProfileController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'number' => 'required|string|max:15',
-            'password' => 'nullable|min:5,'
+            'password' => 'nullable|min:12'
         ]);
 
         $user->name = $request->name;

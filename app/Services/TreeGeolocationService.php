@@ -5,7 +5,7 @@ namespace App\Services;
 use App\PendingGeotag;
 use App\Notifications\TreeNotification;
 use App\Services\GeotagNotificationService;
-
+use App\User;
 class TreeGeolocationService
 {
     public function createPendingGeotag(array $data)

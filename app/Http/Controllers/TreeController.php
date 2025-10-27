@@ -14,7 +14,7 @@ use App\Http\Requests\UpdateTreeStatusRequest;
 use App\Services\TreeStatusService;
 use App\Services\DeadTreeReporter;
 use Illuminate\Http\Request;
-
+use App\User;
 class TreeController extends Controller
 {
     private $analyticsService;
